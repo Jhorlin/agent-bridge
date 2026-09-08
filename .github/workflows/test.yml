@@ -7,12 +7,32 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        node: [22, 24]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-go@v5
         with:
-          node-version: ${{ matrix.node }}
-      - run: npm run check
-      - run: npm test
+          go-version-file: go.mod
+          cache: false
+      - name: Check formatting
+        run: test -z "$(gofmt -l cmd internal)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: go build ./cmd/agent-bridge
+  cross-build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [darwin, linux]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go build -trimpath -o dist/agent-bridge ./cmd/agent-bridge
+        env:
+          CGO_ENABLED: '0'
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}

@@ -1,5 +1,8 @@
-node_modules/
 .agent-bridge/
 bridge.local.json
 .DS_Store
 coverage/
+/agent-bridge
+/dist/
+*.test
+coverage.out

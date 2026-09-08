@@ -2,24 +2,36 @@
 
 Experimental, local-first synchronization between Claude Code and Codex configuration.
 
-**Status: v0.2 experimental portable-file and skill-directory synchronizer, not a complete configuration translator.** No global installation, live configuration changes, or background service registration happens during setup.
+**Status: v0.3 Go implementation of the experimental portable-file and skill-directory synchronizer, not a complete configuration translator.** No global installation, live configuration changes, or background service registration happens during setup.
 
 ## Run
 
-Requires Node.js 22+. No third-party runtime dependencies.
+Requires Go 1.25+ to build. The resulting executable needs neither Go nor Node installed to run. Standard library only; no third-party dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
 ```sh
-npm test
-node bin/agent-bridge.js plan examples/bridge.json
-node bin/agent-bridge.js sync examples/bridge.json
-node bin/agent-bridge.js watch examples/bridge.json
+go test -race ./...
+go vet ./...
+go build -o agent-bridge ./cmd/agent-bridge
+./agent-bridge plan examples/bridge.json
+./agent-bridge sync examples/bridge.json
+./agent-bridge watch examples/bridge.json
 # Explicit opt-in to writes during polling:
-node bin/agent-bridge.js watch examples/bridge.json --apply
+./agent-bridge watch examples/bridge.json --apply
 # Recover an interrupted transaction after inspecting its journal:
-node bin/agent-bridge.js recover examples/bridge.json
+./agent-bridge recover examples/bridge.json
 ```
 
 The example touches only demo files and the ignored `.agent-bridge` directory. Watch mode polls every second; without `--apply` it only reports changes. Stop with Ctrl-C.
+
+Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped; operational errors stop it. Signals finish the current sync before shutdown.
+
+## Go migration
+
+The CLI command names and config schema 1 are unchanged. Replace `node bin/agent-bridge.js` with `./agent-bridge`. There is no npm setup step.
+
+Existing Node v0.2 manifest schema 2 and journal schema 1 remain supported, including the exact SHA-256 fingerprint algorithm and resource property order. Cross-runtime verification covered Node-state adoption, unchanged-manifest preservation, edits in both runtimes, and recovery of an interrupted Node transaction using Go. Stop any Node watcher before switching: do not run both writers concurrently. A stale lock still requires inspection, not automatic removal.
+
+The Node sources and tests were replaced by Go; they remain recoverable in Git at commit `9141381`. The original 30 behavior scenarios are represented in the Go engine/CLI tests, with additional migration and validation cases. See [migration notes](docs/go-migration.md).
 
 ## Architecture
 
@@ -56,7 +68,7 @@ Before changing any target, a private journal records all before/after snapshots
 
 `recover CONFIG` rolls back the pending transaction; it does not restore arbitrary historic backups. Inspect `stateDir/pending.json` and its referenced `backups/<transaction>/journal.json` privately. If a process was killed, inspect the PID in `sync.lock`, confirm that no writer remains, and remove only that stale lock before running recovery. The CLI never steals a lock automatically. Retain the same configuration paths during recovery. Backups remain after recovery; newly created empty directories may remain too.
 
-Version 0.2 uses manifest schema 2. Version 0.1 manifests are rejected rather than silently reinterpreted. Preserve old state/backups and use a fresh state directory for explicit re-adoption; divergent files require review. No live state migration runs automatically.
+Versions 0.2 and 0.3 use manifest schema 2. Version 0.1 manifests are rejected rather than silently reinterpreted. Preserve old state/backups and use a fresh state directory for explicit re-adoption; divergent files require review. No live state migration runs automatically.
 
 ## Safety and limits
 
