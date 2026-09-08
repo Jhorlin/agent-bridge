@@ -14,7 +14,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return usage(errOut)
 	}
 	command, filename := args[0], args[1]
-	if command != "plan" && command != "sync" && command != "watch" && command != "recover" {
+	if command != "plan" && command != "sync" && command != "watch" && command != "recover" && command != "config" {
 		return usage(errOut)
 	}
 	if len(args) == 3 && (command != "watch" || args[2] != "--apply") {
@@ -29,6 +29,13 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		if err != nil {
 			fmt.Fprintln(errOut, err)
 			return 1
+		}
+		if command == "config" {
+			if err = json.NewEncoder(out).Encode(c); err != nil {
+				fmt.Fprintln(errOut, err)
+				return 1
+			}
+			return 0
 		}
 		if command == "recover" {
 			result, err := bridge.Recover(c)
@@ -82,6 +89,6 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	}
 }
 func usage(w io.Writer) int {
-	fmt.Fprintln(w, "Usage: agent-bridge <plan|sync|watch|recover> <config.json> [--apply (watch only)]")
+	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover> <config.json> [--apply (watch only)]")
 	return 1
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -100,5 +101,66 @@ func TestWatchWithoutApplyIsReadOnly(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "state")); !os.IsNotExist(err) {
 		t.Fatal("read-only watcher wrote state")
+	}
+}
+
+func TestMCPWatcherEndToEnd(t *testing.T) {
+	dir, config := setup(t)
+	raw := map[string]any{"version": 1, "stateDir": "state", "resources": []map[string]any{{"id": "tools", "kind": "mcp-config", "scope": "project", "claude": "mcp.json", "codex": "config.toml", "servers": []string{"docs"}, "allowReformat": true}}}
+	b, _ := json.Marshal(raw)
+	if err := os.WriteFile(config, b, 0600); err != nil {
+		t.Fatal(err)
+	}
+	input := `{"mcpServers":{"docs":{"command":"original-server"}}}`
+	if err := os.WriteFile(filepath.Join(dir, "mcp.json"), []byte(input), 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan int, 1)
+	go func() { done <- Run(ctx, []string{"watch", config, "--apply"}, io.Discard, io.Discard) }()
+	waitContains := func(file, want string) {
+		t.Helper()
+		deadline := time.Now().Add(4 * time.Second)
+		for time.Now().Before(deadline) {
+			data, _ := os.ReadFile(file)
+			if strings.Contains(string(data), want) {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		t.Fatalf("MCP watcher did not update %s", file)
+	}
+	waitContains(filepath.Join(dir, "config.toml"), "original-server")
+	data, err := os.ReadFile(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(dir, "config.toml"), []byte(strings.Replace(string(data), "original-server", "codex-edited", 1)), 0600); err != nil {
+		t.Fatal(err)
+	}
+	waitContains(filepath.Join(dir, "mcp.json"), "codex-edited")
+	cancel()
+	select {
+	case code := <-done:
+		if code != 0 {
+			t.Fatalf("exit %d", code)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("watch did not stop")
+	}
+}
+
+func TestConfigCommandShowsResolvedPathsWithoutReadingNativeContents(t *testing.T) {
+	dir, config := setup(t)
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("private native contents"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if code := Run(context.Background(), []string{"config", config}, &out, io.Discard); code != 0 {
+		t.Fatalf("exit %d", code)
+	}
+	if !strings.Contains(out.String(), "CLAUDE.md") || strings.Contains(out.String(), "private native contents") {
+		t.Fatal("bad effective config output")
 	}
 }

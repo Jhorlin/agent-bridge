@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "stateDir": "../.agent-bridge/mcp-demo",
+  "resources": [{
+    "id": "demo-tools",
+    "kind": "mcp-config",
+    "scope": "project",
+    "claude": "mcp.source.json",
+    "codex": "sandbox/codex.toml",
+    "servers": ["docs"],
+    "allowReformat": true
+  }]
+}

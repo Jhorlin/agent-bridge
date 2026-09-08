@@ -432,7 +432,7 @@ func TestNodeV02FingerprintGolden(t *testing.T) {
 }
 
 func TestNodeV02ResourcePropertyOrder(t *testing.T) {
-	r := Resource{"rules", "portable-file", "global", map[string]string{"shared": "s", "claude": "c", "codex": "x"}}
+	r := Resource{ID: "rules", Kind: "portable-file", Scope: "global", Paths: map[string]string{"shared": "s", "claude": "c", "codex": "x"}}
 	data, err := json.Marshal(r)
 	must(t, err)
 	const expected = `{"id":"rules","kind":"portable-file","scope":"global","paths":{"shared":"s","claude":"c","codex":"x"}}`

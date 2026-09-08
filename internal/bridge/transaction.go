@@ -32,6 +32,9 @@ type Recovery struct {
 type Options struct{ BeforeWrite func(int, Operation) error }
 
 func locked(c Config, fn func() error) (err error) {
+	if err = validateLinks(c); err != nil {
+		return err
+	}
 	if err = assertSafe(c.StateDir); err != nil {
 		return err
 	}
@@ -58,10 +61,10 @@ func allowedTarget(c Config, file string) bool {
 	}
 	for _, r := range c.Resources {
 		for _, root := range r.Paths {
-			if r.Kind == "portable-file" && root == file {
+			if (r.Kind == "portable-file" || r.Kind == "mcp-config") && root == file {
 				return true
 			}
-			if r.Kind == "skill-directory" && file != root && inside(root, file) {
+			if (r.Kind == "skill-directory" || r.Kind == "plugin-directory") && file != root && inside(root, file) {
 				return true
 			}
 		}
@@ -177,12 +180,37 @@ func Apply(c Config, options Options) ([]Summary, error) {
 			}
 			for _, side := range item.Writes {
 				before := item.Values[side]
+				content := item.Content
+				switch item.Adapter {
+				case "mcp":
+					content, err = renderMCP(item.Resource, side, item.Content, before)
+				case "plugin-manifest":
+					content, err = renderPluginManifest(item.Resource, side, item.Content)
+				}
+				if err != nil {
+					return err
+				}
+				var roundTrip *Snapshot
+				switch item.Adapter {
+				case "mcp":
+					roundTrip, err = normalizeMCP(item.Resource, side, content)
+				case "plugin-manifest":
+					roundTrip, err = normalizePluginManifest(content)
+				default:
+					roundTrip = content
+				}
+				if err != nil {
+					return err
+				}
+				if fingerprint(roundTrip) != item.Digest {
+					return fmt.Errorf("adapter round-trip validation failed for %s", item.ID)
+				}
 				mode := uint32(0600)
 				if before != nil {
 					mode = before.Mode
 				}
-				mode = (mode & 0666) | (item.Content.Mode & 0111)
-				operations = append(operations, Operation{item.Key + "-" + side, item.Paths[side], before, &Snapshot{item.Content.Data, mode}})
+				mode = (mode & 0666) | (content.Mode & 0111)
+				operations = append(operations, Operation{item.Key + "-" + side, item.Paths[side], before, &Snapshot{content.Data, mode}})
 			}
 			result.Manifest.Files[item.Key] = item.Digest
 		}
@@ -218,6 +246,9 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					if err := options.BeforeWrite(index, op); err != nil {
 						return err
 					}
+				}
+				if err := validateLinks(c); err != nil {
+					return err
 				}
 				current, err := snapshot(op.File)
 				if err != nil {

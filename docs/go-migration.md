@@ -9,7 +9,7 @@
 - `internal/bridge/transaction.go`: lock, journal, guarded writes and recovery.
 - `internal/bridge/filesystem*.go`: snapshots, permissions, no-follow opens and atomic replacement.
 
-Only the standard library is used. CI tests macOS and Linux with the race detector and vet, and cross-builds Darwin/Linux amd64/arm64 executables. Build products are not committed. Windows remains unsupported until its filesystem semantics have dedicated implementation and tests.
+The v0.3 migration used only the standard library. Version 0.4 adds a pinned pure-Go TOML parser for MCP translation. CI tests macOS and Linux with the race detector and vet, and cross-builds Darwin/Linux amd64/arm64 executables. Build products are not committed. Windows remains unsupported until its filesystem semantics have dedicated implementation and tests.
 
 ## Compatibility contract
 
@@ -24,5 +24,7 @@ The engine tests cover: read-only planning; idempotent bootstrap; edits from eac
 The remaining two original scenarios are in CLI tests: watch/apply/shutdown and conflict exit code 2 without writes. Additional Go tests cover usage errors, read-only watch, recover/plan commands, malformed recovery snapshots, legacy manifests, and Node encoding compatibility. A subprocess helper intentionally exits mid-transaction to exercise real interruption; it is skipped when run outside that subprocess.
 
 ## Known limits retained
+
+This section records the v0.3 migration baseline. See [current adapter support](adapters.md) for subsequent features.
 
 Polling is still one second, not native filesystem notifications. Global/project scope is explicit, not inheritance. No semantic skill translation, symlink support, MCP/plugin translation, token copying, service installation, or new pruning behavior was introduced by the language switch. Atomic replacement is per file, not a multi-file transaction visible to readers. Parent-path/check-write races and full power-loss durability remain open work.

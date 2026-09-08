@@ -21,6 +21,7 @@ type Item struct {
 	Content          *Snapshot
 	Digest, Conflict string
 	Writes           []string
+	Adapter          string
 }
 type PlanResult struct {
 	Items          []Item
@@ -71,6 +72,12 @@ func readManifest(c Config) (Manifest, *Snapshot, error) {
 	return m, before, nil
 }
 func expand(r Resource, m Manifest) ([]Item, error) {
+	if r.Kind == "mcp-config" {
+		return []Item{{Resource: r, Key: r.ID, Adapter: "mcp"}}, nil
+	}
+	if r.Kind == "plugin-directory" {
+		return expandPlugin(r, m)
+	}
 	if r.Kind == "portable-file" {
 		return []Item{{Resource: r, Key: r.ID}}, nil
 	}
@@ -126,6 +133,9 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 }
 func Plan(c Config) (PlanResult, error) {
 	result := PlanResult{Items: []Item{}}
+	if err := validateLinks(c); err != nil {
+		return result, err
+	}
 	pending, err := snapshot(pendingPath(c))
 	if err != nil {
 		return result, err
@@ -144,6 +154,7 @@ func Plan(c Config) (PlanResult, error) {
 		}
 		for _, item := range entries {
 			item.Values = map[string]*Snapshot{}
+			semantic := map[string]*Snapshot{}
 			hashes := map[string]string{}
 			for _, side := range sides {
 				value, err := snapshot(item.Paths[side])
@@ -151,7 +162,17 @@ func Plan(c Config) (PlanResult, error) {
 					return result, err
 				}
 				item.Values[side] = value
-				hashes[side] = fingerprint(value)
+				semantic[side] = value
+				switch item.Adapter {
+				case "mcp":
+					semantic[side], err = normalizeMCP(item.Resource, side, value)
+				case "plugin-manifest":
+					semantic[side], err = normalizePluginManifest(value)
+				}
+				if err != nil {
+					return result, err
+				}
+				hashes[side] = fingerprint(semantic[side])
 			}
 			baseline, tracked := result.Manifest.Files[item.Key]
 			selected := ""
@@ -187,7 +208,7 @@ func Plan(c Config) (PlanResult, error) {
 			if selected == "" {
 				selected = "shared"
 			}
-			item.Content = item.Values[selected]
+			item.Content = semantic[selected]
 			item.Digest = fingerprint(item.Content)
 			item.Writes = []string{}
 			if item.Conflict == "" {

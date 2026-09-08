@@ -6,3 +6,4 @@ coverage/
 /dist/
 *.test
 coverage.out
+/examples/sandbox/

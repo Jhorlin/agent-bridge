@@ -2,17 +2,19 @@
 
 Experimental, local-first synchronization between Claude Code and Codex configuration.
 
-**Status: v0.3 Go implementation of the experimental portable-file and skill-directory synchronizer, not a complete configuration translator.** No global installation, live configuration changes, or background service registration happens during setup.
+**Status: v0.4 experimental Go synchronizer with portable files, skill packages, bounded MCP/plugin translation, explicit profile inheritance, and pinned native symlinks. This is not full Claude/Codex feature parity.** No global installation, live configuration changes, or background service registration happens during setup.
 
 ## Run
 
-Requires Go 1.25+ to build. The resulting executable needs neither Go nor Node installed to run. Standard library only; no third-party dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
+Requires Go 1.25+ to build. The resulting executable needs neither Go nor Node installed to run. TOML parsing uses the pinned pure-Go `github.com/pelletier/go-toml/v2` dependency; there is no Node runtime. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
 ```sh
 go test -race ./...
 go vet ./...
 go build -o agent-bridge ./cmd/agent-bridge
 ./agent-bridge plan examples/bridge.json
+# Inspect resolved profiles and target paths without reading native contents:
+./agent-bridge config examples/bridge.json
 ./agent-bridge sync examples/bridge.json
 ./agent-bridge watch examples/bridge.json
 # Explicit opt-in to writes during polling:
@@ -37,7 +39,7 @@ The Node sources and tests were replaced by Go; they remain recoverable in Git a
 
 Each explicitly registered file has three peers: a shared-store file, a Claude path, and a Codex path. A manifest records their last synchronized content/executable-bit SHA-256 digest. Changes to any one peer propagate to the others. Different concurrent edits to the same file block the entire sync. Identical concurrent edits converge. This is baseline-based reconciliation, not last-writer-wins copying.
 
-Configuration paths resolve relative to the configuration file; absolute paths are supported. `scope` labels global/project resources but does **not** implement inheritance or automatically discover projects. Start with sandbox fixtures, not your home configuration.
+Configuration paths resolve relative to their declaring file; absolute paths are supported. Profiles can explicitly `extends` a global/base profile and replace whole resources by ID or `disable` inherited resources. `scope` remains a label: Agent Bridge does not emulate either host's instruction-loading precedence or automatically discover projects. Start with sandbox fixtures, not your home configuration. See [configuration and adapter reference](docs/adapters.md).
 
 The `portable-file` adapter copies exact bytes. Use it only when the content is genuinely compatible with both tools. It does not claim arbitrary CLAUDE.md instructions, skill metadata, or scripts are behaviorally portable.
 
@@ -60,7 +62,20 @@ Register **one skill directory per resource**, not the entire installed-skills f
 }
 ```
 
-New files from either peer are adopted automatically within the explicitly registered directory. Independent changes to different files merge. Deleted tracked files block synchronization; renames therefore require manual reconciliation. Empty directories are not mirrored. Existing symlink-based skill installations are not supported yet.
+New files from either peer are adopted automatically within the explicitly registered directory. Independent changes to different files merge. Deleted tracked files block synchronization; renames therefore require manual reconciliation. Empty directories are not mirrored. Existing root-level native symlinks require explicit `linkTargets` pins; nested links and hardlinks remain rejected.
+
+## New adapters
+
+| Capability | Supported now | Explicit limits |
+| --- | --- | --- |
+| MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
+| Plugins | Portable skill-package directories, common manifest metadata, supporting files; Claude compatibility manifest ↔ Codex compatibility or portable manifest | No installation/cache refresh, OAuth, marketplace management, hooks, agents, bundled MCP, app mappings, custom component paths, or host-specific fields |
+| Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |
+| Inheritance | Explicit base/global profile, declaring-file-relative paths, full-resource project overrides, disabling inherited resources | No automatic project discovery, host instruction inheritance, partial-field merging, or multi-profile coordination |
+
+MCP and plugin entries are compared semantically; formatting-only differences do not cause sync loops. Compiled outputs are parsed back and checked against the canonical model before writing. All adapters use the same guarded transaction journal and conflict blocking. MCP translation preserves unrelated setting **values**, but rewrites formatting and can remove TOML comments; each MCP resource requires `allowReformat: true`.
+
+Try `./agent-bridge plan examples/mcp.bridge.json`, then `sync` with the same file. It generates an isolated example TOML config under `examples/sandbox`; it does not launch a server, authenticate, or contact the example endpoint.
 
 ## Recovery
 
@@ -68,30 +83,30 @@ Before changing any target, a private journal records all before/after snapshots
 
 `recover CONFIG` rolls back the pending transaction; it does not restore arbitrary historic backups. Inspect `stateDir/pending.json` and its referenced `backups/<transaction>/journal.json` privately. If a process was killed, inspect the PID in `sync.lock`, confirm that no writer remains, and remove only that stale lock before running recovery. The CLI never steals a lock automatically. Retain the same configuration paths during recovery. Backups remain after recovery; newly created empty directories may remain too.
 
-Versions 0.2 and 0.3 use manifest schema 2. Version 0.1 manifests are rejected rather than silently reinterpreted. Preserve old state/backups and use a fresh state directory for explicit re-adoption; divergent files require review. No live state migration runs automatically.
+Versions 0.2–0.4 use manifest schema 2. New resource options are recorded in resource identity; changing an already adopted binding requires a new ID or separately reviewed adoption. Do not downgrade a profile using new options to an older binary. Version 0.1 manifests remain rejected. No live state migration runs automatically.
 
 ## Safety and limits
 
 - `plan` never writes. `sync` explicitly applies changes. Summaries omit file contents.
 - Conflicting initial copies require manual reconciliation before adoption.
 - Deletions are conflicts; no automatic pruning.
-- Symlinks are rejected, including symlinked parent paths; hard-linked files are also rejected.
+- Only explicitly pinned native root symlinks are accepted. Symlinked parents, nested/chained links, and hard-linked files are rejected. Pins are rechecked before writes.
 - Writes use fsynced sibling temporary files and rename. Private before/after snapshots are retained in journals under `stateDir/backups`.
-- A lock excludes other bridge writers. External editors are not locked: a remaining check/write race exists. Do not use for security-sensitive production configuration yet.
+- A state-directory lock excludes writers using the same state. Do not run profiles concurrently if they target overlapping native paths: different state directories are not coordinated. External editors are not locked; a remaining check/write race exists. Do not use for security-sensitive production configuration yet.
 - Multi-file changes are recoverable but **not atomically visible**. External readers may observe partial progress. Process-interruption recovery is tested; full power-loss durability and adversarial filesystem races are not guaranteed.
 - New files use private read/write permissions plus source executable bits. Existing target read/write permissions are preserved. ACLs, ownership, extended attributes, timestamps, and directory metadata are not mirrored.
 - State/backups can contain sensitive content. Keep them local, outside public Git, and do not configure credentials as portable files.
-- No MCP, OAuth/session-token, plugin, hook, permission, or semantic instruction translation exists yet. Unsupported adapter kinds fail explicitly.
+- OAuth/session tokens, hook behavior, permission policy, and semantic instruction translation are not implemented. Unsupported fields/components fail explicitly. Plugin packages are authored, not installed or enabled.
 - Resource paths cannot overlap (conservative case-insensitive comparison on every OS). Changing the paths/kind/scope of an already managed ID requires new explicit adoption. Config files and state directories must be trusted and kept private.
 
 ## Roadmap / acceptance gates
 
 1. Further hardening: filesystem races, power-loss durability, richer metadata preservation, ownership and deletion policy, safe historical restore.
-2. Explicit global/project precedence and project registration; preserve unrelated native configuration.
-3. Skill compatibility reports, discovery, and safe handling of existing symlink installations (recursive file syncing is implemented).
-4. MCP JSON/TOML adapters; preserve environment references without copying tokens or relaxing permissions.
+2. Project discovery and multi-profile coordination; host-level instruction inheritance.
+3. Semantic skill compatibility reports and safe nested-link support (root pins and recursive file syncing are implemented).
+4. Broader MCP coverage, per-server reconciliation, and comment-preserving editing (bounded JSON/TOML adapters are implemented).
 5. Structured instructions with shared content and tool-specific overlays.
-6. Plugin/hook capability inventory and explicit unsupported/lossy mappings.
+6. Richer plugin components, bundled MCP, hooks, and installed-cache lifecycle; no blanket parity claims.
 7. Watcher lifecycle, debouncing, onboarding previews, safe uninstall and macOS service integration.
 
 ## Prior art

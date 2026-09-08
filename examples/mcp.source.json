@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "docs": {
+      "type": "http",
+      "url": "https://example.test/mcp",
+      "headers": {"Authorization": "Bearer ${DEMO_TOKEN}"}
+    }
+  }
+}
