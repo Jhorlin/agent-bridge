@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "stateDir": "../.agent-bridge",
+  "resources": [
+    {
+      "id": "demo-instructions",
+      "kind": "portable-file",
+      "scope": "project",
+      "claude": "demo/CLAUDE.md",
+      "codex": "demo/AGENTS.md"
+    }
+  ]
+}
