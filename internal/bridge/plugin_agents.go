@@ -9,7 +9,7 @@ import (
 func exportedAgentName(id, name string) string { return "bridge-" + id + "-" + name }
 
 func normalizePluginAgent(item Item, side string, raw *Snapshot) (*Snapshot, error) {
-	content, err := normalizeAgent(side, raw)
+	content, err := normalizeAgentResource(item.Resource, side, raw)
 	if err != nil || content == nil {
 		return content, err
 	}
@@ -32,9 +32,9 @@ func normalizePluginAgent(item Item, side string, raw *Snapshot) (*Snapshot, err
 	return encoded(agent)
 }
 
-func renderPluginAgent(item Item, side string, content *Snapshot) (*Snapshot, error) {
+func renderPluginAgent(item Item, side string, content, before *Snapshot) (*Snapshot, error) {
 	if side != "codex" {
-		return renderAgent(side, content)
+		return renderAgentResource(item.Resource, side, content, before)
 	}
 	var agent portableAgent
 	if err := decode(content, &agent); err != nil {
@@ -45,7 +45,7 @@ func renderPluginAgent(item Item, side string, content *Snapshot) (*Snapshot, er
 	if err != nil {
 		return nil, err
 	}
-	return renderAgent(side, value)
+	return renderAgentResource(item.Resource, side, value, before)
 }
 
 // Complete write footprint for service and separate-copy overlap checks.

@@ -163,8 +163,8 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			res.TranslateSkillInvocation = true
 		}
 		if r.PreserveAgentSettings {
-			if r.Kind != "agent-file" {
-				return c, fmt.Errorf("preserveAgentSettings requires agent-file")
+			if r.Kind != "agent-file" && !(r.Kind == "plugin-directory" && len(r.CodexAgentExports) > 0) {
+				return c, fmt.Errorf("preserveAgentSettings requires agent-file or explicit plugin agent exports")
 			}
 			res.PreserveAgentSettings = true
 		}

@@ -6,7 +6,7 @@ fetch anything from the network. The `bun` command in the MCP sample is data;
 Agent Bridge's build/test/runtime does not require Bun or Node.
 
 `catalog.json` records repository, exact commit/path/Git blob, fixture SHA-256,
-license, transformations, workstream and expected current result. The three
+license, transformations, workstream and expected current result. The four
 configuration files are byte-identical upstream copies, checked offline against
 their Git blob hashes. Public contents were inspected: no credentials or personal
 configuration were imported. This small initial set is not coverage of all eight
@@ -14,6 +14,14 @@ workstreams. Passing an expected-rejection test does not mean support is impleme
 
 ## Attribution
 
+- `code-simplifier/agent.txt` and its `LICENSE` come from
+  [Anthropic's code-simplifier plugin](https://github.com/anthropics/claude-plugins-official/tree/517b2fcd1b60fa2181ac52dcf8492361ba341180/plugins/code-simplifier).
+  Apache-2.0; both files retain exact upstream bytes. The agent is stored under
+  an inert filename outside discovery roots. Tests reject it without explicit
+  host-local settings consent, then verify namespaced export, Claude-only model
+  retention, reverse edits, independent Codex settings and rollback. Temporary
+  generated/edited copies are test derivatives, not untouched upstream samples;
+  none of the imported agent instructions are executed.
 - `fakechat/mcp.json`, `fakechat/plugin.json`, and `fakechat/LICENSE` come from
   [Anthropic's fakechat plugin](https://github.com/anthropics/claude-plugins-official/tree/517b2fcd1b60fa2181ac52dcf8492361ba341180/external_plugins/fakechat).
   Copyright 2026 Anthropic, PBC. Apache-2.0; the original license is retained.
@@ -24,7 +32,7 @@ workstreams. Passing an expected-rejection test does not mean support is impleme
   Apache-2.0; the original license is retained. Files are renamed/relocated only;
   no skill instructions, scripts or references are imported.
 
-No separate NOTICE file was present within either selected component at these
+No separate NOTICE file was present within these selected components at these
 revisions. Agent Bridge's MIT license does not replace these upstream licenses.
 
 Future user-derived fixtures require a separate read-only source selection,

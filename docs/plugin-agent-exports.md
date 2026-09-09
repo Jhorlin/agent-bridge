@@ -37,11 +37,21 @@ automatically. Project-scoped exports work through explicitly selected project
 paths. New native sessions may be needed to observe changed definitions.
 
 Every package agent must be individually listed. Unlisted/nested agent files,
-wrong names, host-local model/tool/permission metadata, plugin-root macros,
+wrong names, unsupported metadata, plugin-root macros,
 symlinks and overlapping exports are rejected. Exports cannot overlap package
 roots, other managed paths, profile/state/coordinator files or service storage.
 Plugin resources with exports cannot use linked roots. Other agent orchestration
 features, relative references and script behavior are not translated.
+
+By default host-local model/tool/permission fields are rejected. A separate
+`"preserveAgentSettings": true` opt-in permits the same bounded local fields as
+the standalone agent adapter: Claude model, tools/disallowedTools, permissionMode
+and maxTurns; Codex model, model_reasoning_effort, sandbox_mode and approval_policy.
+They stay in their original native file, including during historical restore;
+none are copied into the other host or the shared canonical definition. A newly
+created destination has no translated local settings and uses that host's defaults.
+Configure/review its model and permissions independently before use. Retention
+does not certify equal enforcement or every value's support in every host version.
 
 ## Synchronization and ownership
 
@@ -79,6 +89,12 @@ Offline tests cover forward/reverse fields and names, repeat sync, conflict and
 history selection, raw-review staleness, deletion/metadata/path rejection,
 inheritance/enrollment, ownership/service collisions, injected rollback at each
 write and later-edit recovery refusal. Accepted definitions are round-trip fuzzed.
+
+The pinned, Apache-2.0 [upstream corpus](../internal/bridge/testdata/upstream/README.md)
+includes Anthropic's unchanged code-simplifier agent as inert data. Tests verify
+rejection without settings consent, retention of its Claude-only `model: opus`,
+forward/reverse edited fixture copies and independent Codex settings. Its actual
+instructions never execute; synthetic fixed-provider tests supply native evidence.
 
 Native tests use Claude Code 2.1.266 and Codex 0.153.4, disposable homes and a
 local fake provider. They verify discovery of the bridge-generated Codex export

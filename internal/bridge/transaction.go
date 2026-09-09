@@ -241,7 +241,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				content := item.Content
 				switch item.Adapter {
 				case "plugin-agent":
-					content, err = renderPluginAgent(item, side, item.Content)
+					content, err = renderPluginAgent(item, side, item.Content, before)
 				case "skill-invocation":
 					content, err = renderSkillInvocation(side, item.Content)
 				case "instruction-file":

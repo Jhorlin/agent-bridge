@@ -92,13 +92,58 @@ func TestUpstreamFixtures(t *testing.T) {
 			if fmt.Sprintf("%x", sha256.Sum256(content)) != entry.SHA256 {
 				t.Fatal("fixture changed without a reviewed digest update")
 			}
-			// Git blob hashes verify these three byte-identical fixtures against
+			// Git blob hashes verify the byte-identical fixtures against
 			// their pinned upstream objects. This is integrity, not signature verification.
 			blob := append([]byte(fmt.Sprintf("blob %d\x00", len(content))), content...)
 			if fmt.Sprintf("%x", sha1.Sum(blob)) != entry.SourceBlob {
 				t.Fatal("fixture no longer matches the pinned upstream blob")
 			}
 			switch entry.ID {
+			case "code-simplifier-agent":
+				if entry.Expected != "agent-export-with-local-settings" {
+					t.Fatal("unreviewed support claim")
+				}
+				f := pluginFixture(t)
+				f.raw.Resources[0].AllowReformat = true
+				f.raw.Resources[0].CodexAgentExports = map[string]string{"code-simplifier": "agents/bridge-bundle-code-simplifier.toml"}
+				f.write("claude-plugin/agents/code-simplifier.md", string(content))
+				f.load()
+				if _, err := Apply(f.c, Options{}); err == nil {
+					t.Fatal("Claude model silently dropped without retention opt-in")
+				}
+				f.raw.Resources[0].PreserveAgentSettings = true
+				f.load()
+				f.apply()
+				f.expect("claude-plugin/agents/code-simplifier.md", string(content))
+				out := f.read("agents/bridge-bundle-code-simplifier.toml")
+				s, err := snapshot(f.path("agents/bridge-bundle-code-simplifier.toml"))
+				must(t, err)
+				doc, err := document("codex", s)
+				must(t, err)
+				if _, exists := doc["model"]; exists {
+					t.Fatal("Claude model crossed host boundary")
+				}
+				f.write("agents/bridge-bundle-code-simplifier.toml", strings.Replace(out, "Simplifies and refines", "Reviews and refines", 1)+"model='fixture'\nsandbox_mode='read-only'\n")
+				_, err = Apply(f.c, Options{BeforeWrite: failSecond})
+				contains(t, err, "rolled back")
+				f.expect("claude-plugin/agents/code-simplifier.md", string(content))
+				f.apply()
+				claude := f.read("claude-plugin/agents/code-simplifier.md")
+				if !strings.Contains(claude, "model: opus") || !strings.Contains(claude, "Reviews and refines") || strings.Contains(claude, "sandbox_mode") {
+					t.Fatal("host-local settings were lost or leaked")
+				}
+				f.write("claude-plugin/agents/code-simplifier.md", strings.Replace(claude, "You are an expert", "You are a careful", 1))
+				f.apply()
+				s, err = snapshot(f.path("agents/bridge-bundle-code-simplifier.toml"))
+				must(t, err)
+				doc, err = document("codex", s)
+				must(t, err)
+				if doc["model"] != "fixture" || doc["sandbox_mode"] != "read-only" {
+					t.Fatal("Codex-local settings lost during forward update")
+				}
+				claude = f.read("claude-plugin/agents/code-simplifier.md")
+				f.apply()
+				f.expect("claude-plugin/agents/code-simplifier.md", claude)
 			case "fakechat-mcp":
 				if entry.Expected != "blocked" {
 					t.Fatal("support claim needs new acceptance tests")

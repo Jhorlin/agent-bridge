@@ -72,6 +72,9 @@ func Audit(c Config) AuditReport {
 			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; bounded conventional compatibility-layout hooks, commands and allowlisted MCP are bridged. Command names differ after Codex migration; arguments and direct bundled Codex agents remain unsupported.")
 			if len(r.CodexAgentExports) > 0 {
 				row.Actions = append(row.Actions, "Explicit plugin agents export as namespaced standalone Codex files, not installed package components. Exports remain separately available after plugin uninstall; permissions, models, agent scheduling and arbitrary body behavior are not translated.")
+				if r.PreserveAgentSettings {
+					row.Actions = append(row.Actions, "Bounded agent settings remain in each original host file; configure each export's model and permissions independently before use.")
+				}
 			}
 		case "agent-file":
 			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")

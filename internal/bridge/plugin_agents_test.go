@@ -50,7 +50,7 @@ func FuzzPluginAgentRoundTrip(f *testing.F) {
 			return
 		}
 		for _, side := range sides {
-			rendered, err := renderPluginAgent(item, side, common)
+			rendered, err := renderPluginAgent(item, side, common, nil)
 			must(t, err)
 			again, err := normalizePluginAgent(item, side, rendered)
 			must(t, err)
@@ -94,6 +94,35 @@ func TestPluginAgentExportRoundTrip(t *testing.T) {
 	must(t, err)
 	if !reflect.DeepEqual(c.Resources, f.c.Resources) {
 		t.Fatal("enrollment lost export identity")
+	}
+}
+
+func TestPluginAgentExportSettingsHistory(t *testing.T) {
+	f := pluginAgentFixture(t)
+	f.raw.Resources[0].PreserveAgentSettings = true
+	f.load()
+	f.write("claude-plugin/agents/reviewer.md", strings.Replace(f.read("claude-plugin/agents/reviewer.md"), "name: reviewer\n", "name: reviewer\nmodel: opus\n", 1))
+	tx := initialHistory(t, f)
+	f.write("claude-plugin/agents/reviewer.md", strings.ReplaceAll(strings.ReplaceAll(f.read("claude-plugin/agents/reviewer.md"), "model: opus", "model: sonnet"), "Review the fixture only.", "New instructions."))
+	f.apply()
+	f.write("codex-home/agents/bridge-bundle-reviewer.toml", f.read("codex-home/agents/bridge-bundle-reviewer.toml")+"sandbox_mode='read-only'\nmodel_reasoning_effort='low'\n")
+	choice := HistoryChoice{tx, "bundle/agents/reviewer.md", "codex", "after"}
+	review, err := ReviewHistory(f.path("config.json"), choice)
+	must(t, err)
+	_, err = RestoreReviewed(f.path("config.json"), review.Observation, choice)
+	must(t, err)
+	if !strings.Contains(f.read("claude-plugin/agents/reviewer.md"), "model: sonnet") || !strings.Contains(f.read("claude-plugin/agents/reviewer.md"), "Review the fixture only.") {
+		t.Fatal("history lost current Claude settings or old body")
+	}
+	s, err := snapshot(f.path("codex-home/agents/bridge-bundle-reviewer.toml"))
+	must(t, err)
+	doc, err := document("codex", s)
+	must(t, err)
+	if doc["sandbox_mode"] != "read-only" || doc["model_reasoning_effort"] != "low" {
+		t.Fatal("history lost current Codex settings")
+	}
+	if _, exists := doc["model"]; exists {
+		t.Fatal("history copied Claude model")
 	}
 }
 

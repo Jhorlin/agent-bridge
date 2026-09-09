@@ -2,6 +2,22 @@
   "version": 1,
   "fixtures": [
     {
+      "id": "code-simplifier-agent",
+      "file": "code-simplifier/agent.txt",
+      "sha256": "2a51e8d210580d9f66ac2ed1226c41f9374565fc275da30d7bb95f65c2cc87bb",
+      "repository": "anthropics/claude-plugins-official",
+      "revision": "517b2fcd1b60fa2181ac52dcf8492361ba341180",
+      "sourcePath": "plugins/code-simplifier/agents/code-simplifier.md",
+      "sourceBlob": "05e361b4ef1b688203251989707f8a924a9ed266",
+      "license": "Apache-2.0",
+      "licenseFile": "code-simplifier/LICENSE",
+      "licenseSHA256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "transformations": ["Stored as inert agent.txt outside native discovery roots; source bytes unchanged."],
+      "workstreams": [3, 4],
+      "expected": "agent-export-with-local-settings",
+      "reason": "Explicit standalone export maps common fields; opt-in retains model: opus only in Claude. No imported instructions are executed."
+    },
+    {
       "id": "fakechat-mcp",
       "file": "fakechat/mcp.json",
       "sha256": "3917f449284d362f213a42e0d7ef3bb9a75db795b7909d6febdb1fd94d0df68e",

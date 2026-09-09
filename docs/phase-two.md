@@ -62,10 +62,11 @@ model-free filesystem operations, not native host invocation or deletion support
 7. Enumerate unresolved contracts. A release cannot claim broad support while a
    claimed field/event has no evidence; do not rename unverified work to “done.”
 
-The initial [fixture catalog](../internal/bridge/testdata/upstream/catalog.json)
-covers three configuration samples from two licensed components, not all eight
-workstreams. It currently proves manifest-only round-tripping and safe rejection
-of plugin-relative MCP and host-specific skill sidecars. Personal data is untouched.
+The [fixture catalog](../internal/bridge/testdata/upstream/catalog.json)
+covers four samples from three licensed components, not all eight workstreams.
+It verifies manifest round-tripping, explicit agent export with local settings,
+and safe rejection of plugin-relative MCP and host-specific skill UI sidecars.
+Personal data is untouched; imported instructions never execute.
 
 ## First discovery increment
 
