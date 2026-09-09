@@ -13,6 +13,8 @@ go test -race ./...
 go vet ./...
 go build -o agent-bridge ./cmd/agent-bridge
 ./agent-bridge plan examples/bridge.json
+./agent-bridge audit examples/bridge.json
+./agent-bridge audit examples/mcp.bridge.json --json
 # Inspect resolved profiles and target paths without reading native contents:
 ./agent-bridge config examples/bridge.json
 ./agent-bridge sync examples/bridge.json
@@ -26,6 +28,8 @@ go build -o agent-bridge ./cmd/agent-bridge
 The example touches only demo files and the ignored `.agent-bridge` directory. Watch mode polls every second; without `--apply` it only reports changes. Stop with Ctrl-C.
 
 Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped; operational errors stop it. Signals finish the current sync before shutdown.
+
+`audit CONFIG [--json]` is a read-only compatibility preflight for explicitly registered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
 
 ## Architecture
 
@@ -61,6 +65,8 @@ Register **one skill directory per resource**, not the entire installed-skills f
 New files from either peer are adopted automatically within the explicitly registered directory. Independent changes to different files merge. Deleted tracked files block synchronization; renames therefore require manual reconciliation. Empty directories are not mirrored. Existing root-level native symlinks require explicit `linkTargets` pins; nested links and hardlinks remain rejected.
 
 ## New adapters
+
+See the [compatibility matrix and implementation priorities](docs/compatibility.md) for current coverage, test evidence, and features that remain host-specific or intentionally excluded. File synchronization is not full behavioral compatibility.
 
 | Capability | Supported now | Explicit limits |
 | --- | --- | --- |

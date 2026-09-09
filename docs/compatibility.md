@@ -1,0 +1,94 @@
+# Claude Code ↔ Codex compatibility
+
+Reviewed: 2026-09-08. Implementation baseline: `ee72b31` (Go). This is an initial feature-family audit of local configuration and extensibility, not an exhaustive inventory of every UI feature, flag, or enterprise policy. No host-version pair has yet been certified in live integration tests.
+
+## Reading the matrix
+
+- **Supported**: implemented and tested for the stated filesystem/configuration contract, not identical model behavior.
+- **Partial**: a bounded subset is implemented; limitations are material.
+- **Candidate**: not implemented; a possible mapping needs design and host verification.
+- **Host-managed**: keep native configuration or runtime state separate for now; no equivalence claim.
+- **Excluded**: deliberately outside automatic synchronization for safety.
+
+“Candidate” is a design assessment, not a promise that every field can be translated. Source links describe host features; the implementation and tests determine bridge coverage. Unsupported structured adapter fields block conversion. The generic portable-file adapter does not inspect semantics and must not be used to bypass that boundary.
+
+## Instructions and reusable workflows
+
+| Feature | Native surfaces | Bridge today | Missing contract / next decision |
+| --- | --- | --- | --- |
+| Shared instructions | Claude `CLAUDE.md`; Codex `AGENTS.md` | Partial: explicit byte-for-byte file sync | Only manually reviewed common text; no tool-name or behavioral translation. [T1](#test-evidence) |
+| Imports, scoped rules, precedence | Claude imports and `.claude/rules`; Codex hierarchical guidance | Candidate | Preserve host-only sections and scope; do not flatten conditional rules into unconditional instructions. |
+| Skill contents | Both use `SKILL.md` and supporting resources | Partial: files, binary assets, executable bits, independent file edits | One explicit skill root; `portable: true` is human acknowledgment, not automated certification. [T2](#test-evidence) |
+| Skill metadata and invocation | Claude frontmatter/invocation controls; Codex skill metadata and `agents/openai.yaml` | Candidate | Model, tool, isolation, invocation, and dependency semantics need a field-level map; copying bytes is insufficient. |
+| Custom commands | Claude command/skill conventions; Codex skill invocation | Candidate | No dedicated adapter; preserve namespacing and argument behavior, reject unsupported execution syntax. |
+| Custom subagent definitions | Claude agent Markdown/frontmatter; Codex agent TOML | Candidate | Common name, description, and instruction body are plausible; model, tools, permissions, inheritance, and lifecycle need explicit host-specific treatment. |
+| Running agents / orchestration | Host-created workers and execution contexts | Host-managed | Definition translation would not transfer live workers, messages, task state, or model behavior. |
+
+Native references: [Claude instruction loading](https://code.claude.com/docs/en/memory), [Claude skills](https://code.claude.com/docs/en/skills), [Claude agents](https://code.claude.com/docs/en/sub-agents), [Codex customization](https://learn.chatgpt.com/docs/customization/overview), [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Codex agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
+## MCP and plugins
+
+| Feature | Bridge today | Missing contract / next decision |
+| --- | --- | --- |
+| MCP stdio / HTTP definitions | Partial: allowlisted servers, supported command/arguments, absolute cwd, HTTP URL; JSON ↔ TOML | Selected set is one reconciliation unit; no per-server independent merge, SSE, or remote executor mapping. [T3](#test-evidence) |
+| MCP environment / header references | Partial: same-name environment forwarding and supported bearer/header references | No expansion by bridge, fallback/remapping, or general secret scanning. Credentials in arbitrary arguments can still be copied. [T3](#test-evidence) |
+| MCP policy, enabled flags, timeouts | Candidate: selected entries with unsupported fields currently fail | Never drop restrictions or silently broaden access. Preserve host-only settings or reject the mapping. [T3](#test-evidence) |
+| MCP runtime connectivity | Host-managed | Bridge does not launch servers, test tools, or authenticate. Need isolated host acceptance tests before connectivity claims. |
+| MCP formatting | Partial: semantic comparison and unrelated value preservation | Writes can reformat JSON/TOML and remove TOML comments; explicit `allowReformat` required. [T3](#test-evidence) |
+| Plugin identity + portable skills | Partial: common metadata, portable skill assets, compatibility/portable Codex layouts | Authoring directories only; not a general plugin converter. [T4](#test-evidence) |
+| Bundled MCP | Candidate: currently rejected in plugin packages | A plugin-relative path/root and transport contract is required; standalone MCP support does not imply bundled MCP support. |
+| Hooks | Candidate: currently rejected in plugin packages | Match event timing, input/output, failure behavior and permissions; sharing a script alone is not equivalent behavior. |
+| Bundled agents, commands, UI/app mappings and other components | Host-managed pending component-specific review | No silent dropping of components; unknown fields/layouts fail. [T4](#test-evidence) |
+| Marketplace install / update / enable / trust / cache | Host-managed | No installation or refresh side effects. Synced authoring files may not affect an already installed copy. [T4](#test-evidence) |
+
+Native references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Claude extension overview](https://code.claude.com/docs/en/features-overview), [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference), [OpenAI package formats](https://developers.openai.com/plugins/build/plugins). Exact implemented mappings are in the [adapter reference](adapters.md).
+
+## Scope, synchronization, and safety
+
+| Feature | Bridge today | Limits / intended boundary |
+| --- | --- | --- |
+| Global + project resources | Partial: explicit paths, base-profile inheritance and whole-resource overrides | No automatic scanning, project discovery, or emulation of host precedence. [T5](#test-evidence) |
+| Existing native root symlinks | Partial: explicit physical-target pins | No link creation, nested/chained links, hardlinks, aliases, or retargeting. [T5](#test-evidence) |
+| Ongoing bidirectional sync | Supported for registered resources: one-second polling; writes opt in | Not an installed background service; newly created unregistered skills/plugins are not discovered. [T6](#test-evidence) |
+| Read-only compatibility audit | Partial: per-resource planner checks, selected native field inventory, private diagnostics | Reports review requirements, not behavioral equivalence; no host execution or output compilation. [T8](#test-evidence) |
+| Conflict / drift handling | Supported: baseline comparison, conflicting edits block all writes | No last-writer-wins; deletions/renames need manual reconciliation. [T1](#test-evidence) |
+| Interrupted writes / recovery | Supported: private journals and guarded rollback | Per-file atomic replacement, not globally atomic visibility or proven power-loss durability. Locks do not coordinate separate state directories. [T7](#test-evidence) |
+| Permissions / sandbox / enterprise policy | Host-managed | No translation; never infer equivalent security guarantees from similar setting names. |
+| Model selection, reasoning, UI settings, shortcuts | Host-managed | No model equivalence mapping or settings adapter; candidate subagent work must preserve host-local choices. |
+| Memory, conversations, resume state, scheduled tasks | Host-managed | No adapter or transfer contract. Any future handoff should be explicit, user-reviewed content, not automatic copying of internal state. |
+| Cloud execution, IDE/UI integrations, billing, account entitlements | Host-managed | Outside this local configuration bridge; feature availability is not synchronized. |
+| Login/session/OAuth credentials | Excluded | Do not transport auth stores; authenticate separately in each host. Environment references are not credential migration. |
+| Arbitrary secret-bearing files | Excluded by intended use, not a comprehensive scanner | Users must review registered files; private whole-file journal snapshots may include unrelated sensitive values. |
+
+## Test evidence
+
+These are representative existing tests, not newly added coverage. All run against fixtures. A test named “EndToEnd” below covers the bridge CLI and filesystem, not either AI host.
+
+| Evidence | Source and representative tests | What remains unverified |
+| --- | --- | --- |
+| T1 | [Engine tests](../internal/bridge/bridge_test.go): `TestEditsFromAllPeers`, `TestConcurrentConflict`, `TestDeletionConflict`, `TestIdenticalConcurrentEdits` | Instruction loading/meaning in each host |
+| T2 | [Engine tests](../internal/bridge/bridge_test.go): `TestSkillBytesAndExecutables`, `TestSkillIndependentEditsAndAdditions`, `TestSkillPortabilityRequired` | Metadata compatibility, discovery and skill execution in hosts |
+| T3 | [Adapter tests](../internal/bridge/features_test.go): `TestMCPStdioRoundTrip`, `TestMCPHTTPBearerAndHeaderRefs`, `TestMCPCodexPolicyIsNotDropped`, `TestMCPSemanticFormattingIsNotDrift`, `TestMCPRollbackRestoresExactOriginalFormatting` | Host parsing, server startup, tools and authorization |
+| T4 | [Adapter tests](../internal/bridge/features_test.go): `TestPluginPackageTranslationAndReverseEdit`, `TestPluginPortableCodexLayout`, `TestPluginUnsupportedComponentsBlockAllWrites`, `TestPluginFailureRecoveryAndNoInstallSideEffects` | Host installation, refresh, discovery and execution |
+| T5 | [Adapter tests](../internal/bridge/features_test.go): `TestInheritanceUnchangedGlobalPathsAndDisable`, `TestPinnedFileSymlinkPreservedBidirectionally`, `TestPinnedRetargetDuringTransactionRollsBackOriginal` | Actual host scope resolution and concurrent profiles |
+| T6 | [CLI tests](../internal/cli/cli_test.go): `TestWatchApplyAndShutdown`, `TestWatchWithoutApplyIsReadOnly`, `TestMCPWatcherEndToEnd` | Long-running service lifecycle and host reload behavior |
+| T7 | [Engine tests](../internal/bridge/bridge_test.go): `TestPartialFailureRollback`, `TestProcessInterruptionRecovery`, `TestLaterEditBlocksRecovery`, `TestRecoveryTargetValidation` | Power loss, adversarial races, multi-profile locking |
+| T8 | [Audit tests](../internal/bridge/audit_test.go): `TestAuditAllAdaptersReadOnlyAndDeterministic`, `TestAuditProfileInheritanceAndStrictFields`, `TestAuditUnsupportedAndMalformedMCPRedacted`; [CLI tests](../internal/cli/cli_test.go): `TestAuditFormatsExitCodesAndPrivacy`, `TestAuditOutputFailureIsRedacted` | Skill semantics, exhaustive nested-field inventory and live host acceptance |
+
+## Implementation order and acceptance gates
+
+The audit foundation below is implemented; the remaining items are proposed work, not new support claims.
+
+1. **Read-only compatibility audit — foundation implemented.** Go `audit CONFIG [--json]` reports resource ID, adapter, direction, recognized/known unsupported fields, redacted unknown-key counts and host-local actions. All four adapters reuse planner checks; tests cover deterministic output, no filesystem writes, conflicts, pending state, unsafe links, malformed MCP, unsupported plugin components, profile rejection and diagnostic privacy. Native field inventory currently covers selected MCP server keys and plugin manifest top-level keys; nested/component failures can remain generic. It does not parse skill behavior or compile outputs, and no live host verification is claimed. See [audit details](adapters.md#compatibility-audit). Initial scope is registered resources, not scanning the user's home.
+2. **Instruction and skill overlays.** Separate shared content from native-only metadata/settings. Define ownership and reverse-edit behavior before generation. Acceptance: edits from each side round-trip, host-only data is preserved, ambiguous edits conflict, imports/scope changes never silently widen instructions. Start with plain common instruction text and a small documented metadata allowlist.
+3. **Pinned-version host integration harness.** Use disposable homes/projects and exact Claude/Codex versions; verify supported isolation flags before launch. Record OS, versions, fixture hashes and outcomes. Begin with host discovery of a harmless skill and a local dummy MCP tool. No production credentials or live home access; any authenticated/model-backed run requires separate opt-in and cost awareness. Missing host binaries/access are reported as skipped, not passed.
+4. **Broader MCP and bundled MCP.** Preserve host-local policies and formatting, then add plugin root/path handling and per-server reconciliation. Acceptance: unrelated edits/comments survive, independent server edits merge, restrictive settings cannot be weakened, and each claimed host-version pair loads the generated configuration.
+5. **Minimal custom-agent mapping.** Consider name, description and instruction body first; keep models, tools and permissions host-local. Acceptance: both hosts discover the generated agent and unsupported settings fail visibly. No claim of equivalent execution or agent orchestration.
+6. **Hook mapping and plugin lifecycle.** Review event pairs individually and keep install/enable/trust operations separately authorized. Acceptance: event payload, timing, exit behavior and failure semantics are verified in both hosts before calling any hook portable.
+7. **Global onboarding and service lifecycle.** Read-only inventory, explicit enrollment, cross-profile coordination, watcher installation/status, and reversible uninstall. Acceptance: unrelated files survive, no duplicate writers, and uninstall restores only bridge-owned changes.
+
+Release gate for any adapter: forward/reverse fixtures, idempotence, concurrent-edit and deletion tests, malformed/unknown-field rejection, privacy checks, exact rollback, and versioned host integration evidence. Configuration round-trips and host acceptance are separate checkboxes; neither certifies identical model decisions.
+
+## Keeping this assessment current
+
+On each adapter change or host-version upgrade, recheck the linked official documentation, record the date and tested versions, update this matrix and its tests together, and rerun affected host fixtures. New host features start as unassessed; they must not become supported just because a generic file copy succeeds. This document does not create a scheduled monitor or automatic upgrade process.

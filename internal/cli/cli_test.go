@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -162,5 +163,107 @@ func TestConfigCommandShowsResolvedPathsWithoutReadingNativeContents(t *testing.
 	}
 	if !strings.Contains(out.String(), "CLAUDE.md") || strings.Contains(out.String(), "private native contents") {
 		t.Fatal("bad effective config output")
+	}
+}
+
+func TestAuditFormatsExitCodesAndPrivacy(t *testing.T) {
+	dir, config := setup(t)
+	for _, flag := range []string{"", "--json"} {
+		args := []string{"audit", config}
+		if flag != "" {
+			args = append(args, flag)
+		}
+		var out, errOut bytes.Buffer
+		if code := Run(context.Background(), args, &out, &errOut); code != 0 {
+			t.Fatalf("exit %d: %s", code, errOut.String())
+		}
+		if flag != "" && !json.Valid(out.Bytes()) {
+			t.Fatal("invalid audit JSON")
+		}
+		if !strings.Contains(out.String(), "review-required") {
+			t.Fatal("missing review warning")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "state")); !os.IsNotExist(err) {
+		t.Fatal("audit created state")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("PRIVATE_NATIVE_VALUE"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := Run(context.Background(), []string{"audit", config, "--json"}, &out, &errOut); code != 2 {
+		t.Fatalf("conflict exit %d", code)
+	}
+	if strings.Contains(out.String()+errOut.String(), "PRIVATE_NATIVE_VALUE") {
+		t.Fatal("native value leaked")
+	}
+	if err := os.WriteFile(config, []byte(`{"version":1,"stateDir":"state","resources":[{"kind":"PRIVATE_KIND"}]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	errOut.Reset()
+	if code := Run(context.Background(), []string{"audit", config, "--json"}, &out, &errOut); code != 1 {
+		t.Fatalf("invalid config exit %d", code)
+	}
+	if strings.Contains(out.String()+errOut.String(), "PRIVATE_KIND") {
+		t.Fatal("profile value leaked")
+	}
+	for _, args := range [][]string{{"audit", config, "--apply"}, {"plan", config, "--json"}} {
+		if Run(context.Background(), args, io.Discard, io.Discard) != 1 {
+			t.Fatal("invalid flag accepted")
+		}
+	}
+}
+
+func TestAuditRejectsUnknownProfileFields(t *testing.T) {
+	_, config := setup(t)
+	data, err := os.ReadFile(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = bytes.Replace(data, []byte(`"version":1`), []byte(`"PRIVATE_UNKNOWN":"secret","version":1`), 1)
+	if err := os.WriteFile(config, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if Run(context.Background(), []string{"audit", config}, &out, &out) != 1 {
+		t.Fatal("unknown option accepted")
+	}
+	if strings.Contains(out.String(), "PRIVATE_UNKNOWN") || strings.Contains(out.String(), "secret") {
+		t.Fatal("unknown field leaked")
+	}
+}
+
+type auditFailWriter struct{ remaining int }
+
+func (w *auditFailWriter) Write(p []byte) (int, error) {
+	if w.remaining == 0 {
+		return 0, errors.New("PRIVATE_WRITER_ERROR")
+	}
+	w.remaining--
+	return len(p), nil
+}
+func TestAuditOutputFailureIsRedacted(t *testing.T) {
+	dir, config := setup(t)
+	for _, format := range []string{"", "--json"} {
+		for _, remaining := range []int{0, 1, 2} {
+			if format != "" && remaining > 0 {
+				continue
+			}
+			args := []string{"audit", config}
+			if format != "" {
+				args = append(args, format)
+			}
+			var errOut bytes.Buffer
+			if code := Run(context.Background(), args, &auditFailWriter{remaining}, &errOut); code != 1 {
+				t.Fatalf("output failure exit %d", code)
+			}
+			if strings.Contains(errOut.String(), "PRIVATE_WRITER_ERROR") {
+				t.Fatal("writer error leaked")
+			}
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "state")); !os.IsNotExist(err) {
+		t.Fatal("failed output created state")
 	}
 }

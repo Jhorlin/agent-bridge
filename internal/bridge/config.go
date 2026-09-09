@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -85,12 +87,16 @@ func resolve(base, name string) string {
 }
 
 func LoadConfig(filename string) (Config, error) {
+	return loadConfig(filename, false)
+}
+
+func loadConfig(filename string, audit bool) (Config, error) {
 	var c Config
 	absolute, err := filepath.Abs(filename)
 	if err != nil {
 		return c, err
 	}
-	raw, configFiles, err := inherit(absolute, map[string]bool{})
+	raw, configFiles, err := inherit(absolute, map[string]bool{}, audit)
 	if err != nil {
 		return c, err
 	}
@@ -182,7 +188,7 @@ func LoadConfig(filename string) (Config, error) {
 
 // Full-resource overrides only. Relative paths belong to their declaring file.
 // The leaf config always owns its state directory, isolating project baselines.
-func inherit(file string, stack map[string]bool) (configInput, []string, error) {
+func inherit(file string, stack map[string]bool, audit bool) (configInput, []string, error) {
 	var raw configInput
 	if stack[file] || len(stack) >= 32 {
 		return raw, nil, fmt.Errorf("config inheritance cycle or depth exceeded")
@@ -192,12 +198,33 @@ func inherit(file string, stack map[string]bool) (configInput, []string, error) 
 	if err := assertSafe(file); err != nil {
 		return raw, nil, err
 	}
-	data, err := os.ReadFile(file)
+	var data []byte
+	var err error
+	if audit {
+		// Audit decodes exactly the safe snapshot it validates, not a second read.
+		var rawFile *Snapshot
+		rawFile, err = snapshot(file)
+		if err == nil && rawFile == nil {
+			err = fmt.Errorf("audit profile is missing")
+		}
+		if err == nil {
+			data, err = base64.StdEncoding.DecodeString(rawFile.Data)
+		}
+	} else {
+		data, err = os.ReadFile(file)
+	}
 	if err != nil {
 		return raw, nil, err
 	}
 	if err = strictJSON(data, &raw); err != nil {
 		return raw, nil, err
+	}
+	if audit {
+		d := json.NewDecoder(bytes.NewReader(data))
+		d.DisallowUnknownFields()
+		if err := d.Decode(&raw); err != nil {
+			return raw, nil, fmt.Errorf("invalid or unknown audit profile fields")
+		}
 	}
 	if raw.Version != 1 || raw.StateDir == "" || raw.Resources == nil {
 		return raw, nil, fmt.Errorf("expected version: 1, stateDir, and resources array")
@@ -206,7 +233,7 @@ func inherit(file string, stack map[string]bool) (configInput, []string, error) 
 	base := filepath.Dir(file)
 	merged := []resourceInput{}
 	if raw.Extends != "" {
-		parent, pfiles, err := inherit(resolve(base, raw.Extends), stack)
+		parent, pfiles, err := inherit(resolve(base, raw.Extends), stack, audit)
 		if err != nil {
 			return raw, nil, err
 		}

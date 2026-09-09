@@ -97,6 +97,16 @@ Unsupported files or fields block the entire conversion: bundled MCP, hooks, age
 
 Packaging references: [OpenAI package formats](https://developers.openai.com/plugins/build/plugins) and [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference).
 
-## Verification
+## Compatibility audit
+
+Run `agent-bridge audit CONFIG` for text or `agent-bridge audit CONFIG --json` for JSON report schema version 1. This command uses the existing planner independently for each registered resource so one failure does not hide the rest. It reads native files, shared contents, and existing state without writing. It does not enumerate unregistered resources or run either host. Invalid profiles, including unknown options in inherited profiles, are rejected before auditing resources.
+
+Resources are sorted by ID; native field checks are ordered Claude then Codex. The direction describes the adapter's bidirectional capability, not a selected winner for the next sync. `recognizedFields` lists present known top-level MCP server or plugin manifest keys, not a guarantee their values are valid; validation can still block the resource. `unsupportedFields` names only known unsupported keys. Arbitrary unknown keys are counted and redacted. MCP checks cover only selected servers and aggregate field names across that set. Nested metadata/component failures and shared-store problems can produce a resource-level blocker without a field-level explanation.
+
+Every nonblocked resource is `review-required`, never “fully compatible.” `hostVerified` is false. A missing native side is reported as absent; an existing empty MCP document can have no selected fields. Host-local actions explain remaining review, authentication, or installation needs. `plan` remains the command for detailed synchronization decisions. Audit itself does not compile proposed outputs or certify subsequent apply; inputs may change after either read-only command.
+
+Audit reports expose profile resource IDs, kinds and scopes, but not paths, native values, server names, unknown key names, or raw parser errors. Do not put secrets in resource IDs. Literal secrets inside arbitrary files/arguments are not detected; this is not a secret scanner. Profile errors are deliberately generic and go to stderr even with `--json`. Exit 0 means no detected blockers, exit 2 means at least one blocked resource, and exit 1 means invalid usage/profile or output failure. These audit-specific exit semantics do not change other commands.
+
+## Verification coverage
 
 Go tests cover bidirectional MCP and plugin conversion, mixed-resource all-or-nothing conflicts, per-file skill changes, exact rollback, unsafe credential/reference rejection, duplicate JSON keys, malformed TOML, integer precision, inherited path resolution/overrides, symlink pins and retargeting, and CLI watch/config behavior. Compiled adapter outputs are normalized again before writes. Fuzz tests exercise MCP JSON parsing. These are isolated filesystem/configuration tests, not live host, OAuth, or marketplace integration certification.
