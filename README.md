@@ -129,6 +129,8 @@ data, not installed plugins. Phase-two features are not part of the published al
 Source builds also provide `watch-discovery` and `check-overlap`; see the plan
 for their read-only behavior, usage and limits. Neither enrolls resources nor
 enforces persistent cross-profile ownership.
+For cooperating profiles, source builds can enforce an explicitly reviewed
+coordinator roster during sync/recovery; see [opt-in ownership enforcement](docs/phase-two.md#opt-in-ownership-enforcement).
 
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,

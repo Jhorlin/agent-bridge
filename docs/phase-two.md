@@ -10,14 +10,14 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 
 | # | Workstream | Required acceptance evidence | Current phase-two status |
 |---|---|---|---|
-| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch implemented; reviewed enrollment and ownership remain pending |
+| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch implemented; automated reviewed enrollment remains pending; optional manual roster enforcement below |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Upstream manifest and bundled-MCP seed fixtures added; component support pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Upstream sidecar rejection fixture added; richer mappings pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Planned; startup-only baseline remains unchanged |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Plugin-relative upstream fixture added; implementation pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Planned; never default to last-writer-wins |
-| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Read-only explicit-profile overlap check implemented; persistent ownership and other hardening pending |
+| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight and opt-in coordinator roster enforcement implemented; automated enrollment and other hardening pending |
 
 Implementation sequence: fixture/evidence foundation, ownership and reviewed
 enrollment, MCP and component contracts, richer definitions/hooks, plugin refresh,
@@ -82,7 +82,38 @@ command, later edits, filesystem aliases such as hard links, and concurrent
 changes are not covered. Passing it does not grant portability or trust, and
 does not replace `audit` and `plan`. Do not run overlapping profiles merely
 because they share a coordinator: serialization alone does not prevent baseline
-disagreements. Reviewed enrollment and enforcement remain pending.
+disagreements. Reviewed enrollment remains pending; opt-in enforcement is described below.
+
+## Opt-in ownership enforcement
+
+To enforce the reviewed profile set, give every participating profile the same
+`coordinationDir`. While all watchers/services are stopped, create a private
+`profiles.json` in that directory, containing explicit absolute profile paths:
+
+```json
+{
+  "version": 1,
+  "profiles": ["/absolute/path/global.json", "/absolute/path/project.json"]
+}
+```
+
+Run `check-overlap` on those profiles before restarting. With a roster present,
+sync and recovery validate membership, the shared coordinator, current loaded
+configuration and path overlaps **under the common lock**, before taking the
+state lock or writing native files. Invalid, missing, symlinked or unknown-field
+profiles/rosters block writes with redacted diagnostics. Conflicts preserve any
+pending recovery journal; restore a valid, non-overlapping reviewed roster before
+retrying recovery. Later native edits still require inspection as before.
+
+This is cooperative enforcement for explicitly configured participants, not an
+OS security boundary or automatic enrollment. A missing roster retains legacy
+lock-only behavior. Removing it disables enforcement; do not use deletion to
+bypass a conflict. Unlisted profiles using another/no coordinator, older binaries,
+hard-link aliases and external edits during a running transaction are not fenced.
+Stop all participants before editing the roster or profiles, keep the roster
+private (0600), and preserve it with configuration backups. No roster or live
+configuration is created automatically. Existing config/manifest/journal schemas
+and the published alpha remain unchanged.
 
 ## Documentation anchors
 

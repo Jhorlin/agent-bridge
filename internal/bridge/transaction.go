@@ -43,6 +43,9 @@ func locked(c Config, fn func() error) (err error) {
 	}
 	if c.CoordinationDir != "" {
 		return directoryLocked(c.CoordinationDir, func() error {
+			if err := enforceOwnership(c); err != nil {
+				return err
+			}
 			return directoryLocked(c.StateDir, fn)
 		})
 	}
