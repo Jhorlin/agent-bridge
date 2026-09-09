@@ -67,7 +67,7 @@ func Audit(c Config) AuditReport {
 				row.Actions = append(row.Actions, "Codex MCP policies are retained locally, not translated. Configure Claude enablement and tool permissions independently before use.")
 			}
 		case "plugin-directory":
-			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; only bounded conventional compatibility-layout hooks are bridged. Bundled MCP and agents remain unsupported.")
+			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; only bounded conventional compatibility-layout hooks and allowlisted MCP are bridged. Bundled agents remain unsupported.")
 		case "agent-file":
 			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")
 		case "hook-config":

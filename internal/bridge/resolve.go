@@ -65,6 +65,8 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 		return normalizeHooks(side, raw)
 	case "mcp":
 		return normalizeMCP(i.Resource, side, raw)
+	case "plugin-mcp":
+		return normalizePluginMCP(i.Resource, side, raw)
 	case "plugin-manifest":
 		return normalizePluginManifest(raw)
 	case "":

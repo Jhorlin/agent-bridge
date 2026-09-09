@@ -237,6 +237,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					content, err = renderHooks(side, item.Content, before)
 				case "mcp":
 					content, err = renderMCP(item.Resource, side, item.Content, before)
+				case "plugin-mcp":
+					content, err = renderPluginMCP(item.Resource, side, item.Content, before)
 				case "plugin-manifest":
 					content, err = renderPluginManifest(item.Resource, side, item.Content)
 				}
@@ -255,6 +257,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					roundTrip, err = normalizeHooks(side, content)
 				case "mcp":
 					roundTrip, err = normalizeMCP(item.Resource, side, content)
+				case "plugin-mcp":
+					roundTrip, err = normalizePluginMCP(item.Resource, side, content)
 				case "plugin-manifest":
 					roundTrip, err = normalizePluginManifest(content)
 				default:

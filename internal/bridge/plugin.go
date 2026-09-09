@@ -39,6 +39,11 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			}
 			top := strings.Split(filepath.ToSlash(file), "/")[0]
 			switch top {
+			case ".mcp.json":
+				if file != ".mcp.json" || len(r.Servers) == 0 || !r.AllowReformat || r.CodexPluginLayout == "portable" {
+					return nil, fmt.Errorf("unsupported component: bundled MCP requires an explicit servers allowlist, allowReformat and compatibility layout")
+				}
+				names[file] = true
 			case "hooks":
 				if r.CodexPluginLayout == "portable" {
 					return nil, fmt.Errorf("portable Codex plugin layout does not load bundled hooks; use the compatibility layout")
@@ -89,6 +94,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 	if !present {
 		return nil, fmt.Errorf("no plugin source exists")
 	}
+	if len(r.Servers) > 0 && !names[".mcp.json"] {
+		return nil, fmt.Errorf("bundled MCP source is missing")
+	}
 	manifestResource := r
 	manifestResource.Paths = map[string]string{}
 	for _, side := range sides {
@@ -117,6 +125,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 		item := Item{Resource: entry, Key: prefix + name, Relative: name}
 		if name == "hooks/hooks.json" {
 			item.Adapter = "hook-config"
+		}
+		if name == ".mcp.json" {
+			item.Adapter = "plugin-mcp"
 		}
 		result = append(result, item)
 	}

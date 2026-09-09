@@ -152,7 +152,7 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			}
 			res.CodexPluginLayout = r.CodexPluginLayout
 		}
-		if r.Kind == "mcp-config" {
+		if r.Kind == "mcp-config" || (r.Kind == "plugin-directory" && len(r.Servers) > 0) {
 			if len(r.Servers) == 0 || !r.AllowReformat {
 				return c, fmt.Errorf("mcp-config requires a servers allowlist and allowReformat: true")
 			}
@@ -165,6 +165,9 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			}
 			res.Servers = r.Servers
 			res.AllowReformat = true
+			if r.Kind == "plugin-directory" && r.CodexPluginLayout == "portable" {
+				return c, fmt.Errorf("bundled MCP currently requires the compatibility plugin layout")
+			}
 		} else if r.Kind == "skill-directory" {
 			if len(r.Servers) > 0 {
 				return c, fmt.Errorf("skill-directory does not accept servers")

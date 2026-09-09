@@ -126,7 +126,19 @@ Common identity/publisher metadata is synchronized semantically. Skills in `skil
 
 Source builds also translate conventional `hooks/hooks.json` in the Codex compatibility layout, subject to the same bounded command/event rules as standalone hooks. Portable-layout bundled hooks are rejected because native testing did not discover them. Custom hook locations and inline manifest hooks remain unsupported.
 
-Unsupported files or fields block the entire conversion: bundled MCP, agents, commands, app mappings, settings, host-specific presentation/options, and unrecognized root schemas. No installation, marketplace edits, cache refresh, enablement, trust changes, or login happens. A changed source package may therefore require an explicit host reinstall/refresh before its installed copy changes. This feature keeps registered authoring directories in sync, not installed marketplace caches.
+Source builds support conventional `.mcp.json` for compatibility-layout plugins
+when the resource also declares `"servers": ["docs"]` and `"allowReformat": true`.
+Every server in the package must be allowlisted. Both native packages use JSON;
+environment/header references retain the common MCP contract. Inline/custom-path
+MCP, plugin-root expansion, host-local policies, unlisted servers and portable
+layout are rejected. Bundled MCP currently conflicts as one selected server set;
+standalone MCP's granular per-server merge does not apply to this component.
+
+Unsupported files or fields block the entire conversion: agents, commands, app mappings, settings, host-specific presentation/options, and unrecognized root schemas. No installation, marketplace edits, cache refresh, enablement, trust changes, or login happens. A changed source package may therefore require an explicit host reinstall/refresh before its installed copy changes. This feature keeps registered authoring directories in sync, not installed marketplace caches.
+
+Installed Claude 2.1.266 and Codex 0.153.4 loaded a translated conventional MCP
+fixture from disposable installed packages; Claude connected and Codex discovered
+its fixed test tool. No production server, network service or credential was used.
 
 Packaging references: [OpenAI package formats](https://developers.openai.com/plugins/build/plugins) and [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference).
 

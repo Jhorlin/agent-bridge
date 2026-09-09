@@ -212,6 +212,8 @@ func Plan(c Config) (PlanResult, error) {
 					semantic[side], err = normalizeHooks(side, value)
 				case "mcp":
 					semantic[side], err = normalizeMCP(item.Resource, side, value)
+				case "plugin-mcp":
+					semantic[side], err = normalizePluginMCP(item.Resource, side, value)
 				case "plugin-manifest":
 					semantic[side], err = normalizePluginManifest(value)
 				}
