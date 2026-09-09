@@ -131,8 +131,8 @@ func rollbackWithOwnership(c Config, j Journal, receipt *syncOwnership) error {
 		if err != nil {
 			return err
 		}
-		if receipt != nil && op.Before == nil && current != nil && !receipt.Created[index] {
-			return fmt.Errorf("ambiguous sync creation ownership; preserve the file and inspect pending recovery")
+		if err := checkSyncWriteOwnership(receipt, index, op, current); err != nil {
+			return err
 		}
 		if !equal(current, op.Before) && !equal(current, op.After) {
 			return fmt.Errorf("recovery blocked by a later edit: %s", op.Label)
@@ -144,8 +144,8 @@ func rollbackWithOwnership(c Config, j Journal, receipt *syncOwnership) error {
 		if err != nil {
 			return err
 		}
-		if receipt != nil && op.Before == nil && current != nil && !receipt.Created[i] {
-			return fmt.Errorf("ambiguous sync creation ownership; preserve the file and inspect pending recovery")
+		if err := checkSyncWriteOwnership(receipt, i, op, current); err != nil {
+			return err
 		}
 		if equal(current, op.Before) {
 			continue
@@ -362,7 +362,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		if err = writeJSON(syncOwnershipPath(c, transaction), receipt); err != nil {
 			return err
 		}
-		if err = writeJSON(pendingPath(c), syncPending{transaction, true}); err != nil {
+		if err = writeJSON(pendingPath(c), syncPending{Transaction: transaction, CreationOwnership: true, WriteOwnership: true}); err != nil {
 			return err
 		}
 		writeErr := func() error {
@@ -391,12 +391,15 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					err = createRosterExclusive(op.File, op.After)
 					if err == nil {
 						receipt.Created[index] = true
-						err = writeJSON(syncOwnershipPath(c, transaction), receipt)
 					}
 				} else {
 					err = writeSnapshot(op.File, op.After)
 				}
 				if err != nil {
+					return err
+				}
+				receipt.Written[index] = true
+				if err = writeJSON(syncOwnershipPath(c, transaction), receipt); err != nil {
 					return err
 				}
 			}

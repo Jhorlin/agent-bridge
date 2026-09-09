@@ -47,21 +47,33 @@ No published alpha asset is modified by these tests.
 ## Creation-ownership recovery
 
 Config schema 1, manifest schema 2, and the recovery journal's version-1 encoding
-are unchanged. New syncs write `creation-ownership.json` beside `journal.json`
-and set `creationOwnership: true` in their pending pointer. This receipt is bound
-to the journal and records which previously absent files the transaction created.
-Recovery validates it before changing any file. A missing/malformed receipt or an
-existing file without a recorded creation blocks recovery and retains all evidence.
+are unchanged. New syncs write a **version-2 ownership receipt** in
+`creation-ownership.json` beside `journal.json`, and set `creationOwnership: true`
+and `writeOwnership: true` in their pending pointer. This receipt is bound to the
+journal and records successful creations and replacements for every operation,
+including manifest writes. Recovery validates it before changing any file.
+Matching after-bytes alone are not ownership evidence: an unrecorded changed file
+blocks recovery and retains all evidence, even if another editor saved the exact
+version the bridge intended to write.
 
-If a process stops between exclusive file creation and recording its receipt,
+If a process stops between any native write and recording its receipt,
 ownership is ambiguous even when the bytes match. Inspect and preserve that file;
 do not delete the receipt or pending marker to bypass the check. If another writer
 created it, moving that file aside to a safe location after inspection lets
 recovery roll back the bridge's other writes without deleting the external file.
+For an existing-file replacement, preserve the external edit separately and
+restore the recorded before snapshot only after inspection before retrying
+recovery. The bridge never performs that manual reconciliation automatically.
+
+Version-1 creation receipts remain readable for creations. They cannot prove
+replacement ownership, so a changed existing target without replacement evidence
+now blocks recovery conservatively. New pending pointers requiring write evidence
+reject downgraded version-1 receipts; missing version-2 write flags also fail closed.
 
 Legacy pending pointers without the flag or a receipt remain readable using legacy recovery
 semantics, as verified by the pinned-alpha test. They cannot provide creation
 ownership evidence retroactively. Never use an older binary to recover a new
-pending transaction: older code ignores the new flag and lacks this protection.
+pending transaction: older code either rejects the new format or ignores flags
+and lacks this protection.
 These private local records are not signed ownership proofs against tampering,
 and full power-loss/adversarial filesystem-race guarantees remain out of scope.

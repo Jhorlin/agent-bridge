@@ -62,7 +62,7 @@ func TestSyncOwnershipRecovery(t *testing.T) {
 				receipt.Created = []bool{}
 				must(t, writeJSON(path, receipt))
 			case "wrong-version":
-				receipt.Version = 2
+				receipt.Version = 3
 				must(t, writeJSON(path, receipt))
 			case "unrecorded-creation":
 				receipt.Created[0] = false
