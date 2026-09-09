@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
 )
 
-func runEnrollmentCreation(args []string, out, errOut io.Writer) int {
+func runEnrollmentCreation(ctx context.Context, args []string, out, errOut io.Writer) int {
 	var result any
 	var err error
 	switch args[0] {
@@ -32,6 +33,7 @@ func runEnrollmentCreation(args []string, out, errOut io.Writer) int {
 		result = map[string]string{"status": "recovery-complete", "note": "Any recorded new profile creation was rolled back; its private backup is retained."}
 	}
 	if err != nil {
+		event(ctx, "operation", "cli.enrollment", err)
 		if errors.Is(err, bridge.ErrObservationChanged) {
 			fmt.Fprintln(errOut, "Enrollment inputs changed; review again.")
 			return 2

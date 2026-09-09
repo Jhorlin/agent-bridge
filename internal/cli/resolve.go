@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
 )
 
-func runResolve(args []string, out, errOut io.Writer) int {
+func runResolve(ctx context.Context, args []string, out, errOut io.Writer) int {
 	start := 2
 	if args[0] == "resolve-reviewed" {
 		start = 3
@@ -35,9 +36,10 @@ func runResolve(args []string, out, errOut io.Writer) int {
 	if start == 2 {
 		result, err = bridge.ReviewResolution(args[1], choices)
 	} else {
-		result, err = bridge.ResolveReviewed(args[1], args[2], choices)
+		result, err = bridge.ResolveReviewedObserved(args[1], args[2], choices, observer(ctx))
 	}
 	if err != nil {
+		event(ctx, "operation", "cli.resolve", err)
 		if errors.Is(err, bridge.ErrObservationChanged) {
 			fmt.Fprintln(errOut, "Inputs or conflict choices changed; review the resolution again.")
 			return 2

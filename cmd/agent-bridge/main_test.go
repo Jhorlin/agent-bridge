@@ -4,9 +4,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/Jhorlin/agent-bridge/internal/diagnostics"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"syscall"
 	"testing"
 	"time"
@@ -29,6 +31,7 @@ func TestWatcherProcessSignalsAndRestart(t *testing.T) {
 				t.Fatal(err)
 			}
 			profile := filepath.Join(root, "bridge.json")
+			home := filepath.Join(root, "diagnostic-home")
 			data, err := json.Marshal(map[string]any{"version": 1, "stateDir": "state", "coordinationDir": "coordination", "resources": []any{map[string]any{"id": "rules", "kind": "portable-file", "scope": "project", "claude": "CLAUDE.md", "codex": "AGENTS.md"}}})
 			if err != nil {
 				t.Fatal(err)
@@ -42,7 +45,7 @@ func TestWatcherProcessSignalsAndRestart(t *testing.T) {
 				}
 				cmd := exec.Command(os.Args[0])
 				cmd.Dir = root
-				cmd.Env = []string{"AGENT_BRIDGE_EXEC_HELPER_PROFILE=" + profile}
+				cmd.Env = []string{"AGENT_BRIDGE_EXEC_HELPER_PROFILE=" + profile, "HOME=" + home}
 				if err := cmd.Start(); err != nil {
 					t.Fatal(err)
 				}
@@ -83,6 +86,23 @@ func TestWatcherProcessSignalsAndRestart(t *testing.T) {
 						t.Fatalf("shutdown retained %s: %v", name, err)
 					}
 				}
+			}
+			dir, err := diagnostics.Directory(profile, home, "", runtime.GOOS)
+			if err != nil {
+				t.Fatal(err)
+			}
+			logs := diagnostics.Read(dir, 100)
+			starts, finishes := map[string]bool{}, map[string]bool{}
+			for _, e := range logs.Events {
+				if e.Stage == "command_start" {
+					starts[e.Run] = true
+				}
+				if e.Stage == "command_finish" && e.Code == "ok" {
+					finishes[e.Run] = true
+				}
+			}
+			if len(starts) != 2 || len(finishes) != 2 || logs.Rejected != 0 {
+				t.Fatalf("process restart logs missing: %+v", logs)
 			}
 		})
 	}

@@ -74,6 +74,7 @@ func runLinuxServiceWith(ctx context.Context, args []string, configHome, binary 
 	}
 	if err != nil {
 		fmt.Fprintln(errOut, "Systemd operation failed; inspect ownership, locks, overrides and the user manager. Partial changes may require inspection.")
+		event(ctx, "operation", "cli.service", err)
 		return 1
 	}
 	message := "Systemd service " + action + " completed."

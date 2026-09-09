@@ -179,7 +179,18 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 	return result, nil
 }
 func Plan(c Config) (PlanResult, error) {
-	result := PlanResult{Items: []Item{}}
+	return PlanObserved(c, nil)
+}
+
+// PlanObserved adds content-free failure locations without changing plan semantics.
+func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
+	stage, resource, path := "plan", "", ""
+	defer func() {
+		if failure != nil {
+			observe(sink, stage, "bridge.plan", resource, path, "", failure)
+		}
+	}()
+	result = PlanResult{Items: []Item{}}
 	if err := checkFileChangePending(c); err != nil {
 		return result, err
 	}
@@ -191,13 +202,14 @@ func Plan(c Config) (PlanResult, error) {
 		return result, err
 	}
 	if pending != nil {
-		return result, fmt.Errorf("an interrupted transaction requires recover before syncing")
+		return result, ErrRecoveryPending
 	}
 	result.Manifest, result.ManifestBefore, err = readManifest(c)
 	if err != nil {
 		return result, err
 	}
 	for _, r := range c.Resources {
+		stage, resource, path = "expand", r.ID, ""
 		entries, err := expand(r, result.Manifest)
 		if err != nil {
 			return result, err
@@ -207,12 +219,14 @@ func Plan(c Config) (PlanResult, error) {
 			semantic := map[string]*Snapshot{}
 			hashes := map[string]string{}
 			for _, side := range sides {
+				stage, path = "read", item.Paths[side]
 				value, err := readItemSide(item, side)
 				if err != nil {
 					return result, err
 				}
 				item.Values[side] = value
 				semantic[side] = value
+				stage = "normalize"
 				switch item.Adapter {
 				case "plugin-agent":
 					semantic[side], err = normalizePluginAgent(item, side, value)

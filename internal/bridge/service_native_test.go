@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -29,6 +30,13 @@ func TestNativeLaunchService(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v: %s", err, output)
 	}
+	// launchd does not inherit the test process's HOME. A fixture-only wrapper
+	// confines new runtime diagnostics to the disposable home, then execs the
+	// real compiled binary. Never write test logs into the operator's home.
+	quote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'" }
+	wrapper := f.path("fixture-launch")
+	must(t, os.WriteFile(wrapper, []byte("#!/bin/sh\nexec /usr/bin/env HOME="+quote(f.path("home"))+" "+quote(binary)+" \"$@\"\n"), 0700))
+	binary = wrapper
 	t.Cleanup(func() {
 		cleanup, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()

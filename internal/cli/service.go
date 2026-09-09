@@ -85,6 +85,7 @@ func runServiceWith(ctx context.Context, args []string, out, errOut io.Writer, r
 	}
 	if err != nil {
 		fmt.Fprintln(errOut, "Service operation failed. Existing files were not overwritten; inspect ownership, locks, paths and launchd registration before retrying.")
+		event(ctx, "operation", "cli.service", err)
 		return 1
 	}
 	message := "Service " + action + " completed."

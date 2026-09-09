@@ -112,12 +112,17 @@ func ReviewResolution(filename string, choices map[string]string) (ReviewCheckpo
 }
 
 func ResolveReviewed(filename, observation string, choices map[string]string) ([]Summary, error) {
+	return ResolveReviewedObserved(filename, observation, choices, nil)
+}
+
+func ResolveReviewedObserved(filename, observation string, choices map[string]string, sink Observer) ([]Summary, error) {
 	if !digestPattern.MatchString(observation) || len(choices) == 0 {
 		return nil, fmt.Errorf("resolution requires a review digest and explicit choices")
 	}
 	c, err := LoadAuditConfig(filename)
 	if err != nil {
+		observe(sink, "config_load", "bridge.plan", "", filename, "", err)
 		return nil, err
 	}
-	return Apply(c, Options{ExpectedObservation: observation, Resolutions: choices})
+	return Apply(c, Options{ExpectedObservation: observation, Resolutions: choices, Observe: sink})
 }

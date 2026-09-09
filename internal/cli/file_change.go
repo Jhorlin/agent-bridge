@@ -1,15 +1,17 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
+	"github.com/Jhorlin/agent-bridge/internal/diagnostics"
 )
 
-func runFileChange(args []string, out, errOut io.Writer) int {
+func runFileChange(ctx context.Context, args []string, out, errOut io.Writer) int {
 	var result any
 	var err error
 	if args[0] == "review-retirement" {
@@ -65,7 +67,13 @@ func runFileChange(args []string, out, errOut io.Writer) int {
 			result, err = bridge.ApplyFileChange(args[1], args[2], choice)
 		}
 	}
+	if recovery, ok := result.(bridge.Recovery); ok {
+		if sink := observer(ctx); sink != nil {
+			sink(diagnostics.Event{Stage: "operation", Component: "cli.file_change", Code: bridge.DiagnosticCode(err), Transaction: recovery.Transaction})
+		}
+	}
 	if err != nil {
+		event(ctx, "operation", "cli.file_change", err)
 		if errors.Is(err, bridge.ErrObservationChanged) {
 			fmt.Fprintln(errOut, "Reviewed inputs changed; review the requested change again.")
 			return 2

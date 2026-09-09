@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,7 @@ import (
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
 )
 
-func runHistory(args []string, out, errOut io.Writer) int {
+func runHistory(ctx context.Context, args []string, out, errOut io.Writer) int {
 	var result any
 	var err error
 	switch args[0] {
@@ -27,9 +28,10 @@ func runHistory(args []string, out, errOut io.Writer) int {
 		if len(args) != 7 {
 			return usage(errOut)
 		}
-		result, err = bridge.RestoreReviewed(args[1], args[2], bridge.HistoryChoice{Transaction: args[3], Key: args[4], Side: args[5], Snapshot: args[6]})
+		result, err = bridge.RestoreReviewedObserved(args[1], args[2], bridge.HistoryChoice{Transaction: args[3], Key: args[4], Side: args[5], Snapshot: args[6]}, observer(ctx))
 	}
 	if err != nil {
+		event(ctx, "operation", "cli.history", err)
 		if errors.Is(err, bridge.ErrObservationChanged) {
 			fmt.Fprintln(errOut, "Inputs or history changed; review the restore again.")
 			return 2

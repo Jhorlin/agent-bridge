@@ -253,12 +253,17 @@ func ReviewHistory(filename string, choice HistoryChoice) (ReviewCheckpoint, err
 }
 
 func RestoreReviewed(filename, observation string, choice HistoryChoice) ([]Summary, error) {
+	return RestoreReviewedObserved(filename, observation, choice, nil)
+}
+
+func RestoreReviewedObserved(filename, observation string, choice HistoryChoice, sink Observer) ([]Summary, error) {
 	if !digestPattern.MatchString(observation) {
 		return nil, fmt.Errorf("historical restore requires a review digest")
 	}
 	c, err := LoadAuditConfig(filename)
 	if err != nil {
+		observe(sink, "config_load", "bridge.plan", "", filename, "", err)
 		return nil, err
 	}
-	return Apply(c, Options{ExpectedObservation: observation, History: &choice})
+	return Apply(c, Options{ExpectedObservation: observation, History: &choice, Observe: sink})
 }

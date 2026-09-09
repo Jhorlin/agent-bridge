@@ -17,6 +17,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if ctx.Err() != nil {
 		return 0
 	}
+	if len(args) > 0 && (args[0] == "logs" || args[0] == "doctor" || args[0] == "support-bundle") {
+		return runDiagnostics(ctx, args, out, errOut)
+	}
 	if len(args) == 1 && (args[0] == "--version" || args[0] == "version") {
 		if _, err := fmt.Fprintln(out, "agent-bridge "+Version); err != nil {
 			return 1
@@ -30,22 +33,23 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return runPluginCopy(args, out, errOut)
 	}
 	if len(args) > 0 && (args[0] == "review-retirement" || args[0] == "apply-retirement" || args[0] == "review-file-change" || args[0] == "apply-file-change" || args[0] == "recover-file-change" || args[0] == "file-change-history" || args[0] == "review-file-change-undo" || args[0] == "apply-file-change-undo") {
-		return runFileChange(args, out, errOut)
+		return runFileChange(ctx, args, out, errOut)
 	}
 	if len(args) > 0 && (args[0] == "review-enrollment" || args[0] == "create-enrolled" || args[0] == "recover-enrollment") {
-		return runEnrollmentCreation(args, out, errOut)
+		return runEnrollmentCreation(ctx, args, out, errOut)
 	}
 	if len(args) > 0 && (args[0] == "review-resolution" || args[0] == "resolve-reviewed") {
-		return runResolve(args, out, errOut)
+		return runResolve(ctx, args, out, errOut)
 	}
 	if len(args) > 0 && (args[0] == "history" || args[0] == "review-history" || args[0] == "restore-reviewed") {
-		return runHistory(args, out, errOut)
+		return runHistory(ctx, args, out, errOut)
 	}
 	if len(args) > 0 && args[0] == "enroll-reviewed" {
 		if len(args) != 3 {
 			return usage(errOut)
 		}
 		if err := bridge.EnrollReviewed(args[1], args[2]); err != nil {
+			event(ctx, "operation", "cli.enrollment", err)
 			if errors.Is(err, bridge.ErrObservationChanged) {
 				fmt.Fprintln(errOut, "Reviewed inputs changed; review again before enrolling.")
 				return 2
@@ -90,8 +94,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		if len(args) != 3 {
 			return usage(errOut)
 		}
-		r, err := bridge.SyncReviewed(args[1], args[2])
+		r, err := bridge.SyncReviewedObserved(args[1], args[2], observer(ctx))
 		if err != nil {
+			event(ctx, "operation", "cli", err)
 			if errors.Is(err, bridge.ErrObservationChanged) {
 				fmt.Fprintln(errOut, "Reviewed inputs changed; review again before syncing.")
 				return 2
@@ -196,6 +201,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		if err != nil {
 			if command == "watch" {
+				if !watchBlocked {
+					event(ctx, "watch_paused", "cli", err)
+				}
 				lastObservation = ""
 				if !retryWatch(ctx, errOut, &watchBlocked) {
 					if ctx.Err() != nil {
@@ -209,6 +217,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 				fmt.Fprintln(errOut, "Audit could not load the profile: check schema, adapter, consent, inheritance and path safety. Details withheld to protect configuration values.")
 				return 1
 			}
+			event(ctx, "config_load", "cli", err)
 			fmt.Fprintln(errOut, err)
 			return 1
 		}
@@ -236,7 +245,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			return 0
 		}
 		if command == "recover" {
-			result, err := bridge.Recover(c)
+			result, err := bridge.RecoverObserved(c, observer(ctx))
 			if err != nil {
 				fmt.Fprintln(errOut, err)
 				return 1
@@ -247,7 +256,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			}
 			return 0
 		}
-		result, err := bridge.Plan(c)
+		result, err := bridge.PlanObserved(c, observer(ctx))
 		if err != nil {
 			if command == "watch" {
 				lastObservation = ""
@@ -263,6 +272,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			return 1
 		}
 		if watchBlocked {
+			event(ctx, "watch_resumed", "cli", nil)
 			if _, err := fmt.Fprintln(errOut, "Watch inputs are readable again; planning resumed. Conflicts still block writes."); err != nil {
 				return 1
 			}
@@ -282,7 +292,10 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			last = string(data)
 		}
 		conflict := result.HasConflicts()
-		options := bridge.Options{}
+		if conflict {
+			event(ctx, "conflict", "cli", bridge.ErrConflicts)
+		}
+		options := bridge.Options{Observe: observer(ctx)}
 		apply := command == "sync"
 		if command == "watch" && len(args) == 3 {
 			observation := bridge.Observation(c, result)
@@ -335,6 +348,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge logs <config.json> [--tail 1..1000]\n       agent-bridge doctor <config.json>\n       agent-bridge support-bundle <config.json> <new-output.json>")
 	fmt.Fprintln(w, "       agent-bridge review-retirement <config.json> <resource-id>")
 	fmt.Fprintln(w, "       agent-bridge apply-retirement <config.json> <observation> <resource-id>")
 	fmt.Fprintln(w, "       agent-bridge enroll-reviewed <config.json> <observation>")

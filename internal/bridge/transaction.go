@@ -3,6 +3,7 @@ package bridge
 import (
 	"errors"
 	"fmt"
+	"github.com/Jhorlin/agent-bridge/internal/diagnostics"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -29,6 +30,8 @@ type Recovery struct {
 }
 
 type Options struct {
+	// Observe receives only content-free diagnostic metadata; it must not panic.
+	Observe diagnostics.Observer
 	// BeforeWrite allows deterministic fault injection from isolated tests only.
 	BeforeWrite func(int, Operation) error
 	// ExpectedObservation makes watched application conditional on stable inputs.
@@ -76,7 +79,7 @@ func directoryLocked(dir string, fn func() error) (err error) {
 	lock := filepath.Join(dir, "sync.lock")
 	f, err := os.OpenFile(lock, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if os.IsExist(err) {
-		return fmt.Errorf("another sync is active, or a stale sync.lock needs inspection")
+		return ErrLockPresent
 	}
 	if err != nil {
 		return err
@@ -168,6 +171,12 @@ func rollbackWithOwnership(c Config, j Journal, receipt *syncOwnership) error {
 var transactionPattern = regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
 
 func Recover(c Config) (Recovery, error) {
+	return RecoverObserved(c, nil)
+}
+
+func RecoverObserved(c Config, sink diagnostics.Observer) (recovered Recovery, failure error) {
+	transaction := ""
+	defer func() { observe(sink, "recover", "bridge.recovery", "", "", transaction, failure) }()
 	result := Recovery{Status: "nothing-to-recover"}
 	err := locked(c, func() error {
 		if err := checkFileChangePending(c); err != nil {
@@ -184,6 +193,7 @@ func Recover(c Config) (Recovery, error) {
 		if !transactionPattern.MatchString(pointer.Transaction) {
 			return fmt.Errorf("invalid recovery transaction")
 		}
+		transaction = pointer.Transaction
 		stored, err := snapshot(filepath.Join(c.StateDir, "backups", pointer.Transaction, "journal.json"))
 		if err != nil {
 			return err
@@ -210,10 +220,17 @@ func Recover(c Config) (Recovery, error) {
 	})
 	return result, err
 }
-func Apply(c Config, options Options) ([]Summary, error) {
+func Apply(c Config, options Options) (output []Summary, failure error) {
+	stage, resource, path, tx := "lock", "", "", ""
+	defer func() {
+		if failure != nil {
+			observe(options.Observe, stage, "bridge.transaction", resource, path, tx, failure)
+		}
+	}()
 	var summaries []Summary
 	err := locked(c, func() error {
-		result, err := Plan(c)
+		stage = "plan"
+		result, err := PlanObserved(c, options.Observe)
 		if err != nil {
 			return err
 		}
@@ -242,11 +259,13 @@ func Apply(c Config, options Options) ([]Summary, error) {
 			}
 		}
 		if result.HasConflicts() {
-			return fmt.Errorf("conflicts block all writes")
+			return ErrConflicts
 		}
 		operations := []Operation{}
 		for _, item := range result.Items {
+			stage, resource = "prepare", item.Resource.ID
 			for _, side := range sides {
+				path = item.Paths[side]
 				current, err := readItemSide(item, side)
 				if err != nil {
 					return err
@@ -256,6 +275,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 			}
 			for _, side := range item.Writes {
+				stage, path = "render", item.Paths[side]
 				before := item.Values[side]
 				content := item.Content
 				switch item.Adapter {
@@ -280,6 +300,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					return err
 				}
 				var roundTrip *Snapshot
+				stage = "validate"
 				switch item.Adapter {
 				case "plugin-agent":
 					roundTrip, err = normalizePluginAgent(item, side, content)
@@ -351,6 +372,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		if err != nil {
 			return err
 		}
+		tx, stage, resource, path = transaction, "journal", "", ""
+		observe(options.Observe, stage, "bridge.transaction", "", "", tx, nil)
 		journal := Journal{1, operations}
 		if err = writeJSON(filepath.Join(c.StateDir, "backups", transaction, "journal.json"), journal); err != nil {
 			return err
@@ -367,6 +390,20 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		}
 		writeErr := func() error {
 			for index, op := range operations {
+				stage, path, resource = "write", op.File, ""
+				for _, r := range c.Resources {
+					for _, root := range r.Paths {
+						if inside(root, op.File) {
+							resource = r.ID
+						}
+					}
+					for _, export := range r.CodexAgentExports {
+						if export == op.File {
+							resource = r.ID
+						}
+					}
+				}
+				observe(options.Observe, stage, "bridge.transaction", resource, path, tx, nil)
 				if options.BeforeWrite != nil {
 					if err := options.BeforeWrite(index, op); err != nil {
 						return err
@@ -399,18 +436,27 @@ func Apply(c Config, options Options) ([]Summary, error) {
 					return err
 				}
 				receipt.Written[index] = true
+				stage = "receipt"
 				if err = writeJSON(syncOwnershipPath(c, transaction), receipt); err != nil {
 					return err
 				}
 			}
+			stage, resource, path = "commit", "", ""
 			return os.Remove(pendingPath(c))
 		}()
 		if writeErr != nil {
+			observe(options.Observe, stage, "bridge.transaction", resource, path, tx, writeErr)
+			stage = "rollback"
 			if recoveryErr := rollbackWithOwnership(c, journal, receipt); recoveryErr != nil {
+				observe(options.Observe, stage, "bridge.transaction", "", "", tx, recoveryErr)
 				return fmt.Errorf("%w; %v. Pending transaction retained; run recover after inspection", writeErr, recoveryErr)
 			}
+			observe(options.Observe, stage, "bridge.transaction", "", "", tx, nil)
+			// The original write failure has already been recorded.
+			stage = "operation"
 			return fmt.Errorf("%w; transaction rolled back", writeErr)
 		}
+		observe(options.Observe, "commit", "bridge.transaction", "", "", tx, nil)
 		return nil
 	})
 	return summaries, err

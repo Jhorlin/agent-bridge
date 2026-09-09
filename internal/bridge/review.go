@@ -32,12 +32,17 @@ func ReviewProfile(filename string) (ReviewCheckpoint, error) {
 // SyncReviewed reuses the transaction engine's under-lock observation check.
 // Invalid/empty tokens must never fall back to unconditional Apply.
 func SyncReviewed(filename, observation string) ([]Summary, error) {
+	return SyncReviewedObserved(filename, observation, nil)
+}
+
+func SyncReviewedObserved(filename, observation string, sink Observer) ([]Summary, error) {
 	if !digestPattern.MatchString(observation) {
 		return nil, fmt.Errorf("expected a review observation digest")
 	}
 	c, err := LoadAuditConfig(filename)
 	if err != nil {
+		observe(sink, "config_load", "bridge.plan", "", filename, "", err)
 		return nil, fmt.Errorf("reviewed profile is invalid or unsafe")
 	}
-	return Apply(c, Options{ExpectedObservation: observation})
+	return Apply(c, Options{ExpectedObservation: observation, Observe: sink})
 }
