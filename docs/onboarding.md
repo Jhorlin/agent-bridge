@@ -38,6 +38,12 @@ discovery never chooses a winner. After a successful sync, `watch PROFILE` previ
 changes and `watch PROFILE --apply` applies non-conflicting changes while running.
 There is no background service installed automatically.
 
+If a profile or structured input is temporarily incomplete while being saved,
+watch mode pauses writes and retries once per second. It reports the pause once,
+then reports resumption when planning succeeds. Unsupported input and pending
+recovery also remain blocked; retries do not grant consent or perform recovery.
+Transaction errors, including lock contention during apply, still stop the watcher.
+
 ## Multiple profiles
 
 Set the same absolute `coordinationDir` in every profile that can write overlapping

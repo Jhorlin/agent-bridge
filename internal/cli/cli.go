@@ -55,6 +55,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		return usage(errOut)
 	}
 	last := ""
+	watchBlocked := false
 	for {
 		if ctx.Err() != nil {
 			return 0
@@ -67,6 +68,15 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			c, err = bridge.LoadConfig(filename)
 		}
 		if err != nil {
+			if command == "watch" {
+				if !retryWatch(ctx, errOut, &watchBlocked) {
+					if ctx.Err() != nil {
+						return 0
+					}
+					return 1
+				}
+				continue
+			}
 			if command == "audit" {
 				fmt.Fprintln(errOut, "Audit could not load the profile: check schema, adapter, consent, inheritance and path safety. Details withheld to protect configuration values.")
 				return 1
@@ -111,8 +121,24 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		result, err := bridge.Plan(c)
 		if err != nil {
+			if command == "watch" {
+				if !retryWatch(ctx, errOut, &watchBlocked) {
+					if ctx.Err() != nil {
+						return 0
+					}
+					return 1
+				}
+				continue
+			}
 			fmt.Fprintln(errOut, err)
 			return 1
+		}
+		if watchBlocked {
+			if _, err := fmt.Fprintln(errOut, "Watch inputs are readable again; planning resumed. Conflicts still block writes."); err != nil {
+				return 1
+			}
+			watchBlocked = false
+			last = ""
 		}
 		data, err := json.MarshalIndent(result.Summaries(), "", "  ")
 		if err != nil {
@@ -146,6 +172,25 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			return 0
 		case <-timer.C:
 		}
+	}
+}
+
+// Input errors can be temporary editor saves. Never apply or auto-recover while
+// unreadable; emit a redacted transition once, then retry until canceled.
+func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
+	if !*blocked {
+		if _, err := fmt.Fprintln(out, "Watch paused: configuration or inputs are unreadable/unsupported, or recovery is pending. No sync attempted; retrying. Use audit/plan to inspect."); err != nil {
+			return false
+		}
+		*blocked = true
+	}
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
 	}
 }
 func usage(w io.Writer) int {
