@@ -30,7 +30,7 @@ Native references: [Claude instruction loading](https://code.claude.com/docs/en/
 
 | Feature | Bridge today | Missing contract / next decision |
 | --- | --- | --- |
-| MCP stdio / HTTP definitions | Partial: allowlisted servers, supported command/arguments, absolute cwd, HTTP URL; JSON ↔ TOML | Selected set is one reconciliation unit; no per-server independent merge, SSE, or remote executor mapping. [T3](#test-evidence) |
+| MCP stdio / HTTP definitions | Partial: allowlisted servers, supported command/arguments, absolute cwd, HTTP URL; JSON ↔ TOML | Source builds merge independent server edits with recorded baselines; alpha remains whole-set. No SSE or remote executor mapping. [T3](#test-evidence) |
 | MCP environment / header references | Partial: same-name environment forwarding and supported bearer/header references | No expansion by bridge, fallback/remapping, or general secret scanning. Credentials in arbitrary arguments can still be copied. [T3](#test-evidence) |
 | MCP policy, enabled flags, timeouts | Candidate: selected entries with unsupported fields currently fail | Never drop restrictions or silently broaden access. Preserve host-only settings or reject the mapping. [T3](#test-evidence) |
 | MCP runtime connectivity | Host-managed; local stdio fixture verified | Native tests verify Claude connection and Codex discovery, resource reads and direct tool calls. The bridge itself does not launch servers or authenticate; remote/authenticated transports remain unverified. |

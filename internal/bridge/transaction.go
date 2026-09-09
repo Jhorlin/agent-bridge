@@ -250,6 +250,11 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				operations = append(operations, Operation{item.Key + "-" + side, item.Paths[side], before, &Snapshot{content.Data, mode}})
 			}
 			result.Manifest.Files[item.Key] = item.Digest
+			if item.Adapter == "mcp" {
+				if err := recordMCPBaselines(item.Resource, item.Content, &result.Manifest); err != nil {
+					return err
+				}
+			}
 		}
 		for _, r := range c.Resources {
 			result.Manifest.Resources[r.ID] = r

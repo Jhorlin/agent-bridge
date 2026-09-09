@@ -255,6 +255,16 @@ func Plan(c Config) (PlanResult, error) {
 				selected = "shared"
 			}
 			item.Content = semantic[selected]
+			if item.Adapter == "mcp" && tracked {
+				merged, conflict, handled, err := mergeMCPServers(item.Resource, semantic, result.Manifest)
+				if err != nil {
+					return result, err
+				}
+				if handled {
+					item.Content = merged
+					item.Conflict = conflict
+				}
+			}
 			item.Digest = fingerprint(item.Content)
 			item.Writes = []string{}
 			if item.Conflict == "" {

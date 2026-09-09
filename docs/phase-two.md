@@ -15,7 +15,7 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Upstream manifest and bundled-MCP seed fixtures added; component support pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Upstream sidecar rejection fixture added; richer mappings pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Planned; startup-only baseline remains unchanged |
-| 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Plugin-relative upstream fixture added; implementation pending |
+| 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging and transactional rollback tested; policy/format preservation and plugin-relative support remain pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Planned; never default to last-writer-wins |
 | 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight and opt-in coordinator roster enforcement implemented; automated enrollment and other hardening pending |
 
@@ -170,6 +170,30 @@ Stop all participants before editing the roster or profiles, keep the roster
 private (0600), and preserve it with configuration backups. No roster or live
 configuration is created automatically. Existing config/manifest/journal schemas
 and the published alpha remain unchanged.
+
+## Per-server MCP merging
+
+Source builds record a hash for each selected server after a successful sync.
+Subsequent edits to different servers can merge across shared, Claude and Codex
+inputs. Identical edits to one server converge; differing edits to that same
+server block every write. Native documents remain single transactional writes,
+with unchanged rollback and later-edit checks. Unselected entries and unrelated
+document fields are preserved semantically, but comments/formatting are still
+not preserved. Unknown policies, literal credentials, plugin-relative interpolation,
+partial allowlists and selected-server deletions remain unsupported.
+
+Manifest schema remains 2: additional hash entries record granular baselines and
+their corresponding whole-set digest. A legacy manifest or an older writer that
+leaves stale granular hashes falls back to whole-set conflict detection. A
+successful non-conflicting sync seeds current hashes; do not erase baselines to
+force a merge. No automatic migration resolves an existing conflict. Initial
+bootstrap still requires the selected sets to agree or exist on only one side.
+
+Tests use synthetic, isolated three-server edit scenarios, including concurrent
+edits on all three sides, same-server conflicts, deletion refusal, repeat sync,
+legacy fallback and injected rollback. The public upstream corpus still verifies
+rejection of unsupported plugin-relative MCP; no new transport/runtime behavior
+or native execution support is claimed by this reconciliation change.
 
 ## Documentation anchors
 

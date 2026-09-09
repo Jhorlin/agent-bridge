@@ -149,7 +149,8 @@ Future expansion, not capabilities promised by this initial boundary:
 - Automatic enrollment/project discovery and resource ownership coordination;
   host-level instruction precedence emulation.
 - Host-specific skill invocation/dependency mapping and nested-link support.
-- Broader MCP policy support, per-server reconciliation and comment-preserving editing.
+- Broader MCP policy support and comment-preserving editing. Source builds now
+  merge independent server edits after recording per-server baselines; see [MCP merging](docs/phase-two.md#per-server-mcp-merging).
 - Richer plugin components, bundled MCP and automatic installed-cache refresh.
 - Additional hook events, richer agents, Linux service installation and broader
   real-model execution evidence.
