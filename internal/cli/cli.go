@@ -26,6 +26,23 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && args[0] == "enroll-reviewed" {
+		if len(args) != 3 {
+			return usage(errOut)
+		}
+		if err := bridge.EnrollReviewed(args[1], args[2]); err != nil {
+			if errors.Is(err, bridge.ErrObservationChanged) {
+				fmt.Fprintln(errOut, "Reviewed inputs changed; review again before enrolling.")
+				return 2
+			}
+			fmt.Fprintln(errOut, "Enrollment failed; inspect review, roster ownership, overlaps and locks privately.")
+			return 1
+		}
+		if _, err := fmt.Fprintln(out, "Enrolled the reviewed profile. Native files and synchronization baselines were not changed."); err != nil {
+			return 1
+		}
+		return 0
+	}
 	if len(args) > 0 && args[0] == "systemd-unit" {
 		if len(args) < 3 || len(args) > 4 || (len(args) == 4 && args[3] != "--apply") {
 			return usage(errOut)
@@ -303,6 +320,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge enroll-reviewed <config.json> <observation>")
 	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
 	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")
 	fmt.Fprintln(w, "       agent-bridge draft-profile <root> <--project|--global> <candidate-id> [more IDs...]")

@@ -86,7 +86,7 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 | --- | --- | --- |
 | Shared instructions | Common marker-delimited sections in CLAUDE.md ↔ AGENTS.md, preserving host-only text | No semantic translation of instructions, imports or precedence |
 | Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML | Models, permissions, tools and other settings rejected; no behavioral equivalence |
-| Startup hooks | Explicitly timed SessionStart command definitions; Claude settings JSON ↔ Codex hooks JSON | Startup only, absolute executable paths; no trust grants, script execution, tool events or policy translation |
+| Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit and Stop | Absolute executable paths; no trust grants, script execution by the bridge, tool-event or policy translation |
 | MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
 | Plugins | Portable skill-package directories, common manifest metadata, supporting files; Claude compatibility manifest ↔ Codex compatibility or portable manifest | No installation/cache refresh, OAuth, marketplace management, hooks, agents, bundled MCP, app mappings, custom component paths, or host-specific fields |
 | Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |
@@ -139,6 +139,8 @@ For cooperating profiles, source builds can enforce an explicitly reviewed
 coordinator roster during sync/recovery; see [opt-in ownership enforcement](docs/phase-two.md#opt-in-ownership-enforcement).
 `review-profile` and the explicit write command `sync-reviewed` add a freshness
 check between review and application; see [guarding a reviewed sync](docs/phase-two.md#guarding-a-reviewed-sync).
+`enroll-reviewed` registers an existing reviewed profile in its coordinator roster
+without syncing native files; see [reviewed enrollment](docs/phase-two.md#enrolling-an-existing-reviewed-profile).
 
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,

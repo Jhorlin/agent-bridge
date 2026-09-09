@@ -332,7 +332,7 @@ func TestPluginPackageTranslationAndReverseEdit(t *testing.T) {
 	f.expect("claude-plugin/skills/demo/SKILL.md", "edited on codex")
 }
 func TestPluginUnsupportedComponentsBlockAllWrites(t *testing.T) {
-	for _, file := range []string{"hooks/hooks.json", ".mcp.json", ".app.json", "agents/reviewer.md", "settings.json", "plugin.json"} {
+	for _, file := range []string{".mcp.json", ".app.json", "agents/reviewer.md", "settings.json", "plugin.json"} {
 		t.Run(file, func(t *testing.T) {
 			f := pluginFixture(t)
 			f.write("claude-plugin/"+file, "{}")

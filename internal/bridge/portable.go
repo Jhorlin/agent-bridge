@@ -169,8 +169,8 @@ func renderAgent(side string, content *Snapshot) (*Snapshot, error) {
 
 var hookExecutable = regexp.MustCompile(`^/[A-Za-z0-9_./-]+$`)
 
-// Initial hook contract: synchronous, explicitly timed SessionStart commands,
-// startup only. No shell expressions, prompts, policy decisions or tool events.
+// Bounded hook contract: synchronous, explicitly timed startup SessionStart and
+// UserPromptSubmit/Stop commands. No shell expressions, prompt handlers or tool events.
 func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 	if raw == nil {
 		return nil, nil
@@ -194,8 +194,8 @@ func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 		return nil, nil
 	}
 	for event, groups := range hooks {
-		if event != "SessionStart" {
-			return nil, fmt.Errorf("only startup SessionStart hooks are portable in this version")
+		if event != "SessionStart" && event != "UserPromptSubmit" && event != "Stop" {
+			return nil, fmt.Errorf("only startup SessionStart, UserPromptSubmit and Stop hooks are mapped in this version")
 		}
 		list, ok := groups.([]any)
 		if !ok || len(list) == 0 {
@@ -211,8 +211,13 @@ func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 					return nil, fmt.Errorf("unsupported hook group field")
 				}
 			}
-			if group["matcher"] != "^startup$" {
+			if event == "SessionStart" && group["matcher"] != "^startup$" {
 				return nil, fmt.Errorf("portable hooks require exact startup matcher")
+			}
+			if event == "UserPromptSubmit" || event == "Stop" {
+				if _, ok := group["matcher"]; ok {
+					return nil, fmt.Errorf("prompt and stop hooks do not support a matcher")
+				}
 			}
 			handlers, ok := group["hooks"].([]any)
 			if !ok || len(handlers) == 0 {

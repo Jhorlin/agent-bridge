@@ -70,7 +70,7 @@ Use `kind: "hook-config"` for Claude `settings.json` and Codex `hooks.json`. Thi
 }
 ```
 
-Only synchronous `SessionStart` command handlers with exact `^startup$` matching and an explicit integer timeout of 1–60 seconds are accepted. Commands must be clean absolute paths made of letters, digits, underscore, dot, dash and slash. Arguments, shell expressions, variable expansion, alternate shells, async, prompt/agent/MCP handlers, extra fields and all other events are rejected. The executable is not copied or checked by this adapter; register reviewed supporting files separately and verify their availability on both hosts.
+Source builds accept synchronous `SessionStart` (exact `^startup$` matcher), `UserPromptSubmit` and `Stop` command handlers. Prompt/Stop groups must omit `matcher` rather than relying on a host to ignore it. An explicit integer timeout of 1–60 seconds is required. The published alpha remains startup-only. Commands must be clean absolute paths made of letters, digits, underscore, dot, dash and slash. Arguments, shell expressions, variable expansion, alternate shells, async, prompt/agent/MCP handlers, extra fields and other events are rejected. The executable is not copied or checked by this adapter; register reviewed supporting files separately and verify their availability on both hosts.
 
 The command must be manually reviewed for host-independent behavior. Both hosts expose startup context, but payload details, environment, error handling, output limits and model interpretation are not guaranteed equivalent. Use a harmless context-producing script first. No permission-decision or tool-event hook mapping is claimed. Trust and enablement stay host-local; the bridge never grants trust. Writing a Claude settings file may affect the next trusted session, so `sync` is an explicit configuration change, not a harmless preview.
 
@@ -79,6 +79,12 @@ Codex `hooks/list` verifies discovery with status **untrusted**. Local fake-prov
 Native references: [Claude hook contract](https://code.claude.com/docs/en/hooks), [Codex hook contract](https://learn.chatgpt.com/docs/hooks).
 
 ## Example profile
+
+Source builds also translate the same bounded definitions at a plugin's
+conventional `hooks/hooks.json`. Use the Codex compatibility manifest layout;
+portable root-manifest packages with hooks are rejected because the installed
+Codex native test did not load their hooks. Hook path overrides, inline manifest
+hooks, plugin-root interpolation and trust synchronization remain unsupported.
 
 ```json
 {

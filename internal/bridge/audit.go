@@ -68,7 +68,7 @@ func Audit(c Config) AuditReport {
 		case "agent-file":
 			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")
 		case "hook-config":
-			row.Actions = append(row.Actions, "Only startup SessionStart command configuration is mapped. Review and trust hooks in each host; executable behavior is not certified or run by this bridge.")
+			row.Actions = append(row.Actions, "Only startup SessionStart, UserPromptSubmit and Stop command configuration is mapped. Review and trust hooks in each host; executable behavior is not certified or run by this bridge.")
 		}
 		// Reuse the actual planner so audit cannot call a rejected resource compatible.
 		// Per-resource plans collect independent failures without writing a lock or state.

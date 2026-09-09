@@ -12,9 +12,9 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 |---|---|---|---|
 | 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch and selected-profile drafts implemented; transactional reviewed enrollment remains pending; optional manual roster enforcement below |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
-| 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Upstream manifest and bundled-MCP seed fixtures added; component support pending |
+| 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Conventional bounded hooks added for compatibility layout; portable-hook rejection verified; other components remain pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Upstream sidecar rejection fixture added; richer mappings pending |
-| 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Planned; startup-only baseline remains unchanged |
+| 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Source builds add prompt/Stop command definitions with native payload/trust tests; broader runtime/policy equivalence pending |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging and transactional rollback tested; policy/format preservation and plugin-relative support remain pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Planned; never default to last-writer-wins |
 | 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight and opt-in coordinator roster enforcement implemented; automated enrollment and other hardening pending |
@@ -121,6 +121,31 @@ IDs and relative file names, so keep it private. These commands operate on an
 existing reviewed profile: creating it and updating rosters atomically, automatic
 enrollment and historical rollback selection remain unfinished.
 
+## Enrolling an existing reviewed profile
+
+After preparing a new private profile with an explicit `coordinationDir`, run
+`review-profile CONFIG`, inspect its contents/plan, then use
+`enroll-reviewed CONFIG OBSERVATION`. This adds that existing profile to the
+coordinator's roster under its shared lock. It rejects stale reviewed inputs,
+overlaps, inconsistent coordinators, invalid rosters and unsafe paths. Repeating
+an unchanged enrollment is a no-op. No native data or synchronization baseline
+is written, no watcher is started, and no compatibility consent is inferred.
+
+The roster is the only committed file. First creation uses an exclusive link of
+a fully written temporary file; updates use atomic rename. A private before/after
+snapshot is retained under `coordinationDir/enrollment-backups/UUID/roster.json`
+before any change. A failed update may leave this backup. This is not a signed
+approval receipt or power-loss durability guarantee. Stop participants before
+external edits; uncooperative edits racing the final check are not fenced.
+Output failure after commit does not undo enrollment. Inspect backups privately
+before manual restoration; automatic historical rollback remains unfinished.
+
+Profile creation remains an explicit review step: this command does not extract
+draft envelopes, overwrite profiles, remove roster entries or perform a two-file
+profile-plus-roster transaction. Exit 0 is success, 2 is stale review, 1 is an
+operational/validation error. After enrollment, use a fresh review and
+`sync-reviewed` when ready to apply the actual resource changes.
+
 ## Cross-profile overlap preflight
 
 `agent-bridge check-overlap profile.json other.json [more.json ...]` strictly
@@ -222,6 +247,27 @@ production still rejects symlink paths. Quoting follows the
 [upstream systemd service specification](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml).
 
 ## Documentation anchors
+
+### Prompt and Stop hook evidence
+
+The source adapter now maps `UserPromptSubmit` and `Stop` alongside startup-only
+`SessionStart`. No matcher is accepted for the two new events; explicit command
+timeout and executable restrictions remain. Fixture tests exercise forward/reverse
+sync, repeat sync, conflict, rollback and rejected matcher handling. Installed
+Claude Code 2.1.266 and Codex 0.153.4 execute isolated fixture commands; assertions
+check event/cwd, prompt text, and the Stop recursion flag. Codex's untrusted skip
+is tested separately from a one-invocation fixture-only trust override.
+
+These model-free tests use local fake endpoints, not authenticated model calls.
+They do not prove arbitrary hook scripts, blocking/continuation policies, timeout
+semantics, context precedence, ordering, or retry limits are equivalent. Review
+those behaviors explicitly: Claude and Codex document host-specific differences.
+Tool-name mappings remain outside this increment. Conventional bundled
+`hooks/hooks.json` uses the same bounded adapter with `.codex-plugin/plugin.json`.
+Native tests verify reverse-generated Claude package installation and Codex
+discovery as untrusted. Root-manifest portable Codex packages did not expose
+their hooks in the installed host test; such packages now fail conversion.
+Custom hook manifest paths and plugin-root command interpolation remain rejected.
 
 [Codex hooks](https://learn.chatgpt.com/docs/hooks) describes event behavior and
 hash-based trust review. [Codex plugin building](https://learn.chatgpt.com/docs/build-plugins)

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -47,6 +48,14 @@ func nativeRunEnvironment(t *testing.T, f *fixture, binary string, extra []strin
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
+	// A CLI can exit before its background cache helpers do. Isolate and reap
+	// this fixture's process group so TempDir cleanup cannot race those helpers.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	defer func() {
+		if cmd.Process != nil {
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		}
+	}()
 	cmd.Dir = f.dir
 	// Build an allowlisted child environment; never inherit tokens, hooks, auth
 	// helpers, or the user's config. These are actual child configuration roots.
@@ -73,6 +82,7 @@ func nativeRPCSession(t *testing.T, f *fixture, binary string, run func(func(str
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, "app-server", "--stdio")
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Dir = f.dir
 	cmd.Env = nativeEnvironment(f)
 	cmd.Stderr = io.Discard
@@ -81,7 +91,7 @@ func nativeRPCSession(t *testing.T, f *fixture, binary string, run func(func(str
 	output, err := cmd.StdoutPipe()
 	must(t, err)
 	must(t, cmd.Start())
-	defer func() { input.Close(); cmd.Process.Kill(); cmd.Wait() }()
+	defer func() { input.Close(); syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); cmd.Wait() }()
 	encoder := json.NewEncoder(input)
 	decoder := json.NewDecoder(output)
 	must(t, encoder.Encode(map[string]any{"id": 1, "method": "initialize", "params": map[string]any{"clientInfo": map[string]string{"name": "agent_bridge_tests", "version": "0.1.0"}, "capabilities": map[string]bool{"experimentalApi": true}}}))

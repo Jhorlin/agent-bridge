@@ -24,6 +24,16 @@ func hooksFixture(t *testing.T) *fixture {
 	return portableFixture(t, "hook-config", `{"permissions":{"deny":["Bash"]},"hooks":{"SessionStart":[{"matcher":"^startup$","hooks":[{"type":"command","command":"/usr/bin/true","timeout":10}]}]}}`)
 }
 
+func promptHooksFixture(t *testing.T) *fixture {
+	return portableFixture(t, "hook-config", `{"permissions":{"deny":["Bash"]},"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"/usr/bin/true","timeout":10}]}]}}`)
+}
+
+func stopHooksFixture(t *testing.T) *fixture {
+	f := promptHooksFixture(t)
+	f.write("claude-source", strings.ReplaceAll(f.read("claude-source"), "UserPromptSubmit", "Stop"))
+	return f
+}
+
 func TestInstructionOverlaysBidirectional(t *testing.T) {
 	f := instructionsFixture(t)
 	f.write("codex-source", "Codex only\n"+instructionStart+"\nShared guidance.\n"+instructionEnd+"\nCodex footer\n")
@@ -51,7 +61,7 @@ func TestInstructionOverlaysBidirectional(t *testing.T) {
 }
 
 func TestNewPortableAdaptersRoundTripConflictAndRecovery(t *testing.T) {
-	for name, setup := range map[string]func(*testing.T) *fixture{"instructions": instructionsFixture, "agent": agentFixture, "hooks": hooksFixture} {
+	for name, setup := range map[string]func(*testing.T) *fixture{"instructions": instructionsFixture, "agent": agentFixture, "hooks": hooksFixture, "prompt-hooks": promptHooksFixture, "stop-hooks": stopHooksFixture} {
 		t.Run(name, func(t *testing.T) {
 			f := setup(t)
 			before := auditTree(t, f.dir)
@@ -84,6 +94,18 @@ func TestNewPortableAdaptersRoundTripConflictAndRecovery(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPromptHooksRejectMatchers(t *testing.T) {
+	f := promptHooksFixture(t)
+	f.write("claude-source", strings.Replace(f.read("claude-source"), `{"hooks":[`, `{"matcher":"*","hooks":[`, 1))
+	if !Audit(f.c).Blocked() {
+		t.Fatal("ignored prompt matcher accepted")
+	}
+	if _, err := Apply(f.c, Options{}); err == nil {
+		t.Fatal("wrote unsupported prompt hook")
+	}
+	f.missing("codex-source")
 }
 
 func TestInstructionMarkersFailClosed(t *testing.T) {

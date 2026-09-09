@@ -9,6 +9,7 @@ import (
 func TestNativeClaudePluginInstallAndRemove(t *testing.T) {
 	f := pluginFixture(t)
 	tools := nativeTools(t, f)
+	f.write("claude-plugin/hooks/hooks.json", pluginHookFixture)
 	f.apply()
 	// Exercise the reverse-generated Claude package, not just its initial source.
 	f.write("codex-plugin/.codex-plugin/plugin.json", strings.Replace(f.read("codex-plugin/.codex-plugin/plugin.json"), "1.0.0", "1.1.0", 1))
@@ -43,11 +44,20 @@ func nativeCodexPluginLifecycle(t *testing.T, layout string) {
 		f.raw.Resources[0].CodexPluginLayout = "portable"
 	}
 	f.load()
+	if layout != "portable" {
+		f.write("claude-plugin/hooks/hooks.json", pluginHookFixture)
+	}
 	f.apply()
 	// Only a disposable personal marketplace is created; no user cache is read.
 	f.write("home/.agents/plugins/marketplace.json", `{"name":"personal","interface":{"displayName":"Personal"},"plugins":[{"name":"demo","source":{"source":"local","path":"./plugins/demo"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Productivity"}]}`)
 	nativeRPCSession(t, f, tools["codex"], func(call func(string, any) json.RawMessage) {
 		call("plugin/install", map[string]any{"marketplacePath": f.path("home/.agents/plugins/marketplace.json"), "pluginName": "demo"})
+		if layout != "portable" {
+			hooks := call("hooks/list", map[string]any{"cwds": []string{f.dir}})
+			if !strings.Contains(string(hooks), "userPromptSubmit") || !strings.Contains(string(hooks), "untrusted") {
+				t.Fatalf("plugin hook not discovered untrusted: %s", hooks)
+			}
+		}
 		skills := call("skills/list", map[string]any{"cwds": []string{f.dir}, "forceReload": true})
 		if !strings.Contains(string(skills), "demo") || !strings.Contains(string(skills), "plugins/cache") {
 			t.Fatalf("installed plugin skill not discovered: %s", skills)

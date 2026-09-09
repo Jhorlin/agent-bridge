@@ -98,7 +98,9 @@ Claude uses `.claude-plugin/plugin.json`. By default Codex uses `.codex-plugin/p
 
 Common identity/publisher metadata is synchronized semantically. Skills in `skills/<name>/SKILL.md`, supporting `scripts/`, `assets/`, `references/`, root README and LICENSE files are synchronized per file, including executable bits. Compatibility manifests declare the standard skills path; portable Codex manifests rely on standard directory discovery. Custom skill locations are rejected. `portable: true` acknowledges that the skill content was reviewed; it is not an automated behavioral-equivalence certification.
 
-Unsupported files or fields block the entire conversion: bundled MCP, hooks, agents, commands, app mappings, settings, host-specific presentation/options, and unrecognized root schemas. No installation, marketplace edits, cache refresh, enablement, trust changes, or login happens. A changed source package may therefore require an explicit host reinstall/refresh before its installed copy changes. This feature keeps registered authoring directories in sync, not installed marketplace caches.
+Source builds also translate conventional `hooks/hooks.json` in the Codex compatibility layout, subject to the same bounded command/event rules as standalone hooks. Portable-layout bundled hooks are rejected because native testing did not discover them. Custom hook locations and inline manifest hooks remain unsupported.
+
+Unsupported files or fields block the entire conversion: bundled MCP, agents, commands, app mappings, settings, host-specific presentation/options, and unrecognized root schemas. No installation, marketplace edits, cache refresh, enablement, trust changes, or login happens. A changed source package may therefore require an explicit host reinstall/refresh before its installed copy changes. This feature keeps registered authoring directories in sync, not installed marketplace caches.
 
 Packaging references: [OpenAI package formats](https://developers.openai.com/plugins/build/plugins) and [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference).
 

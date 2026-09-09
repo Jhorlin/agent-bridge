@@ -39,6 +39,14 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			}
 			top := strings.Split(filepath.ToSlash(file), "/")[0]
 			switch top {
+			case "hooks":
+				if r.CodexPluginLayout == "portable" {
+					return nil, fmt.Errorf("portable Codex plugin layout does not load bundled hooks; use the compatibility layout")
+				}
+				if file != "hooks/hooks.json" {
+					return nil, fmt.Errorf("only the conventional plugin hooks/hooks.json is supported")
+				}
+				names[file] = true
 			case "skills", "scripts", "assets", "references", "README.md", "LICENSE":
 				names[file] = true
 			default:
@@ -106,7 +114,11 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 		for _, side := range sides {
 			entry.Paths[side] = filepath.Join(r.Paths[side], name)
 		}
-		result = append(result, Item{Resource: entry, Key: prefix + name, Relative: name})
+		item := Item{Resource: entry, Key: prefix + name, Relative: name}
+		if name == "hooks/hooks.json" {
+			item.Adapter = "hook-config"
+		}
+		result = append(result, item)
 	}
 	return result, nil
 }
