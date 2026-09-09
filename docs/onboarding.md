@@ -37,3 +37,35 @@ Run `agent-bridge audit PROFILE --json` and `agent-bridge plan PROFILE` before
 discovery never chooses a winner. After a successful sync, `watch PROFILE` previews
 changes and `watch PROFILE --apply` applies non-conflicting changes while running.
 There is no background service installed automatically.
+
+## Multiple profiles
+
+Set the same absolute `coordinationDir` in every profile that can write overlapping
+files, or inherit it from a common base profile:
+
+```json
+{
+  "version": 1,
+  "stateDir": "./project-state",
+  "coordinationDir": "/absolute/private/agent-bridge-coordination",
+  "resources": []
+}
+```
+
+Relative coordination paths resolve against their declaring profile, including
+inherited paths. The coordination directory must not overlap profile files,
+resource roots or the profile's state directory. Sync/recovery acquires its common
+lock first, then the profile state lock. Contention returns an error without
+entering the transaction; it does not queue, retry or steal a lock. Read-only
+commands do not create coordination directories or acquire locks.
+
+This is opt-in serialization, not shared baselines, profile discovery or permanent
+resource ownership. All participating profiles must use the same coordination
+directory; unrelated tools and profiles using a different directory are not
+protected. Watchers stop on contention and need restarting after inspection.
+Use one writer profile for each shared resource wherever possible.
+
+After an interrupted process, a `sync.lock` may remain in either directory.
+Inspect both locks and ensure no writer is running before manually removing an
+exact stale lock. Then run recovery. The program never treats PID reuse or lock
+age as permission to delete a lock.

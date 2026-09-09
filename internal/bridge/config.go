@@ -52,9 +52,10 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 }
 
 type Config struct {
-	StateDir    string     `json:"stateDir"`
-	Resources   []Resource `json:"resources"`
-	ConfigFiles []string   `json:"configFiles"`
+	CoordinationDir string     `json:"coordinationDir,omitempty"`
+	StateDir        string     `json:"stateDir"`
+	Resources       []Resource `json:"resources"`
+	ConfigFiles     []string   `json:"configFiles"`
 }
 type resourceInput struct {
 	ID                string            `json:"id"`
@@ -69,11 +70,12 @@ type resourceInput struct {
 	CodexPluginLayout string            `json:"codexPluginLayout,omitempty"`
 }
 type configInput struct {
-	Version   int             `json:"version"`
-	StateDir  string          `json:"stateDir"`
-	Resources []resourceInput `json:"resources"`
-	Extends   string          `json:"extends,omitempty"`
-	Disable   []string        `json:"disable,omitempty"`
+	CoordinationDir string          `json:"coordinationDir,omitempty"`
+	Version         int             `json:"version"`
+	StateDir        string          `json:"stateDir"`
+	Resources       []resourceInput `json:"resources"`
+	Extends         string          `json:"extends,omitempty"`
+	Disable         []string        `json:"disable,omitempty"`
 }
 
 func inside(parent, child string) bool {
@@ -106,6 +108,19 @@ func loadConfig(filename string, audit bool) (Config, error) {
 	c.StateDir = resolve(filepath.Dir(absolute), raw.StateDir)
 	c.ConfigFiles = configFiles
 	destinations := append([]string{c.StateDir}, configFiles...)
+	if raw.CoordinationDir != "" {
+		c.CoordinationDir = raw.CoordinationDir
+		if err := assertSafe(c.CoordinationDir); err != nil {
+			return c, err
+		}
+		for _, other := range destinations {
+			a, b := strings.ToLower(other), strings.ToLower(c.CoordinationDir)
+			if inside(a, b) || inside(b, a) {
+				return c, fmt.Errorf("coordinationDir must not overlap stateDir or config")
+			}
+		}
+		destinations = append(destinations, c.CoordinationDir)
+	}
 	ids := map[string]bool{}
 	for _, r := range raw.Resources {
 		if !safeID.MatchString(r.ID) || ids[r.ID] || strings.Contains(reserved, "|"+r.ID+"|") {
@@ -236,6 +251,12 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 	}
 	files := []string{file}
 	base := filepath.Dir(file)
+	if raw.CoordinationDir != "" {
+		if strings.HasPrefix(raw.CoordinationDir, "~") {
+			return raw, nil, fmt.Errorf("coordinationDir requires an explicit path")
+		}
+		raw.CoordinationDir = resolve(base, raw.CoordinationDir)
+	}
 	merged := []resourceInput{}
 	if raw.Extends != "" {
 		parent, pfiles, err := inherit(resolve(base, raw.Extends), stack, audit)
@@ -243,6 +264,9 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 			return raw, nil, err
 		}
 		merged = parent.Resources
+		if raw.CoordinationDir == "" {
+			raw.CoordinationDir = parent.CoordinationDir
+		}
 		files = append(files, pfiles...)
 	}
 	seen := map[string]bool{}

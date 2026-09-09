@@ -35,13 +35,24 @@ func locked(c Config, fn func() error) (err error) {
 	if err = validateLinks(c); err != nil {
 		return err
 	}
-	if err = assertSafe(c.StateDir); err != nil {
+	if c.CoordinationDir != "" {
+		return directoryLocked(c.CoordinationDir, func() error {
+			return directoryLocked(c.StateDir, fn)
+		})
+	}
+	return directoryLocked(c.StateDir, fn)
+}
+
+// All coordinated profiles acquire the common lock before their state lock.
+// Exclusive lock files fail closed after interruption; no PID-based lock stealing.
+func directoryLocked(dir string, fn func() error) (err error) {
+	if err = assertSafe(dir); err != nil {
 		return err
 	}
-	if err = os.MkdirAll(c.StateDir, 0700); err != nil {
+	if err = os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
-	lock := filepath.Join(c.StateDir, "sync.lock")
+	lock := filepath.Join(dir, "sync.lock")
 	f, err := os.OpenFile(lock, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if os.IsExist(err) {
 		return fmt.Errorf("another sync is active, or a stale sync.lock needs inspection")
