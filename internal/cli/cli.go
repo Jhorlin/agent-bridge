@@ -14,6 +14,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if ctx.Err() != nil {
 		return 0
 	}
+	if len(args) > 0 && args[0] == "service" {
+		return runService(ctx, args[1:], out, errOut)
+	}
 	if len(args) < 2 || len(args) > 3 {
 		return usage(errOut)
 	}
@@ -210,7 +213,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
-	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge discover <root> <--project|--global>")
+	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge discover <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")
 	return 1
 }
 
