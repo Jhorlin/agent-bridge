@@ -28,8 +28,14 @@ type Recovery struct {
 	Transaction string `json:"transaction,omitempty"`
 }
 
-// Options allows deterministic fault injection from isolated tests, never the CLI.
-type Options struct{ BeforeWrite func(int, Operation) error }
+type Options struct {
+	// BeforeWrite allows deterministic fault injection from isolated tests only.
+	BeforeWrite func(int, Operation) error
+	// ExpectedObservation makes watched application conditional on stable inputs.
+	ExpectedObservation string
+}
+
+var ErrObservationChanged = errors.New("inputs changed since the watched observation; retry planning")
 
 func locked(c Config, fn func() error) (err error) {
 	if err = validateLinks(c); err != nil {
@@ -174,6 +180,9 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		result, err := Plan(c)
 		if err != nil {
 			return err
+		}
+		if options.ExpectedObservation != "" && Observation(c, result) != options.ExpectedObservation {
+			return ErrObservationChanged
 		}
 		if result.HasConflicts() {
 			return fmt.Errorf("conflicts block all writes")

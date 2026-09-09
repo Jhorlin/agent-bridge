@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
 	"io"
@@ -56,6 +57,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	}
 	last := ""
 	watchBlocked := false
+	lastObservation := ""
 	for {
 		if ctx.Err() != nil {
 			return 0
@@ -69,6 +71,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		if err != nil {
 			if command == "watch" {
+				lastObservation = ""
 				if !retryWatch(ctx, errOut, &watchBlocked) {
 					if ctx.Err() != nil {
 						return 0
@@ -122,6 +125,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		result, err := bridge.Plan(c)
 		if err != nil {
 			if command == "watch" {
+				lastObservation = ""
 				if !retryWatch(ctx, errOut, &watchBlocked) {
 					if ctx.Err() != nil {
 						return 0
@@ -153,10 +157,22 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			last = string(data)
 		}
 		conflict := result.HasConflicts()
-		if !conflict && (command == "sync" || (command == "watch" && len(args) == 3)) {
-			if _, err = bridge.Apply(c, bridge.Options{}); err != nil {
-				fmt.Fprintln(errOut, err)
-				return 1
+		options := bridge.Options{}
+		apply := command == "sync"
+		if command == "watch" && len(args) == 3 {
+			observation := bridge.Observation(c, result)
+			apply = observation == lastObservation
+			lastObservation = observation
+			options.ExpectedObservation = observation
+		}
+		if !conflict && apply {
+			if _, err = bridge.Apply(c, options); err != nil {
+				if command == "watch" && errors.Is(err, bridge.ErrObservationChanged) {
+					lastObservation = ""
+				} else {
+					fmt.Fprintln(errOut, err)
+					return 1
+				}
 			}
 		}
 		if command != "watch" {

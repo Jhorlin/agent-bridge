@@ -44,6 +44,13 @@ then reports resumption when planning succeeds. Unsupported input and pending
 recovery also remain blocked; retries do not grant consent or perform recovery.
 Transaction errors, including lock contention during apply, still stop the watcher.
 
+Watch application requires two consecutive identical observations of all raw
+inputs and the resolved profile. Read/parse errors reset that stability check.
+After acquiring the write lock, the bridge rejects a changed observation before
+creating a transaction journal or changing native files. This reduces propagation
+of intermediate editor saves; it cannot prove an editor has finished or eliminate
+the documented external-editor check/write race. Explicit `sync` remains immediate.
+
 ## Multiple profiles
 
 Set the same absolute `coordinationDir` in every profile that can write overlapping

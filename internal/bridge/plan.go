@@ -1,6 +1,9 @@
 package bridge
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -28,6 +31,19 @@ type PlanResult struct {
 	Manifest       Manifest
 	ManifestBefore *Snapshot
 }
+
+// Observation identifies all raw inputs and the resolved profile, not just
+// semantic changes or public summaries. It is ephemeral and never logged.
+func Observation(c Config, plan PlanResult) string {
+	// These fixed data types contain only JSON-serializable fields.
+	data, _ := json.Marshal(struct {
+		Config Config
+		Plan   PlanResult
+	}{c, plan})
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
 type Summary struct {
 	ID     string   `json:"id"`
 	File   string   `json:"file,omitempty"`

@@ -28,7 +28,7 @@ go build -o agent-bridge ./cmd/agent-bridge
 ./agent-bridge recover examples/bridge.json
 ```
 
-The example touches only demo files and the ignored `.agent-bridge` directory. Watch mode polls every second; without `--apply` it only reports changes. Stop with Ctrl-C.
+The example touches only demo files and the ignored `.agent-bridge` directory. Watch mode polls every second; without `--apply` it only reports changes. Applying requires two identical consecutive observations of the resolved profile and raw inputs, followed by a recheck under the write lock. This adds at least one polling interval before a change is applied. Stop with Ctrl-C.
 
 Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped. Unreadable or unsupported inputs pause writes and are retried, with redacted pause/resume diagnostics; transaction and output errors stop the watcher. It never automatically recovers a pending transaction. Signals finish the current sync before shutdown.
 
