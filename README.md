@@ -103,6 +103,8 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 
 ## Roadmap / acceptance gates
 
+The [native host acceptance harness](docs/native-testing.md) checks generated MCP configuration and portable package validation with disposable host configuration directories. These checks do not certify model behavior or full host interoperability.
+
 1. Further hardening: filesystem races, power-loss durability, richer metadata preservation, ownership and deletion policy, safe historical restore.
 2. Project discovery and multi-profile coordination; host-level instruction inheritance.
 3. Semantic skill compatibility reports and safe nested-link support (root pins and recursive file syncing are implemented).
