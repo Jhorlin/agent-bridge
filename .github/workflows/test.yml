@@ -3,6 +3,49 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  linux-service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Exercise a real systemd user manager in a disposable account
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_user=ab-fixture
+          if getent passwd "$fixture_user" >/dev/null; then
+            echo "Refusing to reuse an existing account"
+            exit 1
+          fi
+          fixture_root=$(mktemp -d /tmp/agent-bridge-linux.XXXXXX)
+          go build -o "$fixture_root/agent-bridge" ./cmd/agent-bridge
+          go test -race -c -o "$fixture_root/bridge.test" ./internal/bridge
+          mkdir "$fixture_root/.config" "$fixture_root/tmp"
+          sudo useradd --no-create-home --user-group --home-dir "$fixture_root" --shell /bin/sh "$fixture_user"
+          fixture_uid=$(id -u "$fixture_user")
+          cleanup() {
+            sudo loginctl disable-linger "$fixture_user" || true
+            sudo systemctl stop "user@$fixture_uid.service" || true
+            sudo userdel "$fixture_user" || true
+          }
+          trap cleanup EXIT
+          sudo chown -R "$fixture_user:$fixture_user" "$fixture_root"
+          sudo loginctl enable-linger "$fixture_user"
+          sudo systemctl start "user@$fixture_uid.service"
+          sudo test -S "/run/user/$fixture_uid/bus"
+          sudo runuser -u "$fixture_user" -- env \
+            HOME="$fixture_root" \
+            XDG_CONFIG_HOME="$fixture_root/.config" \
+            XDG_RUNTIME_DIR="/run/user/$fixture_uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$fixture_uid/bus" \
+            TMPDIR="$fixture_root/tmp" \
+            AGENT_BRIDGE_SYSTEMD_FIXTURE_ROOT="$fixture_root" \
+            AGENT_BRIDGE_SYSTEMD_LIFECYCLE_TESTS=1 \
+            "$fixture_root/bridge.test" -test.run '^TestNativeSystemdServiceLifecycle$' -test.v -test.timeout 90s
   test:
     strategy:
       matrix:
