@@ -24,6 +24,9 @@ func EnrollReviewed(filename, observation string) error {
 		return fmt.Errorf("enrollment requires an explicit coordinationDir")
 	}
 	return directoryLocked(c.CoordinationDir, func() error {
+		if err := checkEnrollmentPending(c.CoordinationDir); err != nil {
+			return err
+		}
 		profile := c.ConfigFiles[0]
 		review, err := ReviewProfile(profile)
 		if err != nil {

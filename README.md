@@ -131,7 +131,7 @@ Source builds provide `systemd-unit ABSOLUTE_PROFILE ABSOLUTE_BINARY [--apply]`
 to export a Linux user-unit proposal to stdout. It does not install or start a
 service; preview mode is the default. See [Linux unit export](docs/phase-two.md#linux-unit-export)
 for limitations. Source builds also include an experimental owned Linux lifecycle;
-[native user-manager acceptance remains pending](docs/services.md#linux-systemd-user-services-experimental-source-builds).
+[native user-manager lifecycle acceptance passed in isolated Linux CI](docs/services.md#linux-systemd-user-services-experimental-source-builds).
 
 The next phase is tracked in the [eight-workstream acceptance plan](docs/phase-two.md).
 Its [public upstream fixture catalog](internal/bridge/testdata/upstream/README.md)
@@ -146,6 +146,7 @@ coordinator roster during sync/recovery; see [opt-in ownership enforcement](docs
 check between review and application; see [guarding a reviewed sync](docs/phase-two.md#guarding-a-reviewed-sync).
 `enroll-reviewed` registers an existing reviewed profile in its coordinator roster
 without syncing native files; see [reviewed enrollment](docs/phase-two.md#enrolling-an-existing-reviewed-profile).
+For journaled creation and registration together, use [review-enrollment and create-enrolled](docs/enrollment-creation.md).
 `review-resolution` and `resolve-reviewed` support explicit, freshness-checked
 conflict choices; see [resolving conflicts](docs/conflict-resolution.md).
 `history`, `review-history` and `restore-reviewed` select retained portable file

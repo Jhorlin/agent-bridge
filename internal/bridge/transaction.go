@@ -46,6 +46,9 @@ func locked(c Config, fn func() error) (err error) {
 	}
 	if c.CoordinationDir != "" {
 		return directoryLocked(c.CoordinationDir, func() error {
+			if err := checkEnrollmentPending(c.CoordinationDir); err != nil {
+				return err
+			}
 			if err := enforceOwnership(c); err != nil {
 				return err
 			}

@@ -10,14 +10,14 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 
 | # | Workstream | Required acceptance evidence | Current phase-two status |
 |---|---|---|---|
-| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch, selected-profile drafts and reviewed existing-profile roster enrollment implemented; combined profile creation/rollback remains pending |
+| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Discovery, drafts, existing-profile enrollment and journaled creation/registration implemented; candidate consent remains explicit, not automatic |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Bounded conventional hooks and allowlisted MCP added for compatibility layout with native loading tests; agents, commands and package-root relocation remain pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Bounded opt-in host-local agent settings retained with loading tests; skill invocation/dependency mapping remains pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Source builds add prompt/Stop command definitions with native payload/trust tests; broader runtime/policy equivalence pending |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging, rollback and opt-in Codex-local policy retention implemented; formatting preservation and plugin-relative support remain pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Explicit side selection and retained file-version selection with bound review and transaction rollback implemented; rename/delete pending |
-| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight, opt-in coordinator roster and experimental Linux lifecycle implemented; native Linux user-manager acceptance and upgrade tests pending |
+| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Ownership checks and Linux lifecycle/restart passed with a real isolated CI user manager; manager/login restart and automatic upgrade tests remain pending |
 
 Implementation sequence: fixture/evidence foundation, ownership and reviewed
 enrollment, MCP and component contracts, richer definitions/hooks, plugin refresh,
@@ -248,7 +248,9 @@ Offline Linux validation uses `systemd-analyze verify` through the opt-in
 `AGENT_BRIDGE_SYSTEMD_TESTS=1` test. Parser acceptance does **not** establish a
 working login/start/stop/uninstall lifecycle. Automatic installation, receipts,
 ownership-safe removal are implemented in the experimental Linux backend;
-actual user-manager lifecycle acceptance and automatic upgrades remain pending.
+actual user-manager lifecycle acceptance subsequently passed in the isolated
+[Linux CI fixture](services.md#linux-systemd-user-services-experimental-source-builds).
+Automatic upgrades and reboot/login acceptance remain pending.
 The macOS test fixture resolves Go's temporary executable path explicitly;
 production still rejects symlink paths. Quoting follows the
 [upstream systemd service specification](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml).

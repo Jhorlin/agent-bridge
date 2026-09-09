@@ -110,9 +110,18 @@ service stopped: its unit grants infinite graceful stop time so in-flight writes
 can finish. Inspect the manager and pending journals rather than killing/restarting
 blindly. Upgrade by stopping and uninstalling the owned unit, updating the stable
 binary, then reinstalling with reviewed apply consent. In-place automatic upgrade
-and native user-manager lifecycle validation remain pending.
+remains pending.
 
 Linux Docker tests cover the state machine with an injected manager and the
 native systemd parser. They do not prove login/start/stop against a running
-user manager: the unprivileged Docker user-manager probe did not start. This
-implementation is therefore not yet release-accepted for unattended use.
+user manager: the unprivileged Docker user-manager probe did not start.
+
+On 2026-09-09, the isolated `linux-service` GitHub CI job passed
+`TestNativeSystemdServiceLifecycle` against a real systemd user manager in 6.24s.
+It created a disposable account/home on an ephemeral Linux VM, then verified
+preview without writes, apply-mode sync, stop, restart, uninstall and native/state
+data preservation. [Acceptance run](https://github.com/Jhorlin/agent-bridge/actions/runs/34315726344/job/102351418930).
+The bridge did not enable lingering or create accounts; the CI harness did so
+only for its temporary fixture. Reboot/login, manager restart, automatic binary
+upgrade, power loss and every distribution remain outside this evidence. The
+Linux backend remains experimental and has not been added to the published alpha.

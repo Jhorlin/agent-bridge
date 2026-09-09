@@ -26,6 +26,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && (args[0] == "review-enrollment" || args[0] == "create-enrolled" || args[0] == "recover-enrollment") {
+		return runEnrollmentCreation(args, out, errOut)
+	}
 	if len(args) > 0 && (args[0] == "review-resolution" || args[0] == "resolve-reviewed") {
 		return runResolve(args, out, errOut)
 	}
@@ -327,6 +330,9 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 }
 func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge enroll-reviewed <config.json> <observation>")
+	fmt.Fprintln(w, "       agent-bridge review-enrollment <template.json> <absolute-new-profile>")
+	fmt.Fprintln(w, "       agent-bridge create-enrolled <template.json> <absolute-new-profile> <observation>")
+	fmt.Fprintln(w, "       agent-bridge recover-enrollment <absolute-new-profile> <absolute-coordination-dir>")
 	fmt.Fprintln(w, "       agent-bridge review-resolution <config.json> <item-key=side>...")
 	fmt.Fprintln(w, "       agent-bridge resolve-reviewed <config.json> <observation> <item-key=side>...")
 	fmt.Fprintln(w, "       agent-bridge history <config.json>")

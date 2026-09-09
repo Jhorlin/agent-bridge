@@ -47,21 +47,7 @@ func CheckOverlaps(files []string) (OverlapReport, error) {
 		if err != nil {
 			return r, err
 		}
-		claims := []PathClaim{{absolute, "state", c.StateDir}}
-		for _, config := range c.ConfigFiles {
-			claims = append(claims, PathClaim{absolute, "config", config})
-		}
-		if c.CoordinationDir != "" {
-			claims = append(claims, PathClaim{absolute, "coordination", c.CoordinationDir})
-		}
-		for _, resource := range c.Resources {
-			for _, side := range sides[1:] {
-				claims = append(claims, PathClaim{absolute, resource.ID + ":" + side, resource.Paths[side]})
-				if link, ok := resource.Links[side]; ok {
-					claims = append(claims, PathClaim{absolute, resource.ID + ":" + side + ":link", link.Path})
-				}
-			}
-		}
+		claims := configPathClaims(c)
 		for _, claim := range claims {
 			if err := assertSafeClaim(claim); err != nil {
 				return r, err
@@ -72,21 +58,46 @@ func CheckOverlaps(files []string) (OverlapReport, error) {
 	}
 	for i, group := range groups {
 		for _, other := range groups[i+1:] {
-			for _, a := range group {
-				for _, b := range other {
-					// Shared inherited configuration and shared coordination are intentional.
-					if a.Path == b.Path && a.Role == b.Role && (a.Role == "config" || a.Role == "coordination") {
-						continue
-					}
-					x, y := strings.ToLower(a.Path), strings.ToLower(b.Path)
-					if inside(x, y) || inside(y, x) {
-						r.Overlaps = append(r.Overlaps, PathOverlap{a, b})
-					}
-				}
-			}
+			r.Overlaps = append(r.Overlaps, overlappingClaims(group, other)...)
 		}
 	}
 	return r, nil
+}
+
+func configPathClaims(c Config) []PathClaim {
+	profile := c.ConfigFiles[0]
+	claims := []PathClaim{{profile, "state", c.StateDir}}
+	for _, file := range c.ConfigFiles {
+		claims = append(claims, PathClaim{profile, "config", file})
+	}
+	if c.CoordinationDir != "" {
+		claims = append(claims, PathClaim{profile, "coordination", c.CoordinationDir})
+	}
+	for _, r := range c.Resources {
+		for _, side := range sides[1:] {
+			claims = append(claims, PathClaim{profile, r.ID + ":" + side, r.Paths[side]})
+			if link, ok := r.Links[side]; ok {
+				claims = append(claims, PathClaim{profile, r.ID + ":" + side + ":link", link.Path})
+			}
+		}
+	}
+	return claims
+}
+
+func overlappingClaims(first, second []PathClaim) []PathOverlap {
+	result := []PathOverlap{}
+	for _, a := range first {
+		for _, b := range second {
+			if a.Path == b.Path && a.Role == b.Role && (a.Role == "config" || a.Role == "coordination") {
+				continue
+			}
+			x, y := strings.ToLower(a.Path), strings.ToLower(b.Path)
+			if inside(x, y) || inside(y, x) {
+				result = append(result, PathOverlap{a, b})
+			}
+		}
+	}
+	return result
 }
 
 func assertSafeClaim(c PathClaim) error {

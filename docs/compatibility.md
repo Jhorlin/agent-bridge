@@ -47,9 +47,9 @@ Native references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface
 
 | Feature | Bridge today | Limits / intended boundary |
 | --- | --- | --- |
-| Global + project resources | Partial: explicit paths, inheritance, discovery, profile drafts and reviewed roster enrollment | Existing-profile enrollment only; no combined profile-creation transaction or emulation of host precedence. [Phase two](phase-two.md) |
+| Global + project resources | Partial: explicit paths, inheritance, discovery, profile drafts and journaled creation/enrollment | Candidate consent stays explicit; no emulation of host precedence. [Enrollment](enrollment-creation.md) |
 | Existing native root symlinks | Partial: explicit physical-target pins | No link creation, nested/chained links, hardlinks, aliases, or retargeting. [T5](#test-evidence) |
-| Ongoing bidirectional sync | Supported for registered resources: one-second polling; writes opt in; macOS management and experimental Linux lifecycle | Actual Linux user-manager lifecycle acceptance remains pending. [Services](services.md) |
+| Ongoing bidirectional sync | Supported for registered resources: one-second polling; writes opt in; macOS management and experimental Linux lifecycle | Real isolated Linux user-manager lifecycle passed; reboot/login and automatic upgrade remain unverified. [Services](services.md) |
 | Read-only compatibility audit | Partial: per-resource planner checks, selected native field inventory, private diagnostics | Reports review requirements, not behavioral equivalence; no host execution or output compilation. [T8](#test-evidence) |
 | Conflict / drift handling | Baselines and conflict blocking; source builds add reviewed side choices and historical file-version selection | No last-writer-wins; deliberate deletion and renames still need separate design. [Drift workflow](conflict-resolution.md) |
 | Interrupted writes / recovery | Supported: private journals and guarded rollback | Per-file atomic replacement, not globally atomic visibility or proven power-loss durability. Separate state directories coordinate only when using the same explicit `coordinationDir`. [Coordination](onboarding.md#multiple-profiles) |
