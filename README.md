@@ -6,6 +6,9 @@ Experimental, local-first synchronization between Claude Code and Codex configur
 
 ## Run
 
+New setup: use the [global/project onboarding guide](docs/onboarding.md) for
+read-only discovery and creation of an empty profile before enrolling resources.
+
 Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
 ```sh

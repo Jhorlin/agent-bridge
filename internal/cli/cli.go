@@ -10,10 +10,44 @@ import (
 )
 
 func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
+	if ctx.Err() != nil {
+		return 0
+	}
 	if len(args) < 2 || len(args) > 3 {
 		return usage(errOut)
 	}
 	command, filename := args[0], args[1]
+	if command == "init" {
+		if len(args) != 2 {
+			return usage(errOut)
+		}
+		if err := bridge.InitProfile(filename); err != nil {
+			fmt.Fprintln(errOut, "Could not create profile; check path safety, permissions, and whether it already exists.")
+			return 1
+		}
+		if _, err := fmt.Fprintln(out, "Created an empty private profile. Add reviewed resources, then audit and plan before syncing."); err != nil {
+			return 1
+		}
+		return 0
+	}
+	if command == "discover" {
+		if len(args) != 3 || (args[2] != "--global" && args[2] != "--project") {
+			return usage(errOut)
+		}
+		scope := "project"
+		if args[2] == "--global" {
+			scope = "global"
+		}
+		report, err := bridge.Discover(filename, scope)
+		if err != nil {
+			fmt.Fprintln(errOut, "Discovery failed: check root, permissions and unsafe links. No files changed.")
+			return 1
+		}
+		if err := json.NewEncoder(out).Encode(report); err != nil {
+			return 1
+		}
+		return 0
+	}
 	if command != "plan" && command != "sync" && command != "watch" && command != "recover" && command != "config" && command != "audit" {
 		return usage(errOut)
 	}
@@ -115,7 +149,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	}
 }
 func usage(w io.Writer) int {
-	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit> <config.json> [--apply (watch only) | --json (audit only)]")
+	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge discover <root> <--project|--global>")
 	return 1
 }
 
