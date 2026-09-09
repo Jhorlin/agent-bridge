@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pelletier/go-toml/v2/unstable"
@@ -52,8 +53,21 @@ func preserveMCPText(side string, before *Snapshot, desired map[string]any) *Sna
 			}
 			return true
 		}
-		// Arrays and inline objects are not replaced wholesale: doing so could
-		// silently discard comments embedded inside a TOML container.
+		aa, aArray := old.([]any)
+		bb, bArray := next.([]any)
+		if aArray || bArray {
+			if !aArray || !bArray || len(aa) != len(bb) {
+				return false
+			}
+			for index := range aa {
+				if !diff(append(append([]string{}, path...), strconv.Itoa(index)), aa[index], bb[index]) {
+					return false
+				}
+			}
+			return true
+		}
+		// Patch individual scalar leaves, never replace a container wholesale:
+		// comments inside arrays and inline objects must remain in place.
 		switch next.(type) {
 		case string, bool, int64, float64, json.Number:
 		default:
@@ -110,6 +124,31 @@ func preserveMCPText(side string, before *Snapshot, desired map[string]any) *Sna
 		var p unstable.Parser
 		p.Reset(data)
 		var table []string
+		var walk func([]string, *unstable.Node)
+		walk = func(path []string, n *unstable.Node) {
+			switch n.Kind {
+			case unstable.Array:
+				it, index := n.Children(), 0
+				for it.Next() {
+					walk(append(append([]string{}, path...), strconv.Itoa(index)), it.Node())
+					index++
+				}
+			case unstable.InlineTable:
+				it := n.Children()
+				for it.Next() {
+					walk(path, it.Node())
+				}
+			case unstable.KeyValue:
+				keys := append([]string{}, path...)
+				it := n.Key()
+				for it.Next() {
+					keys = append(keys, string(it.Node().Data))
+				}
+				walk(keys, n.Value())
+			default:
+				add(path, int(n.Raw.Offset), int(n.Raw.Offset+n.Raw.Length))
+			}
+		}
 		for p.NextExpression() {
 			n := p.Expression()
 			if n.Kind == unstable.ArrayTable {
@@ -126,10 +165,7 @@ func preserveMCPText(side string, before *Snapshot, desired map[string]any) *Sna
 			if n.Kind == unstable.Table {
 				table = keys
 			} else {
-				v := n.Value()
-				if v.Kind != unstable.Array && v.Kind != unstable.InlineTable {
-					add(append(append([]string{}, table...), keys...), int(v.Raw.Offset), int(v.Raw.Offset+v.Raw.Length))
-				}
+				walk(table, n)
 			}
 		}
 		if p.Error() != nil {
@@ -149,8 +185,9 @@ func preserveMCPText(side string, before *Snapshot, desired map[string]any) *Sna
 				return false
 			}
 			if delim, ok := token.(json.Delim); ok {
+				index := 0
 				for d.More() {
-					var child []string
+					child := append(append([]string{}, path...), strconv.Itoa(index))
 					if delim == '{' {
 						key, err := d.Token()
 						if err != nil {
@@ -161,6 +198,7 @@ func preserveMCPText(side string, before *Snapshot, desired map[string]any) *Sna
 					if !walk(child) {
 						return false
 					}
+					index++
 				}
 				_, err = d.Token()
 				return err == nil
