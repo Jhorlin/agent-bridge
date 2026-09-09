@@ -2,12 +2,13 @@
 
 Status on 2026-09-08: the agreed initial implementation boundary is covered by
 code and tests and is available as public Go source. It remains **experimental**.
-No tagged release or prebuilt release assets have been published. This record is
-not a claim of universal host interoperability or 100% testing.
+The first tagged prerelease is [v0.1.0-alpha.1](https://github.com/Jhorlin/agent-bridge/releases/tag/v0.1.0-alpha.1),
+with standalone macOS/Linux assets. This record is not a claim of universal host
+interoperability or 100% testing.
 
 [Distribution packaging](distribution.md) is implemented separately: four
-platform archives, checksums, version reporting and CI smoke tests. Publication
-still requires a confirmed version, reviewed artifacts and an explicit release step.
+platform archives, checksums, version reporting and CI smoke tests. Each subsequent
+publication requires reviewed artifacts, verified CI and an explicit release step.
 
 ## Implemented boundary
 

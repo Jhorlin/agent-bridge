@@ -1,7 +1,8 @@
 # Building and verifying release archives
 
-No tagged release or public binary assets have been published yet. The repository
-now includes a Go-only packager; it builds archives but never installs a service,
+The experimental [v0.1.0-alpha.1 prerelease](https://github.com/Jhorlin/agent-bridge/releases/tag/v0.1.0-alpha.1)
+provides standalone macOS/Linux archives and checksums. The repository
+includes a Go-only packager; it builds archives but never installs a service,
 changes Claude/Codex settings, creates a tag, or publishes to GitHub.
 
 ## Maintainer packaging
@@ -14,8 +15,7 @@ go vet ./...
 go run ./cmd/package-release -version v0.1.0-alpha.1 -out dist
 ```
 
-The version above is a proposed first prerelease identifier, not an existing
-release. The output directory must not exist; use a different new path for a
+The output directory must not exist; use a different new path for a
 second build. On failure, partial archives remain for inspection. Checksums are
 published locally only after all four archives are successfully created. Packaging
 does not delete existing build outputs or copy local profiles/state/backups.
@@ -47,11 +47,11 @@ not claimed to have run on that machine.
 
 ## User verification and installation
 
-Once reviewed assets are published, obtain the archive matching your OS/CPU and
+Obtain the archive matching your OS/CPU and
 `SHA256SUMS` from that same release. `darwin` means macOS; Apple Silicon uses
 `arm64`, Intel Macs use `amd64`. Linux machines use the matching CPU architecture.
 
-Example for the proposed Apple Silicon prerelease, from a download directory:
+Example for the Apple Silicon prerelease, from a download directory:
 
 ```sh
 shasum -a 256 agent-bridge_v0.1.0-alpha.1_darwin_arm64.tar.gz

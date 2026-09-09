@@ -13,8 +13,10 @@ Requires Go 1.25+ to build. The resulting standalone executable does not require
 
 `./agent-bridge --version` identifies the build (`dev` for ordinary source builds).
 The [distribution guide](docs/distribution.md) covers Go-only cross-platform
-packaging, archive verification and installation. Public binary releases are not
-published yet.
+packaging, archive verification and installation. Download the experimental
+[v0.1.0-alpha.1 prerelease](https://github.com/Jhorlin/agent-bridge/releases/tag/v0.1.0-alpha.1)
+for standalone macOS/Linux binaries and SHA-256 checksums. Start with temporary
+fixtures; this alpha is not recommended for security-sensitive production settings.
 
 ```sh
 go test -race ./...
