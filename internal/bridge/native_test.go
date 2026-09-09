@@ -3,6 +3,7 @@ package bridge
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,12 +44,92 @@ func nativeRun(t *testing.T, f *fixture, binary string, args ...string) string {
 	cmd.Dir = f.dir
 	// Build an allowlisted child environment; never inherit tokens, hooks, auth
 	// helpers, or the user's config. These are actual child configuration roots.
-	cmd.Env = []string{"PATH=/usr/bin:/bin:/usr/sbin:/sbin", "HOME=" + f.path("home"), "CLAUDE_CONFIG_DIR=" + f.path("claude-home"), "CODEX_HOME=" + f.path("codex-home"), "TMPDIR=" + f.path("tmp"), "NO_COLOR=1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"}
+	cmd.Env = nativeEnvironment(f)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("native %s %v failed: %v\n%s", filepath.Base(binary), args, err, output)
 	}
 	return string(output)
+}
+
+func nativeEnvironment(f *fixture) []string {
+	return []string{"PATH=/usr/bin:/bin:/usr/sbin:/sbin", "HOME=" + f.path("home"), "CLAUDE_CONFIG_DIR=" + f.path("claude-home"), "CODEX_HOME=" + f.path("codex-home"), "TMPDIR=" + f.path("tmp"), "NO_COLOR=1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"}
+}
+
+func nativeRPC(t *testing.T, f *fixture, binary, method string, params any) json.RawMessage {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, "app-server", "--stdio")
+	cmd.Dir = f.dir
+	cmd.Env = nativeEnvironment(f)
+	cmd.Stderr = io.Discard
+	input, err := cmd.StdinPipe()
+	must(t, err)
+	output, err := cmd.StdoutPipe()
+	must(t, err)
+	must(t, cmd.Start())
+	defer func() { input.Close(); cmd.Process.Kill(); cmd.Wait() }()
+	encoder := json.NewEncoder(input)
+	decoder := json.NewDecoder(output)
+	must(t, encoder.Encode(map[string]any{"id": 1, "method": "initialize", "params": map[string]any{"clientInfo": map[string]string{"name": "agent_bridge_tests", "version": "0.1.0"}, "capabilities": map[string]bool{"experimentalApi": true}}}))
+	read := func(want int) json.RawMessage {
+		for {
+			var message struct {
+				ID     int             `json:"id"`
+				Result json.RawMessage `json:"result"`
+				Error  json.RawMessage `json:"error"`
+			}
+			must(t, decoder.Decode(&message))
+			if message.ID == want {
+				if len(message.Error) > 0 {
+					t.Fatalf("native RPC error: %s", message.Error)
+				}
+				return message.Result
+			}
+		}
+	}
+	read(1)
+	must(t, encoder.Encode(map[string]any{"method": "initialized", "params": map[string]any{}}))
+	must(t, encoder.Encode(map[string]any{"id": 2, "method": method, "params": params}))
+	return read(2)
+}
+
+func TestNativeCodexSkillAndHookDiscovery(t *testing.T) {
+	f := newFixture(t)
+	tools := nativeTools(t, f)
+	f.raw.Resources = []resourceInput{
+		{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
+		{ID: "hook", Kind: "hook-config", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/settings.json", Codex: "codex-home/hooks.json"},
+	}
+	f.load()
+	f.write("claude-home/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: Harmless bridge discovery fixture.\n---\nExplain that this is a test.\n")
+	f.write("claude-home/settings.json", `{"hooks":{"SessionStart":[{"matcher":"^startup$","hooks":[{"type":"command","command":"/usr/bin/true","timeout":10}]}]}}`)
+	f.apply()
+	params := map[string]any{"cwds": []string{f.dir}, "forceReload": true}
+	skills := nativeRPC(t, f, tools["codex"], "skills/list", params)
+	if !strings.Contains(string(skills), `"name":"bridge-demo"`) {
+		t.Fatalf("skill not discovered: %s", skills)
+	}
+	hooks := nativeRPC(t, f, tools["codex"], "hooks/list", map[string]any{"cwds": []string{f.dir}})
+	if !strings.Contains(string(hooks), "/usr/bin/true") || !strings.Contains(string(hooks), `"eventName":"sessionStart"`) || !strings.Contains(string(hooks), `"trustStatus":"untrusted"`) {
+		t.Fatalf("hook not discovered: %s", hooks)
+	}
+	t.Logf("Codex discovered generated skill and hook; no hook trust or execution was requested")
+}
+
+func TestNativeClaudeAgentValidation(t *testing.T) {
+	f := agentFixture(t)
+	tools := nativeTools(t, f)
+	f.raw.Resources[0].Claude = "claude-home/agents/reviewer.md"
+	f.raw.Resources[0].Codex = "codex-home/agents/reviewer.toml"
+	f.load()
+	f.write("claude-home/agents/reviewer.md", f.read("claude-source"))
+	f.apply()
+	output := nativeRun(t, f, tools["claude"], "plugin", "validate", f.path("claude-home/agents"), "--json")
+	if !json.Valid([]byte(output)) {
+		t.Fatal("agent validator did not return JSON")
+	}
 }
 
 func TestNativeMCPConfigurationAcceptance(t *testing.T) {

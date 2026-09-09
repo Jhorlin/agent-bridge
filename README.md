@@ -2,11 +2,11 @@
 
 Experimental, local-first synchronization between Claude Code and Codex configuration.
 
-**Status: v0.4 experimental Go synchronizer with portable files, skill packages, bounded MCP/plugin translation, explicit profile inheritance, and pinned native symlinks. This is not full Claude/Codex feature parity.** No global installation, live configuration changes, or background service registration happens during setup.
+**Status: experimental Go synchronizer with shared instruction sections, portable skills, bounded MCP/plugin translation, minimal agents, startup-hook configuration, explicit profile inheritance, and pinned native symlinks. This is not full Claude/Codex feature parity.** No global installation, live configuration changes, or background service registration happens during setup.
 
 ## Run
 
-Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML parsing uses the pinned pure-Go `github.com/pelletier/go-toml/v2` dependency. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
+Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
 ```sh
 go test -race ./...
@@ -70,6 +70,9 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 
 | Capability | Supported now | Explicit limits |
 | --- | --- | --- |
+| Shared instructions | Common marker-delimited sections in CLAUDE.md ↔ AGENTS.md, preserving host-only text | No semantic translation of instructions, imports or precedence |
+| Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML | Models, permissions, tools and other settings rejected; no behavioral equivalence |
+| Startup hooks | Explicitly timed SessionStart command definitions; Claude settings JSON ↔ Codex hooks JSON | Startup only, absolute executable paths; no trust grants, script execution, tool events or policy translation |
 | MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
 | Plugins | Portable skill-package directories, common manifest metadata, supporting files; Claude compatibility manifest ↔ Codex compatibility or portable manifest | No installation/cache refresh, OAuth, marketplace management, hooks, agents, bundled MCP, app mappings, custom component paths, or host-specific fields |
 | Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |
@@ -78,6 +81,8 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 MCP and plugin entries are compared semantically; formatting-only differences do not cause sync loops. Compiled outputs are parsed back and checked against the canonical model before writing. All adapters use the same guarded transaction journal and conflict blocking. MCP translation preserves unrelated setting **values**, but rewrites formatting and can remove TOML comments; each MCP resource requires `allowReformat: true`.
 
 Try `./agent-bridge plan examples/mcp.bridge.json`, then `sync` with the same file. It generates an isolated example TOML config under `examples/sandbox`; it does not launch a server, authenticate, or contact the example endpoint.
+
+See [shared instructions, agents and startup hooks](docs/portable-adapters.md) for consent requirements, supported fields and sandbox examples.
 
 ## Recovery
 
@@ -98,7 +103,7 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 - Multi-file changes are recoverable but **not atomically visible**. External readers may observe partial progress. Process-interruption recovery is tested; full power-loss durability and adversarial filesystem races are not guaranteed.
 - New files use private read/write permissions plus source executable bits. Existing target read/write permissions are preserved. ACLs, ownership, extended attributes, timestamps, and directory metadata are not mirrored.
 - State/backups can contain sensitive content. Keep them local, outside public Git, and do not configure credentials as portable files.
-- OAuth/session tokens, hook behavior, permission policy, and semantic instruction translation are not implemented. Unsupported fields/components fail explicitly. Plugin packages are authored, not installed or enabled.
+- OAuth/session tokens, permission policy, arbitrary hook behavior, and semantic instruction translation are not implemented. Startup-hook configuration and minimal agent definitions are supported only within the documented subset. Unsupported fields/components fail explicitly. Plugin packages are authored, not installed or enabled.
 - Resource paths cannot overlap (conservative case-insensitive comparison on every OS). Changing the paths/kind/scope of an already managed ID requires new explicit adoption. Config files and state directories must be trusted and kept private.
 
 ## Roadmap / acceptance gates

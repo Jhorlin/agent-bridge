@@ -53,12 +53,16 @@ func Audit(c Config) AuditReport {
 	for _, r := range resources {
 		row := AuditResource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Direction: "bidirectional", Status: "review-required", Checks: []AuditCheck{}, Actions: []string{"Run plan before sync; audit is not a write authorization or live host certification."}}
 		switch r.Kind {
-		case "portable-file", "skill-directory":
+		case "portable-file", "skill-directory", "instruction-file":
 			row.Actions = append(row.Actions, "Review instruction, metadata, script and tool compatibility in both hosts; byte copying does not validate behavior.")
 		case "mcp-config":
 			row.Actions = append(row.Actions, "Authenticate and verify selected tools separately in each host; review formatting loss and host-local policies.")
 		case "plugin-directory":
 			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; bundled hooks, MCP and agents are not bridged.")
+		case "agent-file":
+			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")
+		case "hook-config":
+			row.Actions = append(row.Actions, "Only startup SessionStart command configuration is mapped. Review and trust hooks in each host; executable behavior is not certified or run by this bridge.")
 		}
 		// Reuse the actual planner so audit cannot call a rejected resource compatible.
 		// Per-resource plans collect independent failures without writing a lock or state.

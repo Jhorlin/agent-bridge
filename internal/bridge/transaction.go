@@ -61,7 +61,7 @@ func allowedTarget(c Config, file string) bool {
 	}
 	for _, r := range c.Resources {
 		for _, root := range r.Paths {
-			if (r.Kind == "portable-file" || r.Kind == "mcp-config") && root == file {
+			if (r.Kind == "portable-file" || r.Kind == "mcp-config" || r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config") && root == file {
 				return true
 			}
 			if (r.Kind == "skill-directory" || r.Kind == "plugin-directory") && file != root && inside(root, file) {
@@ -182,6 +182,12 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				before := item.Values[side]
 				content := item.Content
 				switch item.Adapter {
+				case "instruction-file":
+					content, err = renderInstructions(side, item.Content, before)
+				case "agent-file":
+					content, err = renderAgent(side, item.Content)
+				case "hook-config":
+					content, err = renderHooks(side, item.Content, before)
 				case "mcp":
 					content, err = renderMCP(item.Resource, side, item.Content, before)
 				case "plugin-manifest":
@@ -192,6 +198,12 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 				var roundTrip *Snapshot
 				switch item.Adapter {
+				case "instruction-file":
+					roundTrip, err = normalizeInstructions(side, content)
+				case "agent-file":
+					roundTrip, err = normalizeAgent(side, content)
+				case "hook-config":
+					roundTrip, err = normalizeHooks(side, content)
 				case "mcp":
 					roundTrip, err = normalizeMCP(item.Resource, side, content)
 				case "plugin-manifest":

@@ -72,6 +72,9 @@ func readManifest(c Config) (Manifest, *Snapshot, error) {
 	return m, before, nil
 }
 func expand(r Resource, m Manifest) ([]Item, error) {
+	if r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config" {
+		return []Item{{Resource: r, Key: r.ID, Adapter: r.Kind}}, nil
+	}
 	if r.Kind == "mcp-config" {
 		return []Item{{Resource: r, Key: r.ID, Adapter: "mcp"}}, nil
 	}
@@ -164,6 +167,12 @@ func Plan(c Config) (PlanResult, error) {
 				item.Values[side] = value
 				semantic[side] = value
 				switch item.Adapter {
+				case "instruction-file":
+					semantic[side], err = normalizeInstructions(side, value)
+				case "agent-file":
+					semantic[side], err = normalizeAgent(side, value)
+				case "hook-config":
+					semantic[side], err = normalizeHooks(side, value)
 				case "mcp":
 					semantic[side], err = normalizeMCP(item.Resource, side, value)
 				case "plugin-manifest":

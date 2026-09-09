@@ -1,6 +1,6 @@
 # Claude Code ↔ Codex compatibility
 
-Reviewed: 2026-09-08. Implementation baseline: `ee72b31` (Go). This is an initial feature-family audit of local configuration and extensibility, not an exhaustive inventory of every UI feature, flag, or enterprise policy. No host-version pair has yet been certified in live integration tests.
+Reviewed: 2026-09-08; updated with the portable-adapter milestone. This is a feature-family audit of local configuration and extensibility, not an exhaustive inventory of every UI feature, flag, or enterprise policy. [Native acceptance tests](native-testing.md) cover specific discovery/validation operations in Claude Code 2.1.266 and Codex CLI 0.153.4, not complete interoperability or model behavior.
 
 ## Reading the matrix
 
@@ -16,12 +16,12 @@ Reviewed: 2026-09-08. Implementation baseline: `ee72b31` (Go). This is an initia
 
 | Feature | Native surfaces | Bridge today | Missing contract / next decision |
 | --- | --- | --- | --- |
-| Shared instructions | Claude `CLAUDE.md`; Codex `AGENTS.md` | Partial: explicit byte-for-byte file sync | Only manually reviewed common text; no tool-name or behavioral translation. [T1](#test-evidence) |
+| Shared instructions | Claude `CLAUDE.md`; Codex `AGENTS.md` | Partial: explicit file sync or marker-delimited common sections preserving native overlays | Only manually reviewed common text; no tool-name or behavioral translation. [Portable adapters](portable-adapters.md) |
 | Imports, scoped rules, precedence | Claude imports and `.claude/rules`; Codex hierarchical guidance | Candidate | Preserve host-only sections and scope; do not flatten conditional rules into unconditional instructions. |
 | Skill contents | Both use `SKILL.md` and supporting resources | Partial: files, binary assets, executable bits, independent file edits | One explicit skill root; `portable: true` is human acknowledgment, not automated certification. [T2](#test-evidence) |
 | Skill metadata and invocation | Claude frontmatter/invocation controls; Codex skill metadata and `agents/openai.yaml` | Candidate | Model, tool, isolation, invocation, and dependency semantics need a field-level map; copying bytes is insufficient. |
 | Custom commands | Claude command/skill conventions; Codex skill invocation | Candidate | No dedicated adapter; preserve namespacing and argument behavior, reject unsupported execution syntax. |
-| Custom subagent definitions | Claude agent Markdown/frontmatter; Codex agent TOML | Candidate | Common name, description, and instruction body are plausible; model, tools, permissions, inheritance, and lifecycle need explicit host-specific treatment. |
+| Custom subagent definitions | Claude agent Markdown/frontmatter; Codex agent TOML | Partial: name, description and instruction body | Models, tools, permissions and other fields are rejected; no execution equivalence. [Portable adapters](portable-adapters.md) |
 | Running agents / orchestration | Host-created workers and execution contexts | Host-managed | Definition translation would not transfer live workers, messages, task state, or model behavior. |
 
 Native references: [Claude instruction loading](https://code.claude.com/docs/en/memory), [Claude skills](https://code.claude.com/docs/en/skills), [Claude agents](https://code.claude.com/docs/en/sub-agents), [Codex customization](https://learn.chatgpt.com/docs/customization/overview), [Codex skills](https://learn.chatgpt.com/docs/build-skills), [Codex agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
@@ -37,7 +37,7 @@ Native references: [Claude instruction loading](https://code.claude.com/docs/en/
 | MCP formatting | Partial: semantic comparison and unrelated value preservation | Writes can reformat JSON/TOML and remove TOML comments; explicit `allowReformat` required. [T3](#test-evidence) |
 | Plugin identity + portable skills | Partial: common metadata, portable skill assets, compatibility/portable Codex layouts | Authoring directories only; not a general plugin converter. [T4](#test-evidence) |
 | Bundled MCP | Candidate: currently rejected in plugin packages | A plugin-relative path/root and transport contract is required; standalone MCP support does not imply bundled MCP support. |
-| Hooks | Candidate: currently rejected in plugin packages | Match event timing, input/output, failure behavior and permissions; sharing a script alone is not equivalent behavior. |
+| Hooks | Partial: standalone startup-only SessionStart command configuration; still rejected in plugin packages | Explicit timeout and absolute executable; no script execution, trust grants or behavioral equivalence. [Portable adapters](portable-adapters.md) |
 | Bundled agents, commands, UI/app mappings and other components | Host-managed pending component-specific review | No silent dropping of components; unknown fields/layouts fail. [T4](#test-evidence) |
 | Marketplace install / update / enable / trust / cache | Host-managed | No installation or refresh side effects. Synced authoring files may not affect an already installed copy. [T4](#test-evidence) |
 
@@ -77,10 +77,10 @@ These are representative existing tests, not newly added coverage. All run again
 
 ## Implementation order and acceptance gates
 
-The audit foundation below is implemented; the remaining items are proposed work, not new support claims.
+The audit and bounded instruction/agent/startup-hook adapters are implemented. The [native harness](native-testing.md) verifies selected host operations. The remaining acceptance gates below are still required before expanding their support claims.
 
 1. **Read-only compatibility audit — foundation implemented.** Go `audit CONFIG [--json]` reports resource ID, adapter, direction, recognized/known unsupported fields, redacted unknown-key counts and host-local actions. All four adapters reuse planner checks; tests cover deterministic output, no filesystem writes, conflicts, pending state, unsafe links, malformed MCP, unsupported plugin components, profile rejection and diagnostic privacy. Native field inventory currently covers selected MCP server keys and plugin manifest top-level keys; nested/component failures can remain generic. It does not parse skill behavior or compile outputs, and no live host verification is claimed. See [audit details](adapters.md#compatibility-audit). Initial scope is registered resources, not scanning the user's home.
-2. **Instruction and skill overlays.** Separate shared content from native-only metadata/settings. Define ownership and reverse-edit behavior before generation. Acceptance: edits from each side round-trip, host-only data is preserved, ambiguous edits conflict, imports/scope changes never silently widen instructions. Start with plain common instruction text and a small documented metadata allowlist.
+2. **Instruction overlays implemented; skill metadata remains.** Marker-delimited common sections preserve native prefixes/suffixes and support reverse edits and conflicts. Semantic skill metadata translation still needs a small field allowlist and host verification.
 3. **Pinned-version host integration harness.** Use disposable homes/projects and exact Claude/Codex versions; verify supported isolation flags before launch. Record OS, versions, fixture hashes and outcomes. Begin with host discovery of a harmless skill and a local dummy MCP tool. No production credentials or live home access; any authenticated/model-backed run requires separate opt-in and cost awareness. Missing host binaries/access are reported as skipped, not passed.
 4. **Broader MCP and bundled MCP.** Preserve host-local policies and formatting, then add plugin root/path handling and per-server reconciliation. Acceptance: unrelated edits/comments survive, independent server edits merge, restrictive settings cannot be weakened, and each claimed host-version pair loads the generated configuration.
 5. **Minimal custom-agent mapping.** Consider name, description and instruction body first; keep models, tools and permissions host-local. Acceptance: both hosts discover the generated agent and unsupported settings fail visibly. No claim of equivalent execution or agent orchestration.

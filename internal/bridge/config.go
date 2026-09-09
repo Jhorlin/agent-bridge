@@ -112,10 +112,10 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			return c, fmt.Errorf("resource IDs must be unique and path-safe")
 		}
 		ids[r.ID] = true
-		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" {
+		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" && r.Kind != "instruction-file" && r.Kind != "agent-file" && r.Kind != "hook-config" {
 			return c, fmt.Errorf("unsupported adapter: %s", r.Kind)
 		}
-		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory") && !r.Portable {
+		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory" || r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config") && !r.Portable {
 			return c, fmt.Errorf("%s requires portable: true after reviewing tool compatibility", r.Kind)
 		}
 		if r.Scope != "global" && r.Scope != "project" {
@@ -140,6 +140,11 @@ func loadConfig(filename string, audit bool) (Config, error) {
 				seen[name] = true
 			}
 			res.Servers = r.Servers
+			res.AllowReformat = true
+		} else if r.Kind == "agent-file" || r.Kind == "hook-config" {
+			if !r.AllowReformat || len(r.Servers) > 0 {
+				return c, fmt.Errorf("agent and hook adapters require allowReformat and do not accept servers")
+			}
 			res.AllowReformat = true
 		} else if len(r.Servers) > 0 || r.AllowReformat {
 			return c, fmt.Errorf("MCP options require mcp-config")
