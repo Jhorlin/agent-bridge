@@ -26,6 +26,7 @@ type FileChangeReview struct {
 }
 type fileChangeJournal struct {
 	Version    int         `json:"version"`
+	Restore    bool        `json:"restore,omitempty"`
 	Change     FileChange  `json:"change"`
 	Resource   Resource    `json:"resource"`
 	Operations []Operation `json:"operations"`
@@ -152,6 +153,12 @@ func ApplyFileChange(filename, observation string, change FileChange) (Recovery,
 	return applyFileChange(filename, observation, change, nil)
 }
 func applyFileChange(filename, observation string, change FileChange, beforeWrite func(int, Operation) error) (Recovery, error) {
+	return applyReviewedFileChange(filename, observation, func(c Config) (fileChangeJournal, string, error) {
+		return prepareFileChange(c, change)
+	}, beforeWrite)
+}
+
+func applyReviewedFileChange(filename, observation string, prepare func(Config) (fileChangeJournal, string, error), beforeWrite func(int, Operation) error) (Recovery, error) {
 	result := Recovery{}
 	if !digestPattern.MatchString(observation) {
 		return result, fmt.Errorf("reviewed observation required")
@@ -165,7 +172,7 @@ func applyFileChange(filename, observation string, change FileChange, beforeWrit
 		if err != nil || !reflect.DeepEqual(c, current) {
 			return ErrObservationChanged
 		}
-		journal, digest, err := prepareFileChange(c, change)
+		journal, digest, err := prepare(c)
 		if err != nil {
 			return err
 		}
@@ -228,9 +235,9 @@ func applyFileChange(filename, observation string, change FileChange, beforeWrit
 	return result, err
 }
 
-func rollbackFileChange(c Config, j fileChangeJournal) error {
+func validateFileChangeJournal(c Config, j fileChangeJournal) error {
 	r, relative, err := fileChangeResource(c, j.Change)
-	if err != nil || j.Version != 1 || !reflect.DeepEqual(r, j.Resource) {
+	if err != nil || j.Version != 1 || !reflect.DeepEqual(r, j.Resource) || (j.Restore && j.Change.Rename != "") {
 		return fmt.Errorf("file-change journal identity is invalid")
 	}
 	expected := []string{}
@@ -250,15 +257,26 @@ func rollbackFileChange(c Config, j fileChangeJournal) error {
 		return fmt.Errorf("invalid file-change manifest")
 	}
 	digest, tracked := beforeManifest.Files[j.Change.Key]
-	if !tracked || !digestPattern.MatchString(digest) {
-		return fmt.Errorf("file-change baseline missing")
-	}
-	delete(beforeManifest.Files, j.Change.Key)
-	if j.Change.Rename != "" {
-		if _, exists := beforeManifest.Files[r.ID+"/"+j.Change.Rename]; exists {
-			return fmt.Errorf("rename baseline already exists")
+	if j.Restore {
+		if tracked {
+			return fmt.Errorf("restoration baseline already exists")
 		}
-		beforeManifest.Files[r.ID+"/"+j.Change.Rename] = digest
+		digest = afterManifest.Files[j.Change.Key]
+		if !digestPattern.MatchString(digest) {
+			return fmt.Errorf("restoration baseline missing")
+		}
+		beforeManifest.Files[j.Change.Key] = digest
+	} else {
+		if !tracked || !digestPattern.MatchString(digest) {
+			return fmt.Errorf("file-change baseline missing")
+		}
+		delete(beforeManifest.Files, j.Change.Key)
+		if j.Change.Rename != "" {
+			if _, exists := beforeManifest.Files[r.ID+"/"+j.Change.Rename]; exists {
+				return fmt.Errorf("rename baseline already exists")
+			}
+			beforeManifest.Files[r.ID+"/"+j.Change.Rename] = digest
+		}
 	}
 	if !reflect.DeepEqual(beforeManifest, afterManifest) {
 		return fmt.Errorf("file-change journal changes unrelated baseline data")
@@ -268,12 +286,17 @@ func rollbackFileChange(c Config, j fileChangeJournal) error {
 			return fmt.Errorf("invalid file-change operation")
 		}
 		isRename := j.Change.Rename != "" && index < len(expected)-1 && index%2 == 0
-		if !isRename && j.Created[index] {
+		isRestore := j.Restore && index < len(expected)-1
+		if !isRename && !isRestore && j.Created[index] {
 			return fmt.Errorf("invalid file-change ownership receipt")
 		}
 		if index == len(expected)-1 {
 			if op.Before == nil || op.After == nil {
 				return fmt.Errorf("invalid manifest snapshots")
+			}
+		} else if isRestore {
+			if op.Before != nil || op.After == nil || fingerprint(op.After) != digest {
+				return fmt.Errorf("invalid restoration snapshots")
 			}
 		} else if isRename {
 			if op.Before != nil || op.After == nil || !equal(op.After, j.Operations[index+1].Before) {
@@ -284,11 +307,20 @@ func rollbackFileChange(c Config, j fileChangeJournal) error {
 		} else if fingerprint(op.Before) != digest {
 			return fmt.Errorf("file-change snapshot differs from its baseline")
 		}
+	}
+	return nil
+}
+
+func rollbackFileChange(c Config, j fileChangeJournal) error {
+	if err := validateFileChangeJournal(c, j); err != nil {
+		return err
+	}
+	for index, op := range j.Operations {
 		current, err := snapshot(op.File)
 		if err != nil {
 			return err
 		}
-		if isRename && !j.Created[index] && current != nil {
+		if op.Before == nil && !j.Created[index] && current != nil {
 			return fmt.Errorf("ambiguous rename creation ownership requires manual inspection")
 		}
 		if !equal(current, op.Before) && !equal(current, op.After) {

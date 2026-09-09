@@ -12,7 +12,22 @@ import (
 func runFileChange(args []string, out, errOut io.Writer) int {
 	var result any
 	var err error
-	if args[0] == "recover-file-change" {
+	if args[0] == "file-change-history" {
+		if len(args) != 2 {
+			return usage(errOut)
+		}
+		result, err = bridge.FileChangeHistory(args[1])
+	} else if args[0] == "review-file-change-undo" {
+		if len(args) != 3 {
+			return usage(errOut)
+		}
+		result, err = bridge.ReviewFileChangeUndo(args[1], args[2])
+	} else if args[0] == "apply-file-change-undo" {
+		if len(args) != 4 {
+			return usage(errOut)
+		}
+		result, err = bridge.ApplyFileChangeUndo(args[1], args[2], args[3])
+	} else if args[0] == "recover-file-change" {
 		if len(args) != 2 {
 			return usage(errOut)
 		}

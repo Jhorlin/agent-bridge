@@ -65,11 +65,48 @@ func TestFileChangeCLI(t *testing.T) {
 	if code := run("apply-file-change", profile, review.Observation, "demo/references/renamed.txt", "--delete"); code != 0 {
 		t.Fatal(code, &errOut)
 	}
+	var deleted bridge.Recovery
+	if err := json.Unmarshal(out.Bytes(), &deleted); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := os.Stat(filepath.Join(dir, "codex-skill/references/renamed.txt")); !os.IsNotExist(err) {
 		t.Fatal("file not deleted", err)
 	}
 	if code := run("recover-file-change", profile); code != 0 {
 		t.Fatal(code, &errOut)
+	}
+	if code := run("file-change-history", profile); code != 0 {
+		t.Fatal(code, &errOut)
+	}
+	if strings.Contains(out.String(), "PRIVATE-FIXTURE-CONTENT") {
+		t.Fatal("history leaked content")
+	}
+	if code := run("review-file-change-undo", profile, deleted.Transaction); code != 0 {
+		t.Fatal(code, &errOut)
+	}
+	if strings.Contains(out.String(), "PRIVATE-FIXTURE-CONTENT") {
+		t.Fatal("undo review leaked content")
+	}
+	if err := json.Unmarshal(out.Bytes(), &review); err != nil {
+		t.Fatal(err)
+	}
+	if code := run("apply-file-change-undo", profile, strings.Repeat("0", 64), deleted.Transaction); code != 2 {
+		t.Fatal(code, &errOut)
+	}
+	if code := run("apply-file-change-undo", profile, review.Observation, deleted.Transaction); code != 0 {
+		t.Fatal(code, &errOut)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "codex-skill/references/renamed.txt"))
+	if err != nil || string(data) != "PRIVATE-FIXTURE-CONTENT" {
+		t.Fatal("undo did not restore file", err)
+	}
+	if code := run("sync", profile); code != 0 {
+		t.Fatal(code, &errOut)
+	}
+	for _, args := range [][]string{{"file-change-history"}, {"review-file-change-undo", profile}, {"apply-file-change-undo", profile, review.Observation}, {"file-change-history", profile, "extra"}} {
+		if code := run(args...); code != 1 {
+			t.Fatal(code, args)
+		}
 	}
 	for _, args := range [][]string{{"review-file-change"}, {"apply-file-change", profile}, {"recover-file-change", profile, "extra"}, {"review-file-change", profile, "demo/references/x", "--rename", ""}, {"review-file-change", profile, "demo/references/x", "--delete", "extra"}} {
 		if code := run(args...); code != 1 {

@@ -29,7 +29,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "compare-plugin-copy" {
 		return runPluginCopy(args, out, errOut)
 	}
-	if len(args) > 0 && (args[0] == "review-file-change" || args[0] == "apply-file-change" || args[0] == "recover-file-change") {
+	if len(args) > 0 && (args[0] == "review-file-change" || args[0] == "apply-file-change" || args[0] == "recover-file-change" || args[0] == "file-change-history" || args[0] == "review-file-change-undo" || args[0] == "apply-file-change-undo") {
 		return runFileChange(args, out, errOut)
 	}
 	if len(args) > 0 && (args[0] == "review-enrollment" || args[0] == "create-enrolled" || args[0] == "recover-enrollment") {
@@ -346,6 +346,9 @@ func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge review-file-change <config.json> <item-key> <--delete|--rename relative-path>")
 	fmt.Fprintln(w, "       agent-bridge apply-file-change <config.json> <observation> <item-key> <--delete|--rename relative-path>")
 	fmt.Fprintln(w, "       agent-bridge recover-file-change <config.json>")
+	fmt.Fprintln(w, "       agent-bridge file-change-history <config.json>")
+	fmt.Fprintln(w, "       agent-bridge review-file-change-undo <config.json> <transaction>")
+	fmt.Fprintln(w, "       agent-bridge apply-file-change-undo <config.json> <observation> <transaction>")
 	fmt.Fprintln(w, "       agent-bridge compare-plugin-copy <config.json> <plugin-id> <claude|codex> <absolute-copy-root>")
 	fmt.Fprintln(w, "       agent-bridge restore-reviewed <config.json> <observation> <transaction> <item-key> <side> <before|after>")
 	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
