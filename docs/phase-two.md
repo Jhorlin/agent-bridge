@@ -90,6 +90,37 @@ Run `audit`, `plan`, and `check-overlap` before enabling any writes. Never turn 
 all consent flags just to make validation pass. Transactional enrollment with
 stale-content refusal, roster updates and rollback remains unfinished.
 
+## Guarding a reviewed sync
+
+After manually preparing a new private configuration from the draft, run:
+
+```sh
+agent-bridge review-profile /absolute/path/profile.json
+agent-bridge sync-reviewed /absolute/path/profile.json OBSERVATION_FROM_REVIEW
+```
+
+`review-profile` strictly validates the profile and plans without writing. A
+conflicting/unsupported plan returns exit 1 without an observation. Successful
+JSON includes an `observation` SHA-256 digest and summaries, not file contents.
+Review the actual private content and the proposed writes before proceeding.
+
+`sync-reviewed` is an explicit write command. It replans under the existing locks
+and requires the digest to match the effective configuration, planned raw managed
+inputs and baseline manifest. Stale input returns exit 2 before transactional
+target writes; missing/invalid digests never fall back to unconditional sync.
+Lock/state directories may still be created during an unsuccessful attempt.
+Existing ownership checks, per-write comparisons, journals and rollback apply.
+Other errors return exit 1; inspect pending recovery state before retrying. An
+output failure after successful sync does not undo that sync.
+
+The digest is a freshness check, not a secret, signature, proof of human approval,
+or host trust grant. It does not pin comments/formatting in the profile, runtime
+host behavior, omitted files or external changes after checking. Roster policy
+is checked live, not included in the digest. Review output can expose resource
+IDs and relative file names, so keep it private. These commands operate on an
+existing reviewed profile: creating it and updating rosters atomically, automatic
+enrollment and historical rollback selection remain unfinished.
+
 ## Cross-profile overlap preflight
 
 `agent-bridge check-overlap profile.json other.json [more.json ...]` strictly

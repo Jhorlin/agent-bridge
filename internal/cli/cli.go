@@ -26,6 +26,38 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && (args[0] == "review-profile" || args[0] == "sync-reviewed") {
+		if args[0] == "review-profile" {
+			if len(args) != 2 {
+				return usage(errOut)
+			}
+			r, err := bridge.ReviewProfile(args[1])
+			if err != nil {
+				fmt.Fprintln(errOut, "Review failed: check profile safety, adapter support and conflicts. No files changed.")
+				return 1
+			}
+			if err := json.NewEncoder(out).Encode(r); err != nil {
+				return 1
+			}
+			return 0
+		}
+		if len(args) != 3 {
+			return usage(errOut)
+		}
+		r, err := bridge.SyncReviewed(args[1], args[2])
+		if err != nil {
+			if errors.Is(err, bridge.ErrObservationChanged) {
+				fmt.Fprintln(errOut, "Reviewed inputs changed; review again before syncing.")
+				return 2
+			}
+			fmt.Fprintln(errOut, "Reviewed sync failed. Inspect the profile, ownership roster and pending recovery state privately.")
+			return 1
+		}
+		if err := json.NewEncoder(out).Encode(r); err != nil {
+			return 1
+		}
+		return 0
+	}
 	if len(args) > 0 && args[0] == "draft-profile" {
 		if len(args) < 4 || (args[2] != "--global" && args[2] != "--project") {
 			return usage(errOut)
@@ -257,6 +289,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")
 	fmt.Fprintln(w, "       agent-bridge draft-profile <root> <--project|--global> <candidate-id> [more IDs...]")
 	fmt.Fprintln(w, "       agent-bridge check-overlap <profile.json> <other.json> [more profiles...]")
 	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge <discover|watch-discovery> <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")

@@ -131,6 +131,8 @@ for their read-only behavior, usage and limits. None enrolls resources or
 enforces persistent cross-profile ownership.
 For cooperating profiles, source builds can enforce an explicitly reviewed
 coordinator roster during sync/recovery; see [opt-in ownership enforcement](docs/phase-two.md#opt-in-ownership-enforcement).
+`review-profile` and the explicit write command `sync-reviewed` add a freshness
+check between review and application; see [guarding a reviewed sync](docs/phase-two.md#guarding-a-reviewed-sync).
 
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,
