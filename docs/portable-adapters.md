@@ -22,6 +22,11 @@ This is explicit content ownership, not translation of imports, scoped rules, to
 
 ## Minimal custom agents
 
+Agent files and decoded metadata must be valid UTF-8. Invalid byte sequences,
+including invalid text produced by YAML binary scalars, are rejected rather than
+silently replaced during translation. A fuzz-generated case is retained in the
+regression corpus.
+
 Use `kind: "agent-file"` with a Claude agent `.md` path and a Codex agent `.toml` path. The portable fields are name, description and instruction body. YAML parsing uses pinned pure-Go `gopkg.in/yaml.v3`; there is no additional application runtime.
 
 Claude source:

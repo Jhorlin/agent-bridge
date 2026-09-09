@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
@@ -88,6 +89,9 @@ func normalizeAgent(side string, raw *Snapshot) (*Snapshot, error) {
 	if err != nil {
 		return nil, err
 	}
+	if !utf8.Valid(data) {
+		return nil, fmt.Errorf("agent definitions must be valid UTF-8")
+	}
 	var agent portableAgent
 	switch side {
 	case "claude":
@@ -128,6 +132,9 @@ func normalizeAgent(side string, raw *Snapshot) (*Snapshot, error) {
 				return nil, fmt.Errorf("unsupported shared agent field")
 			}
 		}
+	}
+	if !utf8.ValidString(agent.Name) || !utf8.ValidString(agent.Description) || !utf8.ValidString(agent.Instructions) {
+		return nil, fmt.Errorf("decoded agent fields must be valid UTF-8")
 	}
 	if !safeID.MatchString(agent.Name) || strings.TrimSpace(agent.Description) == "" || strings.TrimSpace(agent.Instructions) == "" {
 		return nil, fmt.Errorf("agent name, description and instructions are required")
