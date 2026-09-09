@@ -140,6 +140,13 @@ Installed Claude 2.1.266 and Codex 0.153.4 loaded a translated conventional MCP
 fixture from disposable installed packages; Claude connected and Codex discovered
 its fixed test tool. No production server, network service or credential was used.
 
+A separate native boundary test found that the same package using
+`${CLAUDE_PLUGIN_ROOT}/scripts/...` connected in Claude but exposed no tool in
+Codex 0.153.4. Probes of `${PLUGIN_ROOT}`, `./scripts/...`, and shell-expanded
+root variables also failed to discover the Codex fixture tool. These results do
+not establish a safe relocation mapping, so package-root conversion stays blocked;
+the bridge does not substitute an authoring-directory path for an installed path.
+
 Packaging references: [OpenAI package formats](https://developers.openai.com/plugins/build/plugins) and [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference).
 
 ## Compatibility audit
