@@ -20,9 +20,10 @@ same way with explicitly selected project paths. This does not enroll every
 skill automatically or alter native trust, credentials, permissions or caches.
 Do not test against your real home; first use separate disposable directories.
 
-The shared/Claude `SKILL.md` accepts only `name`, `description` and a boolean
-`disable-model-invocation`. Missing Claude policy defaults to false. Codex's
-`SKILL.md` contains only name/description; its `agents/openai.yaml` must contain:
+The shared/Claude `SKILL.md` accepts `name`, `description`, bounded informational
+`license`/`compatibility`/`metadata`, and a boolean `disable-model-invocation`.
+Missing Claude policy defaults to false. Codex's `SKILL.md` retains common
+informational metadata; its `agents/openai.yaml` must contain:
 
 ```yaml
 policy:

@@ -57,9 +57,9 @@ func Audit(c Config) AuditReport {
 		switch r.Kind {
 		case "skill-directory":
 			if r.TranslateSkillInvocation {
-				row.Actions = append(row.Actions, "Invocation mode maps disable-model-invocation to inverse policy.allow_implicit_invocation. Codex entry and explicit policy sidecar form one reviewed unit; history restores policy too. Other metadata and execution contexts remain unsupported.")
+				row.Actions = append(row.Actions, "Invocation mode maps disable-model-invocation to inverse policy.allow_implicit_invocation. Codex entry and explicit policy sidecar form one reviewed unit; history restores policy too. Common informational metadata is retained; host-specific controls and execution contexts remain unsupported.")
 			} else if r.AllowReformat {
-				row.Actions = append(row.Actions, "Strict metadata validates only name and description and preserves instruction bytes; invocation policies and agents/openai.yaml are unsupported. Review body, scripts and host loading separately.")
+				row.Actions = append(row.Actions, "Strict metadata validates name, description and bounded informational fields and preserves instruction bytes; invocation policies and agents/openai.yaml are unsupported. Review body, scripts and host loading separately.")
 			} else {
 				row.Actions = append(row.Actions, "Raw skill copying does not validate frontmatter or host behavior. Use allowReformat for opt-in strict common metadata validation.")
 			}

@@ -159,16 +159,26 @@ Use root-relative file/subtree exclusions, without globs:
 
 `.gitignore` is not interpreted. Excluding either native member excludes the whole
 automatic component. Excluded collection members are skipped before content reads.
-Names must be safe kebab-case (at most 64 characters). Unsafe links and unsupported
+Collection-level regular `README.md`, `LICENSE`, and `LICENSE.md` files are
+ignored, not treated as components or copied. Other unexpected collection files
+still block discovery. Names must be safe kebab-case (at most 64 characters).
+Unsafe links and unsupported
 collection entries fail; unrelated symlinks are not traversed. Explicit pinned-root
 symlinks remain an opt-in exception.
 
 - `CLAUDE.local.md` stays private and produces a fixed warning in project mode.
 - Project `.claude/CLAUDE.md` and project/global `AGENTS.override.md` require
   explicit handling or exclusion; they can alter/shadow the ordinary pair.
-- Automatic instructions containing whitespace-delimited `@references`
-  conservatively block planning, including some mentions/examples. Imports are
-  not expanded. Review and use explicit resource exceptions where appropriate.
+- Automatic instructions containing whitespace-delimited `@references` outside
+  closed Markdown fences and matched single-line code spans block planning.
+  Literal package names in code examples do not count as imports. Unclosed fences
+  require review. Other Markdown forms remain conservatively handled; imports are
+  never expanded. See [Claude's import contract](https://code.claude.com/docs/en/memory).
+- Automatic skill entries containing recognized `$ARGUMENTS`, numeric argument
+  placeholders, `${CLAUDE_*}` variables or dynamic-shell syntax block writes,
+  including literal examples. Explicit resources remain available after review.
+- Existing `.claude/rules` directories produce a fixed warning: path-scoped rules
+  are not translated and must be reviewed independently in Codex.
 - Unsupported skill metadata, agent fields, hooks, MCP transports and plugin
   components block writes. Placement is not portability certification.
 - Nested placement does not guarantee identical native discovery, inheritance,
@@ -210,3 +220,4 @@ Locations follow [Codex skills](https://learn.chatgpt.com/docs/build-skills),
 [Claude settings](https://code.claude.com/docs/en/settings) and
 [Claude plugin packages](https://code.claude.com/docs/en/plugins-reference).
 The authoring staging directory is a bridge convention, not a host standard.
+For a staged rollout with native exceptions, see [complex monorepos](monorepos.md).

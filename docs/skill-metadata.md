@@ -25,15 +25,17 @@ Codex sidecar, see [skill invocation policy](skill-invocation.md).
 }
 ```
 
-The same option works for project-scoped resources and inherited profiles. Scope
-does not discover or enroll skills: register one directory per resource.
+The same option works for project-scoped resources and inherited profiles. Explicit scope labels do not enroll skills; [convention profiles](conventions.md)
+can discover these resources automatically.
 
 ## Accepted subset
 
 The bridge deliberately accepts a narrower contract than either host:
 
-- YAML frontmatter must start on the first line and contain exactly the string
-  fields `name` and `description`. Both are required.
+- YAML frontmatter must start on the first line. String fields `name` and
+  `description` are required. Current source also accepts optional string `license`,
+  string `compatibility` (up to 500 Unicode characters), and a `metadata` map of
+  string keys to string values. These are informational, not execution settings.
 - Names have at most 64 characters: lowercase ASCII letters, digits and single
   internal hyphens. Descriptions are nonblank, single-line strings of at most
   1,024 Unicode characters.
@@ -57,7 +59,8 @@ bytes remain exact. Concurrent different metadata/body edits conflict as one
 This mode does not map models, tool permissions, argument substitution, dynamic
 shell context, invocation policy, subagent execution, UI metadata or dependencies.
 It does not prove instructions/scripts mean the same thing in both tools. Review
-these manually before setting `portable: true`; the body is not a semantic linter.
+these manually before setting `portable: true`; the body is not a complete semantic linter. Automatic convention skills reject
+  recognized Claude argument/variable/dynamic-shell expansion syntax conservatively.
 Plugin-bundled skill copying does not opt into this standalone mode.
 
 Do not toggle the mode on an already tracked resource and reuse its baseline.
@@ -72,7 +75,8 @@ manual reconciliation; switching modes does not choose a winner.
 
 [Codex skill documentation](https://learn.chatgpt.com/docs/build-skills) requires
 name/description and describes its optional sidecar. [Claude skill documentation](https://code.claude.com/docs/en/skills)
-allows additional controls with host-specific behavior; those are excluded here.
+allows additional controls with host-specific behavior; execution controls remain excluded here. Common informational metadata is retained;
+this does not certify environment requirements or make dependencies available.
 The bridge's narrower validation limits are compatibility policy, not a claim
 that both hosts enforce these exact limits.
 

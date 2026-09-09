@@ -108,12 +108,12 @@ Register **one skill directory per resource**, not the entire installed-skills f
 
 New files from either peer are adopted automatically within the explicitly registered directory. Independent changes to different files merge. Deleted tracked files block synchronization; renames therefore require manual reconciliation. Empty directories are not mirrored. Existing root-level native symlinks require explicit `linkTargets` pins; nested links and hardlinks remain rejected.
 
-For opt-in **strict common metadata**, add `"allowReformat": true` to a new skill resource. This validates and semantically reconciles only `name` and `description`, preserves instruction bytes and supporting files, and rejects unknown/host-specific metadata and `agents/openai.yaml`. Formatting-only frontmatter edits no longer cause drift. This is not invocation-policy or script translation. See [strict skill mode](docs/skill-metadata.md), including safe adoption of existing resources.
+For opt-in **strict common metadata**, add `"allowReformat": true` to a new skill resource. This validates and semantically reconciles `name`, `description`, and bounded informational `license`/`compatibility`/`metadata`, preserves instruction bytes and supporting files, and rejects unknown/host-specific metadata and `agents/openai.yaml`. Formatting-only frontmatter edits no longer cause drift. This is not invocation-policy or script translation. See [strict skill mode](docs/skill-metadata.md), including safe adoption of existing resources.
 
 Source builds additionally offer `translateSkillInvocation: true` with strict mode:
 Claude's `disable-model-invocation` maps to the inverse Codex
 `policy.allow_implicit_invocation` in a transactionally paired sidecar. Explicit
-invocation remains available; other rich skill metadata is unsupported. See
+invocation remains available; host-specific skill controls remain unsupported. See
 [invocation policy, adoption and native test limits](docs/skill-invocation.md).
 
 For minimal Claude plugin agents, source builds support explicit or convention-derived,

@@ -202,6 +202,9 @@ func conventionNamesFiltered(root, suffix string, skip func(string) bool) ([]str
 		}
 		name := entry.Name()
 		if suffix == "" {
+			if entry.Type().IsRegular() && (name == "README.md" || name == "LICENSE" || name == "LICENSE.md") {
+				continue // Collection documentation is not an executable component.
+			}
 			if !entry.IsDir() {
 				return nil, fmt.Errorf("conventional component collection requires named directories")
 			}
@@ -316,6 +319,11 @@ func discoverFeatureConventions(c Config, explicit []resourceInput) ([]resourceI
 		add(r)
 	}
 	for _, base := range dirs {
+		if _, e := os.Lstat(filepath.Join(base, ".claude", "rules")); e == nil {
+			warnings = append(warnings, "Claude scoped rules are not translated; review applicable rule files independently in Codex. Synchronization does not establish instruction or policy equivalence.")
+		} else if !os.IsNotExist(e) {
+			return nil, nil, e
+		}
 		for _, feature := range conventionFeatures {
 			if !p.enabled(feature) || (feature == "instructions" && p.scope() != "global") {
 				continue

@@ -148,7 +148,7 @@ func TestNativeCodexSkillAndHookDiscovery(t *testing.T) {
 func TestNativeConventionProjectDiscovery(t *testing.T) {
 	f := allConventionFixture(t, "project")
 	tools := nativeTools(t, f)
-	f.write(".claude/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: Harmless convention fixture.\n---\nExplain that this is a test.\n")
+	f.write(".claude/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: Harmless convention fixture.\nlicense: MIT\ncompatibility: Requires a fixture executable.\nmetadata:\n  author: Example\n  version: '1.0'\n---\nExplain that this is a test.\n")
 	f.write(".claude/settings.json", `{"hooks":{"SessionStart":[{"matcher":"^startup$","hooks":[{"type":"command","command":"/usr/bin/true","timeout":10}]}]}}`)
 	reloadConventions(t, f)
 	f.apply()

@@ -75,7 +75,7 @@ func invocationFields(raw *Snapshot) (map[string]any, string, error) {
 		start = end + 1
 	}
 	for key := range fields {
-		if key != "name" && key != "description" && key != "disable-model-invocation" {
+		if !portableSkillField(key) && key != "disable-model-invocation" {
 			return nil, "", fmt.Errorf("unsupported skill invocation field")
 		}
 	}
@@ -87,7 +87,13 @@ func invocationFields(raw *Snapshot) (map[string]any, string, error) {
 			return nil, "", fmt.Errorf("skill invocation policy requires a boolean")
 		}
 	}
-	common, err := encodeAgentDocument("claude", map[string]any{"name": fields["name"], "description": fields["description"]}, body)
+	commonFields := map[string]any{}
+	for key, value := range fields {
+		if key != "disable-model-invocation" {
+			commonFields[key] = value
+		}
+	}
+	common, err := encodeAgentDocument("claude", commonFields, body)
 	if err != nil {
 		return nil, "", err
 	}

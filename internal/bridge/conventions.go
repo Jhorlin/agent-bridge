@@ -314,12 +314,5 @@ func validateConventionContent(c Config, item Item, value *Snapshot) error {
 	if err != nil {
 		return err
 	}
-	// Conservative: @ references may carry Claude import semantics that byte
-	// copying into AGENTS.md cannot translate.
-	for _, word := range strings.Fields(string(data)) {
-		if strings.HasPrefix(word, "@") && len(word) > 1 {
-			return fmt.Errorf("conventions: @ references require explicit instruction mapping or removal of host-specific imports")
-		}
-	}
-	return nil
+	return checkInstructionImports(string(data))
 }
