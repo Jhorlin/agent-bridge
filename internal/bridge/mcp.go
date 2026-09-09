@@ -334,6 +334,12 @@ func normalizeMCP(r Resource, side string, raw *Snapshot) (*Snapshot, error) {
 			}
 			s, err = canonicalServer(s)
 		} else {
+			if side == "codex" && r.PreserveCodexMCPPolicies {
+				m, _, err = splitCodexMCPPolicies(m)
+				if err != nil {
+					return nil, err
+				}
+			}
 			s, err = serverFromNative(side, m)
 		}
 		if err != nil {
@@ -426,7 +432,23 @@ func renderMCP(r Resource, side string, content, before *Snapshot) (*Snapshot, e
 		if !ok {
 			return nil, fmt.Errorf("selected MCP server cannot be deleted")
 		}
-		entries[name] = nativeServer(side, server)
+		output := nativeServer(side, server)
+		if side == "codex" && r.PreserveCodexMCPPolicies {
+			if existing, ok := entries[name]; ok {
+				fields, ok := existing.(map[string]any)
+				if !ok {
+					return nil, fmt.Errorf("MCP server must be an object")
+				}
+				_, policies, err := splitCodexMCPPolicies(fields)
+				if err != nil {
+					return nil, err
+				}
+				for key, value := range policies {
+					output[key] = value
+				}
+			}
+		}
+		entries[name] = output
 	}
 	doc[key] = entries
 	if side == "claude" {

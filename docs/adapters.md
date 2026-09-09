@@ -74,11 +74,37 @@ Source builds record per-server baselines after a successful sync, allowing inde
 | Bearer reference | `headers: {"Authorization":"Bearer ${TOKEN}"}` | `bearer_token_env_var = "TOKEN"` |
 | Other header reference | `headers: {"X-Tenant":"${TENANT}"}` | `env_http_headers = {"X-Tenant":"TENANT"}` |
 
-Environment values are never expanded by Agent Bridge. OAuth/session credentials are not read or transported. Literal env/header values, environment renaming, remote env sources, fallback expressions, command/argument/URL interpolation, URL user-info/query/fragment, SSE, and unknown selected-server options are rejected. Codex tool restrictions, enabled flags, timeouts, special authentication modes, and helper commands are not discarded or translated. An entry containing them blocks conversion.
+Environment values are never expanded by Agent Bridge. OAuth/session credentials are not read or transported. Literal env/header values, environment renaming, remote env sources, fallback expressions, command/argument/URL interpolation, URL user-info/query/fragment, SSE, and unknown selected-server options are rejected. Codex policies block conversion by default; source builds offer the bounded retention option below. Special authentication modes and helper commands still block conversion.
 
 This is not a general secret scanner: a credential embedded in an arbitrary command argument or file may still be copied. Review inputs. Journals hold private before/after snapshots of the whole native file, which can include unrelated sensitive values; keep state/backups private and out of Git. Logs and parse errors omit configuration contents. The bridge does not start MCP servers or verify network/authentication behavior.
 
 Schema references used for these mappings: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) and [Claude MCP](https://code.claude.com/docs/en/mcp). The implementation intentionally supports a narrower subset than either host.
+
+### Retaining Codex-local MCP policies (source builds)
+
+An MCP resource can opt in with `"preserveCodexMCPPolicies": true`. The default
+still rejects policies. This option keeps supported policy values in the existing
+Codex document while translating only the transport configuration. Policies never
+enter the shared server model or Claude output. The setting is part of resource
+identity; do not toggle it on an already adopted ID without a reviewed new adoption.
+
+The retained fields are `enabled`, `required`, `enabled_tools`, `disabled_tools`,
+`startup_timeout_sec`, `tool_timeout_sec`, `default_tools_approval_mode`, and
+`tools.<name>.approval_mode` / `tools.<name>.output_token_limit`. Values are checked;
+timeouts must be positive and at most one day. Unknown fields, authentication
+helpers and credential settings remain rejected. This retains values, not TOML
+formatting or comments. See the [official field contract](https://learn.chatgpt.com/docs/extend/mcp).
+
+**This is not permission translation.** A disabled Codex server stays disabled
+there, but its Claude counterpart needs independent enablement/approval decisions.
+Tool restrictions likewise do not transfer. Review both hosts before using either.
+The audit reports this distinction. Local policy-only edits do not create shared
+drift; a policy edit after review still invalidates the raw-input observation.
+
+Offline tests cover retention, reverse transport changes, rollback, independent
+policy edits and malformed fields. An isolated installed-Codex reader test checks
+that a translated update retains disabled state and is accepted by the native
+configuration reader; it does not certify live tool-policy enforcement.
 
 ## Plugin packages
 

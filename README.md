@@ -94,6 +94,9 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 
 MCP and plugin entries are compared semantically; formatting-only differences do not cause sync loops. Compiled outputs are parsed back and checked against the canonical model before writing. All adapters use the same guarded transaction journal and conflict blocking. MCP translation preserves unrelated setting **values**, but rewrites formatting and can remove TOML comments; each MCP resource requires `allowReformat: true`.
 
+Source builds can also retain bounded Codex-local MCP policies with an explicit
+opt-in; these are **not** translated into Claude permissions. See [policy retention](docs/adapters.md#retaining-codex-local-mcp-policies-source-builds).
+
 Try `./agent-bridge plan examples/mcp.bridge.json`, then `sync` with the same file. It generates an isolated example TOML config under `examples/sandbox`; it does not launch a server, authenticate, or contact the example endpoint.
 
 See [shared instructions, agents and hooks](docs/portable-adapters.md) for consent requirements, supported fields and sandbox examples.

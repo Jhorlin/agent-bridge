@@ -16,14 +16,15 @@ var safeID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 var reserved = "|__proto__|constructor|prototype|toString|toLocaleString|valueOf|hasOwnProperty|isPrototypeOf|propertyIsEnumerable|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__|"
 
 type Resource struct {
-	ID                string            `json:"id"`
-	Kind              string            `json:"kind"`
-	Scope             string            `json:"scope"`
-	Paths             map[string]string `json:"paths"`
-	Servers           []string          `json:"servers,omitempty"`
-	Links             map[string]Link   `json:"links,omitempty"`
-	AllowReformat     bool              `json:"allowReformat,omitempty"`
-	CodexPluginLayout string            `json:"codexPluginLayout,omitempty"`
+	ID                       string            `json:"id"`
+	Kind                     string            `json:"kind"`
+	Scope                    string            `json:"scope"`
+	Paths                    map[string]string `json:"paths"`
+	Servers                  []string          `json:"servers,omitempty"`
+	Links                    map[string]Link   `json:"links,omitempty"`
+	AllowReformat            bool              `json:"allowReformat,omitempty"`
+	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
+	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 }
 
 type Link struct {
@@ -40,15 +41,16 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		Codex  string `json:"codex"`
 	}
 	return json.Marshal(struct {
-		ID                string          `json:"id"`
-		Kind              string          `json:"kind"`
-		Scope             string          `json:"scope"`
-		Paths             orderedPaths    `json:"paths"`
-		Servers           []string        `json:"servers,omitempty"`
-		Links             map[string]Link `json:"links,omitempty"`
-		AllowReformat     bool            `json:"allowReformat,omitempty"`
-		CodexPluginLayout string          `json:"codexPluginLayout,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout})
+		ID                       string          `json:"id"`
+		Kind                     string          `json:"kind"`
+		Scope                    string          `json:"scope"`
+		Paths                    orderedPaths    `json:"paths"`
+		Servers                  []string        `json:"servers,omitempty"`
+		Links                    map[string]Link `json:"links,omitempty"`
+		AllowReformat            bool            `json:"allowReformat,omitempty"`
+		CodexPluginLayout        string          `json:"codexPluginLayout,omitempty"`
+		PreserveCodexMCPPolicies bool            `json:"preserveCodexMCPPolicies,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies})
 }
 
 type Config struct {
@@ -58,16 +60,17 @@ type Config struct {
 	ConfigFiles     []string   `json:"configFiles"`
 }
 type resourceInput struct {
-	ID                string            `json:"id"`
-	Kind              string            `json:"kind"`
-	Scope             string            `json:"scope"`
-	Portable          bool              `json:"portable"`
-	Claude            string            `json:"claude"`
-	Codex             string            `json:"codex"`
-	Servers           []string          `json:"servers,omitempty"`
-	LinkTargets       map[string]string `json:"linkTargets,omitempty"`
-	AllowReformat     bool              `json:"allowReformat,omitempty"`
-	CodexPluginLayout string            `json:"codexPluginLayout,omitempty"`
+	ID                       string            `json:"id"`
+	Kind                     string            `json:"kind"`
+	Scope                    string            `json:"scope"`
+	Portable                 bool              `json:"portable"`
+	Claude                   string            `json:"claude"`
+	Codex                    string            `json:"codex"`
+	Servers                  []string          `json:"servers,omitempty"`
+	LinkTargets              map[string]string `json:"linkTargets,omitempty"`
+	AllowReformat            bool              `json:"allowReformat,omitempty"`
+	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
+	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 }
 type configInput struct {
 	CoordinationDir string          `json:"coordinationDir,omitempty"`
@@ -137,6 +140,12 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			return c, fmt.Errorf("each resource needs global or project scope")
 		}
 		res := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"shared": filepath.Join(c.StateDir, "shared", r.ID)}}
+		if r.PreserveCodexMCPPolicies {
+			if r.Kind != "mcp-config" {
+				return c, fmt.Errorf("preserveCodexMCPPolicies requires mcp-config")
+			}
+			res.PreserveCodexMCPPolicies = true
+		}
 		if r.CodexPluginLayout != "" {
 			if r.Kind != "plugin-directory" || r.CodexPluginLayout != "portable" {
 				return c, fmt.Errorf("codexPluginLayout supports portable for plugin-directory only")

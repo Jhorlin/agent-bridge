@@ -63,8 +63,11 @@ func Audit(c Config) AuditReport {
 			row.Actions = append(row.Actions, "Review instruction, metadata, script and tool compatibility in both hosts; byte copying does not validate behavior.")
 		case "mcp-config":
 			row.Actions = append(row.Actions, "Authenticate and verify selected tools separately in each host; review formatting loss and host-local policies.")
+			if r.PreserveCodexMCPPolicies {
+				row.Actions = append(row.Actions, "Codex MCP policies are retained locally, not translated. Configure Claude enablement and tool permissions independently before use.")
+			}
 		case "plugin-directory":
-			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; bundled hooks, MCP and agents are not bridged.")
+			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; only bounded conventional compatibility-layout hooks are bridged. Bundled MCP and agents remain unsupported.")
 		case "agent-file":
 			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")
 		case "hook-config":
@@ -143,6 +146,9 @@ func auditNativeFields(r Resource, side string) AuditCheck {
 		if side == "codex" {
 			root = "mcp_servers"
 			allowed = []string{"command", "args", "cwd", "url", "env_vars", "env", "env_http_headers", "bearer_token_env_var"}
+			if r.PreserveCodexMCPPolicies {
+				allowed = append(allowed, codexMCPPolicyFields...)
+			}
 		}
 		if entries, ok := doc[root].(map[string]any); ok {
 			for _, name := range r.Servers {
