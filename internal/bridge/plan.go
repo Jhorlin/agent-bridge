@@ -202,6 +202,8 @@ func Plan(c Config) (PlanResult, error) {
 				item.Values[side] = value
 				semantic[side] = value
 				switch item.Adapter {
+				case "plugin-command":
+					semantic[side], err = normalizePluginCommand(value)
 				case "skill-metadata":
 					semantic[side], err = normalizeSkill(value)
 				case "instruction-file":

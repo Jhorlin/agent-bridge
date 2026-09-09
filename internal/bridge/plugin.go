@@ -39,6 +39,12 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			}
 			top := strings.Split(filepath.ToSlash(file), "/")[0]
 			switch top {
+			case "commands":
+				parts := strings.Split(filepath.ToSlash(file), "/")
+				if r.CodexPluginLayout == "portable" || len(parts) != 2 || len(parts[1]) > 67 || !strings.HasSuffix(parts[1], ".md") || !skillName.MatchString(strings.TrimSuffix(parts[1], ".md")) {
+					return nil, fmt.Errorf("plugin commands require flat kebab-case Markdown files and compatibility layout")
+				}
+				names[file] = true
 			case ".mcp.json":
 				if file != ".mcp.json" || len(r.Servers) == 0 || !r.AllowReformat || r.CodexPluginLayout == "portable" {
 					return nil, fmt.Errorf("unsupported component: bundled MCP requires an explicit servers allowlist, allowReformat and compatibility layout")
@@ -97,6 +103,16 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 	if len(r.Servers) > 0 && !names[".mcp.json"] {
 		return nil, fmt.Errorf("bundled MCP source is missing")
 	}
+	for name := range names {
+		if strings.HasPrefix(name, "commands/") {
+			migrated := "skills/source-command-" + strings.TrimSuffix(strings.TrimPrefix(name, "commands/"), ".md") + "/"
+			for other := range names {
+				if strings.HasPrefix(other, migrated) {
+					return nil, fmt.Errorf("plugin skill collides with Codex's migrated command name")
+				}
+			}
+		}
+	}
 	manifestResource := r
 	manifestResource.Paths = map[string]string{}
 	for _, side := range sides {
@@ -123,6 +139,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			entry.Paths[side] = filepath.Join(r.Paths[side], name)
 		}
 		item := Item{Resource: entry, Key: prefix + name, Relative: name}
+		if strings.HasPrefix(name, "commands/") {
+			item.Adapter = "plugin-command"
+		}
 		if name == "hooks/hooks.json" {
 			item.Adapter = "hook-config"
 		}

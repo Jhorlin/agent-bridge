@@ -134,7 +134,14 @@ MCP, plugin-root expansion, host-local policies, unlisted servers and portable
 layout are rejected. Bundled MCP currently conflicts as one selected server set;
 standalone MCP's granular per-server merge does not apply to this component.
 
-Unsupported files or fields block the entire conversion: agents, commands, app mappings, settings, host-specific presentation/options, and unrecognized root schemas. No installation, marketplace edits, cache refresh, enablement, trust changes, or login happens. A changed source package may therefore require an explicit host reinstall/refresh before its installed copy changes. This feature keeps registered authoring directories in sync, not installed marketplace caches.
+Source builds also bridge bounded [conventional static commands](plugin-commands.md)
+in compatibility layout. Unsupported files or fields block the entire conversion:
+agents, dynamic command arguments/execution settings, app mappings, settings,
+host-specific presentation/options, and unrecognized root schemas. No installation,
+marketplace edits, cache refresh, enablement, trust changes, or login happens. A
+changed source package may therefore require an explicit host reinstall/refresh
+before its installed copy changes. This feature keeps registered authoring
+directories in sync, not installed marketplace caches.
 
 Installed Claude 2.1.266 and Codex 0.153.4 loaded a translated conventional MCP
 fixture from disposable installed packages; Claude connected and Codex discovered
