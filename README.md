@@ -6,7 +6,7 @@ Experimental, local-first synchronization between Claude Code and Codex configur
 
 ## Run
 
-Requires Go 1.25+ to build. The resulting executable needs neither Go nor Node installed to run. TOML parsing uses the pinned pure-Go `github.com/pelletier/go-toml/v2` dependency; there is no Node runtime. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
+Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML parsing uses the pinned pure-Go `github.com/pelletier/go-toml/v2` dependency. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
 ```sh
 go test -race ./...
@@ -27,15 +27,11 @@ The example touches only demo files and the ignored `.agent-bridge` directory. W
 
 Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped; operational errors stop it. Signals finish the current sync before shutdown.
 
-## Go migration
-
-The CLI command names and config schema 1 are unchanged. Replace `node bin/agent-bridge.js` with `./agent-bridge`. There is no npm setup step.
-
-Existing Node v0.2 manifest schema 2 and journal schema 1 remain supported, including the exact SHA-256 fingerprint algorithm and resource property order. Cross-runtime verification covered Node-state adoption, unchanged-manifest preservation, edits in both runtimes, and recovery of an interrupted Node transaction using Go. Stop any Node watcher before switching: do not run both writers concurrently. A stale lock still requires inspection, not automatic removal.
-
-The Node sources and tests were replaced by Go; they remain recoverable in Git at commit `9141381`. The original 30 behavior scenarios are represented in the Go engine/CLI tests, with additional migration and validation cases. See [migration notes](docs/go-migration.md).
-
 ## Architecture
+
+![Agent Bridge Go architecture: explicit profiles feed the CLI; adapters normalize three local peers for baseline reconciliation; opt-in transactions journal and apply guarded writes.](docs/architecture.svg)
+
+[Interactive diagram](docs/architecture.html) · [PNG](docs/architecture.png) · [Diagram source and validation notes](docs/architecture-notes.md). Download the HTML and open it locally to explore components and code references; GitHub displays the HTML source rather than running the viewer.
 
 Each explicitly registered file has three peers: a shared-store file, a Claude path, and a Codex path. A manifest records their last synchronized content/executable-bit SHA-256 digest. Changes to any one peer propagate to the others. Different concurrent edits to the same file block the entire sync. Identical concurrent edits converge. This is baseline-based reconciliation, not last-writer-wins copying.
 
@@ -83,7 +79,7 @@ Before changing any target, a private journal records all before/after snapshots
 
 `recover CONFIG` rolls back the pending transaction; it does not restore arbitrary historic backups. Inspect `stateDir/pending.json` and its referenced `backups/<transaction>/journal.json` privately. If a process was killed, inspect the PID in `sync.lock`, confirm that no writer remains, and remove only that stale lock before running recovery. The CLI never steals a lock automatically. Retain the same configuration paths during recovery. Backups remain after recovery; newly created empty directories may remain too.
 
-Versions 0.2–0.4 use manifest schema 2. New resource options are recorded in resource identity; changing an already adopted binding requires a new ID or separately reviewed adoption. Do not downgrade a profile using new options to an older binary. Version 0.1 manifests remain rejected. No live state migration runs automatically.
+Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schema 1. Resource options are recorded in resource identity; changing an already adopted binding requires a new ID or separately reviewed adoption. Unsupported state schemas are rejected. No live state migration runs automatically.
 
 ## Safety and limits
 

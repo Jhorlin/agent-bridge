@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {"title": "Agent Bridge · Go architecture", "locale": "en", "quality_profile": "showcase", "viewBox": [1200, 760], "repository": {"url": "https://github.com/Jhorlin/agent-bridge", "revision": "b64fa028bb39e53892a4cdecc54a5b156ec0be3b"}},
+  "components": [
+    {"id": "commands", "type": "frontend", "label": "Go CLI", "sublabel": "plan · sync · watch · recover", "pos": [50, 310], "size": [260, 80], "sources": [{"path": "internal/cli/cli.go", "line": 12}]},
+    {"id": "profiles", "type": "database", "label": "Explicit profiles", "sublabel": "Paths · inheritance · link pins", "pos": [50, 580], "size": [260, 80], "sources": [{"path": "internal/bridge/config.go", "line": 87}]},
+    {"id": "reconcile", "type": "backend", "label": "Reconciliation", "sublabel": "Compare three peers to baseline", "pos": [470, 310], "size": [260, 80], "sources": [{"path": "internal/bridge/plan.go", "line": 134}]},
+    {"id": "apply", "type": "security", "label": "Guarded transaction", "sublabel": "Lock · replan · validate · commit", "pos": [890, 310], "size": [260, 80], "sources": [{"path": "internal/bridge/transaction.go", "line": 160}]},
+    {"id": "state", "type": "database", "label": "Private local state", "sublabel": "Manifest · journal · pending marker", "pos": [470, 60], "size": [280, 80], "sources": [{"path": "internal/bridge/transaction.go", "line": 124}, {"path": "internal/bridge/plan.go", "line": 46}]},
+    {"id": "adapters", "type": "backend", "label": "Resource adapters", "sublabel": "Files · skills · MCP · plugins", "pos": [470, 580], "size": [260, 80], "sources": [{"path": "internal/bridge/plan.go", "line": 74}, {"path": "internal/bridge/mcp.go", "line": 297}, {"path": "internal/bridge/plugin.go", "line": 113}]},
+    {"id": "peers", "type": "database", "label": "Three local peers", "sublabel": "Shared store · Claude · Codex", "pos": [890, 580], "size": [260, 80], "sources": [{"path": "internal/bridge/plan.go", "line": 134}, {"path": "internal/bridge/filesystem.go", "line": 141}]}
+  ],
+  "connections": [
+    {"from": "profiles", "to": "commands", "label": "load"},
+    {"from": "commands", "to": "reconcile", "label": "plan"},
+    {"from": "reconcile", "to": "apply", "label": "opt-in apply"},
+    {"from": "state", "to": "reconcile", "label": "baseline", "fromSide": "bottom", "toSide": "top"},
+    {"from": "apply", "to": "state", "label": "journal + manifest", "fromSide": "top", "toSide": "right"},
+    {"from": "peers", "to": "adapters", "label": "read"},
+    {"from": "adapters", "to": "reconcile", "label": "normalize"},
+    {"from": "apply", "to": "peers", "label": "guarded writes", "labelAt": [1020, 485]}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Ongoing, explicit sync", "items": ["Watch polls every second; writes require --apply.", "Any peer can supply changes; no automatic discovery."]},
+    {"dot": "amber", "title": "Preserve edits", "items": ["Conflicts and deletions block all writes.", "Adapters render and round-trip-check before commit."]},
+    {"dot": "emerald", "title": "Recoverable, not globally atomic", "items": ["Per-file replacement; journals support guarded rollback.", "No token transfer, plugin installation, or full feature parity."]}
+  ]
+}
