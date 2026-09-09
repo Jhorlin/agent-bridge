@@ -43,6 +43,10 @@ Exit codes: 0 = successful command (a read-only plan may report pending work), 1
 
 `audit CONFIG [--json]` is a read-only compatibility preflight for explicitly registered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
 
+Source builds also provide [reviewed supporting-file rename/delete](docs/supporting-file-changes.md)
+with retained backups and interrupted-operation recovery. These explicit commands
+do not make ordinary synchronization propagate deletions automatically.
+
 ## Architecture
 
 ![Agent Bridge Go architecture: explicit profiles feed the CLI; adapters normalize three local peers for baseline reconciliation; opt-in transactions journal and apply guarded writes.](docs/architecture.svg)

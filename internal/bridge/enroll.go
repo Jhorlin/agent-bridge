@@ -173,6 +173,9 @@ func createRosterExclusive(path string, after *Snapshot) error {
 	}
 	defer os.Remove(f.Name())
 	defer f.Close()
+	if err := f.Chmod(os.FileMode(after.Mode)); err != nil {
+		return err
+	}
 	if _, err := f.Write(data); err != nil {
 		return err
 	}

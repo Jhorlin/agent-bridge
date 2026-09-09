@@ -171,6 +171,9 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 }
 func Plan(c Config) (PlanResult, error) {
 	result := PlanResult{Items: []Item{}}
+	if err := checkFileChangePending(c); err != nil {
+		return result, err
+	}
 	if err := validateLinks(c); err != nil {
 		return result, err
 	}

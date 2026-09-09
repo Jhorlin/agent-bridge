@@ -26,6 +26,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && (args[0] == "review-file-change" || args[0] == "apply-file-change" || args[0] == "recover-file-change") {
+		return runFileChange(args, out, errOut)
+	}
 	if len(args) > 0 && (args[0] == "review-enrollment" || args[0] == "create-enrolled" || args[0] == "recover-enrollment") {
 		return runEnrollmentCreation(args, out, errOut)
 	}
@@ -337,6 +340,9 @@ func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge resolve-reviewed <config.json> <observation> <item-key=side>...")
 	fmt.Fprintln(w, "       agent-bridge history <config.json>")
 	fmt.Fprintln(w, "       agent-bridge review-history <config.json> <transaction> <item-key> <side> <before|after>")
+	fmt.Fprintln(w, "       agent-bridge review-file-change <config.json> <item-key> <--delete|--rename relative-path>")
+	fmt.Fprintln(w, "       agent-bridge apply-file-change <config.json> <observation> <item-key> <--delete|--rename relative-path>")
+	fmt.Fprintln(w, "       agent-bridge recover-file-change <config.json>")
 	fmt.Fprintln(w, "       agent-bridge restore-reviewed <config.json> <observation> <transaction> <item-key> <side> <before|after>")
 	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
 	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")

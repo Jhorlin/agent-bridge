@@ -150,6 +150,9 @@ var transactionPattern = regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4
 func Recover(c Config) (Recovery, error) {
 	result := Recovery{Status: "nothing-to-recover"}
 	err := locked(c, func() error {
+		if err := checkFileChangePending(c); err != nil {
+			return err
+		}
 		pending, err := snapshot(pendingPath(c))
 		if err != nil || pending == nil {
 			return err
