@@ -51,6 +51,12 @@ policy. Bridge discovery does not read Git ignore rules: private/generated roots
 still need explicit convention exclusions. A future unsupported component pauses
 the watcher rather than being silently flattened or partially applied.
 
+Discovery still walks eligible project directories for new components, but only
+probes native feature collections at directories containing native configuration
+entries. Unsafe links remain visible to validation, and previously managed
+collections remain tracked when their files disappear. This reduces redundant
+probes in large source trees without caching away new assets or deletions.
+
 The regression suite covers these structural cases using invented content.
 Targeted native tests verify discovery, not arbitrary scripts, live MCP connectivity,
 permission parity, plugin installation, or correct behavior of proprietary skills.

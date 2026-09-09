@@ -147,10 +147,22 @@ func conventionFeatureDirs(c Config) ([]string, error) {
 	if p.scope() == "global" {
 		return []string{p.Root}, nil
 	}
-	var dirs []string
+	// Walk the tree for new components, but only probe native collections at
+	// candidate bases. Probing every feature under every source directory adds
+	// many redundant ancestor safety checks in large monorepos. Missing managed
+	// collections are independently restored from their validated recipes below.
+	bases := map[string]bool{p.Root: true}
 	err = filepath.WalkDir(p.Root, func(path string, d fs.DirEntry, e error) error {
 		if e != nil {
 			return e
+		}
+		if path != p.Root {
+			switch strings.ToLower(d.Name()) {
+			case ".claude", ".codex", ".agents", ".mcp.json", ".agent-bridge-plugins":
+				// Include symlinks and wrong file types so ordinary native-path
+				// validation still rejects them rather than hiding unsafe inputs.
+				bases[filepath.Dir(path)] = true
+			}
 		}
 		if !d.IsDir() {
 			return nil
@@ -168,9 +180,13 @@ func conventionFeatureDirs(c Config) ([]string, error) {
 				return e
 			}
 		}
-		dirs = append(dirs, path)
 		return nil
 	})
+	var dirs []string
+	for base := range bases {
+		dirs = append(dirs, base)
+	}
+	sort.Strings(dirs)
 	return dirs, err
 }
 

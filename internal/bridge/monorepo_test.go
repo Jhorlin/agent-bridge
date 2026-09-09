@@ -2,9 +2,54 @@ package bridge
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestConventionFeatureDirectoryCandidates(t *testing.T) {
+	f := allConventionFixture(t, "project")
+	f.write("plain/deep/source.go", "ordinary source")
+	f.write("nested/.claude/skills/demo/SKILL.md", "---\nname: demo\ndescription: Demo.\n---\nHelp.\n")
+	f.write("mcp/.mcp.json", `{"mcpServers":{}}`)
+	f.write("ignored/.git/HEAD", "nested repository")
+	f.write("ignored/.claude/settings.json", "invalid")
+	reloadConventions(t, f)
+	dirs, err := conventionFeatureDirs(f.c)
+	must(t, err)
+	if !reflect.DeepEqual(dirs, []string{f.dir, f.path("mcp"), f.path("nested")}) {
+		t.Fatalf("probing ordinary directories: %v", dirs)
+	}
+	f.apply()
+	must(t, os.RemoveAll(f.path("nested/.claude")))
+	must(t, os.RemoveAll(f.path("nested/.agents")))
+	reloadConventions(t, f)
+	if len(f.c.Resources) != 3 {
+		t.Fatal("missing tracked collection was dropped")
+	}
+	if _, err := Apply(f.c, Options{}); err == nil {
+		t.Fatal("missing entry points accepted")
+	}
+}
+
+func TestConventionFeatureCandidatesRetainUnsafeInputs(t *testing.T) {
+	for _, name := range []string{".claude", ".codex", ".agents", ".mcp.json", ".agent-bridge-plugins"} {
+		t.Run(name, func(t *testing.T) {
+			f := allConventionFixture(t, "project")
+			f.write("nested/ordinary.txt", "fixture")
+			reloadConventions(t, f)
+			must(t, os.Symlink(f.dir, f.path("nested/"+name)))
+			dirs, err := conventionFeatureDirs(f.c)
+			must(t, err)
+			if !reflect.DeepEqual(dirs, []string{f.dir, f.path("nested")}) {
+				t.Fatal("unsafe candidate hidden")
+			}
+			if _, err := LoadConfig(f.path("config.json")); err == nil {
+				t.Fatal("unsafe native root accepted")
+			}
+		})
+	}
+}
 
 func TestConventionCollectionDocumentation(t *testing.T) {
 	f := allConventionFixture(t, "project")
