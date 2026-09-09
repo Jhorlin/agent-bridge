@@ -218,6 +218,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 				var roundTrip *Snapshot
 				switch item.Adapter {
+				case "skill-metadata":
+					roundTrip, err = normalizeSkill(content)
 				case "instruction-file":
 					roundTrip, err = normalizeInstructions(side, content)
 				case "agent-file":

@@ -53,7 +53,13 @@ func Audit(c Config) AuditReport {
 	for _, r := range resources {
 		row := AuditResource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Direction: "bidirectional", Status: "review-required", Checks: []AuditCheck{}, Actions: []string{"Run plan before sync; audit is not a write authorization or live host certification."}}
 		switch r.Kind {
-		case "portable-file", "skill-directory", "instruction-file":
+		case "skill-directory":
+			if r.AllowReformat {
+				row.Actions = append(row.Actions, "Strict metadata validates only name and description and preserves instruction bytes; invocation policies and agents/openai.yaml are unsupported. Review body, scripts and host loading separately.")
+			} else {
+				row.Actions = append(row.Actions, "Raw skill copying does not validate frontmatter or host behavior. Use allowReformat for opt-in strict common metadata validation.")
+			}
+		case "portable-file", "instruction-file":
 			row.Actions = append(row.Actions, "Review instruction, metadata, script and tool compatibility in both hosts; byte copying does not validate behavior.")
 		case "mcp-config":
 			row.Actions = append(row.Actions, "Authenticate and verify selected tools separately in each host; review formatting loss and host-local policies.")

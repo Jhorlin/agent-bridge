@@ -50,7 +50,7 @@ The `portable-file` adapter copies exact bytes. Use it only when the content is 
 
 ## Skill directories
 
-Register **one skill directory per resource**, not the entire installed-skills folder. All nested regular files (including hidden and binary files) participate; review the directory for secrets before adoption. Existing populated peers must contain `SKILL.md`. The adapter preserves bytes and executable bits; it does not translate frontmatter or validate tool behavior. Set `portable: true` only after reviewing that compatibility yourself.
+Register **one skill directory per resource**, not the entire installed-skills folder. All nested regular files (including hidden and binary files) participate; review the directory for secrets before adoption. Existing populated peers must contain `SKILL.md`. By default, the adapter preserves bytes and executable bits without validating frontmatter or tool behavior. Set `portable: true` only after reviewing that compatibility yourself.
 
 ```json
 {
@@ -68,6 +68,8 @@ Register **one skill directory per resource**, not the entire installed-skills f
 ```
 
 New files from either peer are adopted automatically within the explicitly registered directory. Independent changes to different files merge. Deleted tracked files block synchronization; renames therefore require manual reconciliation. Empty directories are not mirrored. Existing root-level native symlinks require explicit `linkTargets` pins; nested links and hardlinks remain rejected.
+
+For opt-in **strict common metadata**, add `"allowReformat": true` to a new skill resource. This validates and semantically reconciles only `name` and `description`, preserves instruction bytes and supporting files, and rejects unknown/host-specific metadata and `agents/openai.yaml`. Formatting-only frontmatter edits no longer cause drift. This is not invocation-policy or script translation. See [strict skill mode](docs/skill-metadata.md), including safe adoption of existing resources.
 
 ## New adapters
 

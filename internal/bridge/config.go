@@ -156,6 +156,11 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			}
 			res.Servers = r.Servers
 			res.AllowReformat = true
+		} else if r.Kind == "skill-directory" {
+			if len(r.Servers) > 0 {
+				return c, fmt.Errorf("skill-directory does not accept servers")
+			}
+			res.AllowReformat = r.AllowReformat
 		} else if r.Kind == "agent-file" || r.Kind == "hook-config" {
 			if !r.AllowReformat || len(r.Servers) > 0 {
 				return c, fmt.Errorf("agent and hook adapters require allowReformat and do not accept servers")

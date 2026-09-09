@@ -145,6 +145,9 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 	sort.Strings(ordered)
 	result := []Item{}
 	for _, name := range ordered {
+		if r.AllowReformat && strings.EqualFold(name, "agents/openai.yaml") {
+			return nil, fmt.Errorf("strict skill metadata does not translate host-specific agents/openai.yaml")
+		}
 		if filepath.IsAbs(name) || strings.Contains(name, "\\") {
 			return nil, fmt.Errorf("unsafe skill entry in manifest")
 		}
@@ -158,7 +161,11 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 		for _, side := range sides {
 			entry.Paths[side] = filepath.Join(r.Paths[side], name)
 		}
-		result = append(result, Item{Resource: entry, Key: prefix + name, Relative: name})
+		item := Item{Resource: entry, Key: prefix + name, Relative: name}
+		if r.AllowReformat && name == "SKILL.md" {
+			item.Adapter = "skill-metadata"
+		}
+		result = append(result, item)
 	}
 	return result, nil
 }
@@ -195,6 +202,8 @@ func Plan(c Config) (PlanResult, error) {
 				item.Values[side] = value
 				semantic[side] = value
 				switch item.Adapter {
+				case "skill-metadata":
+					semantic[side], err = normalizeSkill(value)
 				case "instruction-file":
 					semantic[side], err = normalizeInstructions(side, value)
 				case "agent-file":

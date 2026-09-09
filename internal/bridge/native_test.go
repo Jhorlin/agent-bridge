@@ -115,7 +115,7 @@ func TestNativeCodexSkillAndHookDiscovery(t *testing.T) {
 	f := newFixture(t)
 	tools := nativeTools(t, f)
 	f.raw.Resources = []resourceInput{
-		{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
+		{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
 		{ID: "hook", Kind: "hook-config", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/settings.json", Codex: "codex-home/hooks.json"},
 	}
 	f.load()

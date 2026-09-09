@@ -26,6 +26,11 @@ The base must define the disabled ID. Disabling removes it from this profile onl
 
 ## Existing symlinks
 
+Standalone `skill-directory` resources optionally accept `allowReformat: true`
+for [strict common metadata](skill-metadata.md). Without it, files remain raw
+byte copies. Switching an existing resource's mode requires reviewed adoption
+under a new identity or fresh state; it is not an in-place baseline migration.
+
 Add `linkTargets` to a resource to pin a native root link to a specific physical target:
 
 ```json

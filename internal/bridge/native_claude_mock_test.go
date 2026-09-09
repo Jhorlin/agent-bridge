@@ -15,11 +15,13 @@ func TestNativeClaudeAgentAndHookWithLocalEndpoint(t *testing.T) {
 	f := newFixture(t)
 	tools := nativeTools(t, f)
 	f.raw.Resources = []resourceInput{
+		{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
 		{ID: "agent", Kind: "agent-file", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/agents/reviewer.md", Codex: "codex-home/agents/reviewer.toml"},
 		{ID: "startup", Kind: "hook-config", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/settings.json", Codex: "codex-home/hooks.json"},
 		{ID: "instructions", Kind: "instruction-file", Scope: "global", Portable: true, Claude: "claude-home/CLAUDE.md", Codex: "codex-home/AGENTS.md"},
 	}
 	f.load()
+	f.write("home/.agents/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: BRIDGE_STRICT_SKILL_DESCRIPTION_FIXTURE\n---\nHarmless instruction.\n")
 	f.write("codex-home/agents/reviewer.toml", "name='reviewer'\ndescription='Review fixture'\ndeveloper_instructions='BRIDGE_AGENT_INSTRUCTION_FIXTURE'\n")
 	f.write("codex-home/AGENTS.md", instructionStart+"\nBRIDGE_SHARED_INSTRUCTION_FIXTURE\n"+instructionEnd+"\n")
 	f.write("capture-hook", "#!/bin/sh\nexec /bin/cat > '"+f.path("payload.json")+"'\n")
@@ -76,7 +78,7 @@ func TestNativeClaudeAgentAndHookWithLocalEndpoint(t *testing.T) {
 	found := false
 	for len(requests) > 0 {
 		body := <-requests
-		if strings.Contains(body, "BRIDGE_AGENT_INSTRUCTION_FIXTURE") && strings.Contains(body, "BRIDGE_SHARED_INSTRUCTION_FIXTURE") {
+		if strings.Contains(body, "BRIDGE_AGENT_INSTRUCTION_FIXTURE") && strings.Contains(body, "BRIDGE_SHARED_INSTRUCTION_FIXTURE") && strings.Contains(body, "BRIDGE_STRICT_SKILL_DESCRIPTION_FIXTURE") {
 			found = true
 		}
 	}
