@@ -1,6 +1,6 @@
 # Native host acceptance tests
 
-Run `AGENT_BRIDGE_NATIVE_TESTS=1 go test -v ./internal/bridge -run '^TestNative' -count=1` with both CLIs installed. Normal `go test` runs skip native acceptance tests. Missing binaries also skip, never pass as certified. Each native host process has a 20-second timeout and a minimal environment pointing its actual configuration roots at disposable fixture directories; tokens and auth helper variables are not inherited. The harness does not copy credentials, issue prompts, or invoke model APIs. MCP approvals and plugin installs cover only generated fixtures in disposable settings and caches, never production resources.
+Run `AGENT_BRIDGE_NATIVE_TESTS=1 go test -v ./internal/bridge -run '^TestNative' -count=1` with both CLIs installed. Normal `go test` runs skip native acceptance tests. Missing binaries also skip, never pass as certified. Each native host process has a 20-second timeout and a minimal environment pointing its actual configuration roots at disposable fixture directories; tokens and auth helper variables are not inherited. The harness does not copy credentials or make paid model requests. Fixed prompts in the startup tests use loopback fake providers, not real models. Approvals, one-invocation hook trust overrides and plugin installs cover only reviewed fixtures in disposable settings and caches, never production resources.
 
 Verified locally on macOS, 2026-09-08:
 
@@ -24,8 +24,8 @@ this local stdio runtime path, not remote HTTP authentication or arbitrary serve
 The initial pending-approval test remains separate and still verifies that the
 bridge itself does not grant approval.
 
-Agent execution, hook execution, host instruction
-loading, and model behavior still need separate coverage. Machine-managed policies
+Broader agent orchestration, hook failure semantics, and real model behavior still
+need separate coverage. Machine-managed policies
 may influence native CLIs even with disposable user directories; this is
 configuration isolation, not an OS security sandbox.
 
@@ -43,5 +43,44 @@ they do not install anything in the user's actual hosts.
 This validates a native lifecycle path, not automatic bridge-managed installation,
 cache refresh, arbitrary plugin execution or hook trust. Users still install and
 refresh reviewed packages with their native host tools.
+
+## Local fake-provider startup tests
+
+Go HTTP test servers bound to loopback return fixed protocol responses. Codex uses
+a custom Responses provider with no authentication requirement. Claude uses a
+local Messages endpoint and a synthetic, nonfunctional test key. Neither endpoint
+contains a model or forwards requests upstream. This exercises real CLI loading
+and startup paths without API charges or subscription usage.
+
+- Codex: a complete CLI turn leaves the capture script unexecuted while its hook
+  is untrusted. A separate invocation with `--dangerously-bypass-hook-trust` runs
+  only that reviewed fixture script. Its captured JSON has `SessionStart`,
+  `startup`, and the expected disposable working directory. Both outgoing local
+  requests contain the translated global shared instructions, skill description,
+  and custom agent description (with multi-agent support enabled in the fixture).
+- Claude: `--agent reviewer` loads a reverse-translated minimal agent. The local
+  request contains its instruction body and the shared global instructions. The
+  reverse-translated startup hook captures the expected event/source/directory.
+
+The first app-server-only probe did not execute the startup hook; CLI startup is
+the verified path. The mock Messages stream initially lacked event names; fixing
+the fixture's SSE framing made the protocol test pass. These findings are not
+bridge translation failures and were not counted as successful tests.
+
+Tests do not prove real-model compliance, arbitrary script portability, timeout
+or failure equivalence, or full subagent orchestration. The hook adapter never
+adds a trust override to user configuration.
+
+Protocol/configuration references: [Codex custom providers](https://learn.chatgpt.com/docs/config-file/config-advanced),
+[Codex hook trust](https://learn.chatgpt.com/docs/hooks),
+[Claude streaming events](https://platform.claude.com/docs/en/build-with-claude/streaming).
+
+## Watcher process lifecycle
+
+The normal Go suite also exercises the executable entry point in child processes
+on macOS/Linux. It synchronizes temporary files, sends SIGINT or SIGTERM, verifies
+clean exit with no state/coordinator locks or pending journal, restarts, and
+verifies another edit synchronizes. These tests do not install an OS background
+service or certify power-loss recovery.
 
 Isolation references: [Codex environment variables](https://learn.chatgpt.com/docs/config-file/environment-variables), [Claude configuration locations](https://code.claude.com/docs/en/settings). Commands and flags are also checked against each installed CLI's help.

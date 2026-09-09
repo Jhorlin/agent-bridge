@@ -13,8 +13,9 @@ import (
 )
 
 // Native tests are deliberately opt-in: a default unit-test run must not start
-// installed third-party CLIs. No prompts, logins or production approvals occur.
-// Runtime MCP tests approve only a fixed server in disposable test configuration.
+// installed third-party CLIs. No real-provider requests, logins or production
+// approvals occur. Fixed prompts use loopback fake providers only; runtime tests
+// approve only reviewed fixtures in disposable test configuration.
 func nativeTools(t *testing.T, f *fixture) map[string]string {
 	t.Helper()
 	if os.Getenv("AGENT_BRIDGE_NATIVE_TESTS") != "1" {
@@ -38,6 +39,10 @@ func nativeTools(t *testing.T, f *fixture) map[string]string {
 }
 
 func nativeRun(t *testing.T, f *fixture, binary string, args ...string) string {
+	return nativeRunEnvironment(t, f, binary, nil, args...)
+}
+
+func nativeRunEnvironment(t *testing.T, f *fixture, binary string, extra []string, args ...string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -45,7 +50,7 @@ func nativeRun(t *testing.T, f *fixture, binary string, args ...string) string {
 	cmd.Dir = f.dir
 	// Build an allowlisted child environment; never inherit tokens, hooks, auth
 	// helpers, or the user's config. These are actual child configuration roots.
-	cmd.Env = nativeEnvironment(f)
+	cmd.Env = append(nativeEnvironment(f), extra...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("native %s %v failed: %v\n%s", filepath.Base(binary), args, err, output)

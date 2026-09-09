@@ -42,7 +42,7 @@ description = 'Review code for correctness.'
 developer_instructions = 'Inspect the proposed changes and explain concrete risks.'
 ```
 
-Instruction body whitespace is preserved after normalizing Claude CRLF input to LF. Frontmatter/TOML formatting may change. Unknown fields, duplicate fields, missing metadata and empty instructions fail. Models, tools, permissions, sandbox settings, skill preloads, memory and agent lifecycle are not mapped. Do not remove safety settings to force an existing agent through this adapter: keep that agent host-local instead. Generated minimal agents inherit host defaults; this is not a security-policy equivalence claim. Claude native validation is tested; Codex agent discovery/execution still needs separate certification.
+Instruction body whitespace is preserved after normalizing Claude CRLF input to LF. Frontmatter/TOML formatting may change. Unknown fields, duplicate fields, missing metadata and empty instructions fail. Models, tools, permissions, sandbox settings, skill preloads, memory and agent lifecycle are not mapped. Do not remove safety settings to force an existing agent through this adapter: keep that agent host-local instead. Generated minimal agents inherit host defaults; this is not a security-policy equivalence claim. Local fake-provider tests verify Claude loads the translated agent instructions and Codex advertises the translated agent description. Real-model behavior and subagent orchestration remain unverified.
 
 Native schemas: [Claude agents](https://code.claude.com/docs/en/sub-agents), [Codex agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
@@ -69,7 +69,7 @@ Only synchronous `SessionStart` command handlers with exact `^startup$` matching
 
 The command must be manually reviewed for host-independent behavior. Both hosts expose startup context, but payload details, environment, error handling, output limits and model interpretation are not guaranteed equivalent. Use a harmless context-producing script first. No permission-decision or tool-event hook mapping is claimed. Trust and enablement stay host-local; the bridge never grants trust. Writing a Claude settings file may affect the next trusted session, so `sync` is an explicit configuration change, not a harmless preview.
 
-Codex `hooks/list` has verified discovery of the generated startup hook with status **untrusted**. No native hook execution or trust approval has been performed by the test harness.
+Codex `hooks/list` verifies discovery with status **untrusted**. Local fake-provider CLI tests also verify that Codex skips the untrusted fixture and executes it with a one-invocation trust override, and that Claude executes the reverse-translated startup hook. These tests check event/source/cwd payload fields; they do not certify arbitrary script, output, timeout or failure semantics. See [native evidence](native-testing.md#local-fake-provider-startup-tests).
 
 Native references: [Claude hook contract](https://code.claude.com/docs/en/hooks), [Codex hook contract](https://learn.chatgpt.com/docs/hooks).
 
