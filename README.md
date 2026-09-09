@@ -88,7 +88,7 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 | Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML | Models, permissions, tools and other settings rejected; no behavioral equivalence |
 | Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit and Stop | Absolute executable paths; no trust grants, script execution by the bridge, tool-event or policy translation |
 | MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
-| Plugins | Portable skill-package directories, common manifest metadata, supporting files; Claude compatibility manifest ↔ Codex compatibility or portable manifest | No installation/cache refresh, OAuth, marketplace management, hooks, agents, bundled MCP, app mappings, custom component paths, or host-specific fields |
+| Plugins | Portable skill-package directories, common manifest metadata, supporting files; source builds also support bounded conventional hooks in compatibility layout | No installation/cache refresh, OAuth, marketplace management, portable-layout hooks, agents, bundled MCP, app mappings, custom component paths, or host-specific fields |
 | Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |
 | Inheritance | Explicit base/global profile, declaring-file-relative paths, full-resource project overrides, disabling inherited resources | No automatic project discovery, host instruction inheritance, partial-field merging, or multi-profile coordination |
 
@@ -96,7 +96,7 @@ MCP and plugin entries are compared semantically; formatting-only differences do
 
 Try `./agent-bridge plan examples/mcp.bridge.json`, then `sync` with the same file. It generates an isolated example TOML config under `examples/sandbox`; it does not launch a server, authenticate, or contact the example endpoint.
 
-See [shared instructions, agents and startup hooks](docs/portable-adapters.md) for consent requirements, supported fields and sandbox examples.
+See [shared instructions, agents and hooks](docs/portable-adapters.md) for consent requirements, supported fields and sandbox examples.
 
 ## Recovery
 
@@ -141,6 +141,10 @@ coordinator roster during sync/recovery; see [opt-in ownership enforcement](docs
 check between review and application; see [guarding a reviewed sync](docs/phase-two.md#guarding-a-reviewed-sync).
 `enroll-reviewed` registers an existing reviewed profile in its coordinator roster
 without syncing native files; see [reviewed enrollment](docs/phase-two.md#enrolling-an-existing-reviewed-profile).
+`review-resolution` and `resolve-reviewed` support explicit, freshness-checked
+conflict choices; see [resolving conflicts](docs/conflict-resolution.md).
+`history`, `review-history` and `restore-reviewed` select retained portable file
+versions without restoring an old manifest; see [historical selection](docs/conflict-resolution.md#selecting-a-retained-historical-version).
 
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,

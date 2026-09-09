@@ -26,6 +26,12 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && (args[0] == "review-resolution" || args[0] == "resolve-reviewed") {
+		return runResolve(args, out, errOut)
+	}
+	if len(args) > 0 && (args[0] == "history" || args[0] == "review-history" || args[0] == "restore-reviewed") {
+		return runHistory(args, out, errOut)
+	}
 	if len(args) > 0 && args[0] == "enroll-reviewed" {
 		if len(args) != 3 {
 			return usage(errOut)
@@ -321,6 +327,11 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 }
 func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge enroll-reviewed <config.json> <observation>")
+	fmt.Fprintln(w, "       agent-bridge review-resolution <config.json> <item-key=side>...")
+	fmt.Fprintln(w, "       agent-bridge resolve-reviewed <config.json> <observation> <item-key=side>...")
+	fmt.Fprintln(w, "       agent-bridge history <config.json>")
+	fmt.Fprintln(w, "       agent-bridge review-history <config.json> <transaction> <item-key> <side> <before|after>")
+	fmt.Fprintln(w, "       agent-bridge restore-reviewed <config.json> <observation> <transaction> <item-key> <side> <before|after>")
 	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
 	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")
 	fmt.Fprintln(w, "       agent-bridge draft-profile <root> <--project|--global> <candidate-id> [more IDs...]")

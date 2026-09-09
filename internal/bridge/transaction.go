@@ -33,6 +33,9 @@ type Options struct {
 	BeforeWrite func(int, Operation) error
 	// ExpectedObservation makes watched application conditional on stable inputs.
 	ExpectedObservation string
+	// Resolutions requires an observation binding every explicit conflict choice.
+	Resolutions map[string]string
+	History     *HistoryChoice
 }
 
 var ErrObservationChanged = errors.New("inputs changed since the watched observation; retry planning")
@@ -184,8 +187,29 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		if err != nil {
 			return err
 		}
-		if options.ExpectedObservation != "" && Observation(c, result) != options.ExpectedObservation {
+		observation := Observation(c, result)
+		if options.History != nil {
+			if options.Resolutions != nil || !digestPattern.MatchString(options.ExpectedObservation) {
+				return fmt.Errorf("historical restore requires its own reviewed observation")
+			}
+			observation, err = prepareHistory(c, &result, *options.History)
+			if err != nil {
+				return err
+			}
+		}
+		if options.Resolutions != nil {
+			if !digestPattern.MatchString(options.ExpectedObservation) {
+				return fmt.Errorf("conflict resolution requires a reviewed observation")
+			}
+			observation = resolutionObservation(c, result, options.Resolutions)
+		}
+		if options.ExpectedObservation != "" && observation != options.ExpectedObservation {
 			return ErrObservationChanged
+		}
+		if options.Resolutions != nil {
+			if err := resolvePlan(&result, options.Resolutions); err != nil {
+				return err
+			}
 		}
 		if result.HasConflicts() {
 			return fmt.Errorf("conflicts block all writes")

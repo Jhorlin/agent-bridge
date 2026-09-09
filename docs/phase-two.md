@@ -10,14 +10,14 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 
 | # | Workstream | Required acceptance evidence | Current phase-two status |
 |---|---|---|---|
-| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch and selected-profile drafts implemented; transactional reviewed enrollment remains pending; optional manual roster enforcement below |
+| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch, selected-profile drafts and reviewed existing-profile roster enrollment implemented; combined profile creation/rollback remains pending |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Conventional bounded hooks added for compatibility layout; portable-hook rejection verified; other components remain pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Upstream sidecar rejection fixture added; richer mappings pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Source builds add prompt/Stop command definitions with native payload/trust tests; broader runtime/policy equivalence pending |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging and transactional rollback tested; policy/format preservation and plugin-relative support remain pending |
-| 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Planned; never default to last-writer-wins |
-| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight and opt-in coordinator roster enforcement implemented; automated enrollment and other hardening pending |
+| 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Explicit side selection and retained file-version selection with bound review and transaction rollback implemented; rename/delete pending |
+| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Explicit-profile preflight, opt-in coordinator roster and experimental Linux lifecycle implemented; native Linux user-manager acceptance and upgrade tests pending |
 
 Implementation sequence: fixture/evidence foundation, ownership and reviewed
 enrollment, MCP and component contracts, richer definitions/hooks, plugin refresh,
@@ -26,6 +26,13 @@ each increment rather than waiting until the end. Push only verified milestones;
 do not modify or republish the existing alpha assets.
 
 ## Fixture and evidence rules
+
+Source-build drift commands and their exact limitations are documented in
+[reviewed conflict and historical selection](conflict-resolution.md). Tests cover
+all current adapter types for conflict selection, current instruction-overlay
+preservation for history, stale choices/raw inputs/journal bytes, unsafe history,
+ownership checks, exact rollback, repeat sync and CLI error handling. These are
+model-free filesystem operations, not native host invocation or deletion support.
 
 1. Record exact public repository revision, source file/blob, local digest,
    applicable license and any required attribution. Public visibility alone is
@@ -163,7 +170,7 @@ command, later edits, filesystem aliases such as hard links, and concurrent
 changes are not covered. Passing it does not grant portability or trust, and
 does not replace `audit` and `plan`. Do not run overlapping profiles merely
 because they share a coordinator: serialization alone does not prevent baseline
-disagreements. Reviewed enrollment remains pending; opt-in enforcement is described below.
+disagreements. Reviewed existing-profile enrollment and opt-in enforcement are described below.
 
 ## Opt-in ownership enforcement
 
