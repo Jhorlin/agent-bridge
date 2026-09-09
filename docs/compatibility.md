@@ -33,13 +33,13 @@ Native references: [Claude instruction loading](https://code.claude.com/docs/en/
 | MCP stdio / HTTP definitions | Partial: allowlisted servers, supported command/arguments, absolute cwd, HTTP URL; JSON ↔ TOML | Selected set is one reconciliation unit; no per-server independent merge, SSE, or remote executor mapping. [T3](#test-evidence) |
 | MCP environment / header references | Partial: same-name environment forwarding and supported bearer/header references | No expansion by bridge, fallback/remapping, or general secret scanning. Credentials in arbitrary arguments can still be copied. [T3](#test-evidence) |
 | MCP policy, enabled flags, timeouts | Candidate: selected entries with unsupported fields currently fail | Never drop restrictions or silently broaden access. Preserve host-only settings or reject the mapping. [T3](#test-evidence) |
-| MCP runtime connectivity | Host-managed | Bridge does not launch servers, test tools, or authenticate. Need isolated host acceptance tests before connectivity claims. |
+| MCP runtime connectivity | Host-managed; local stdio fixture verified | Native tests verify Claude connection and Codex discovery, resource reads and direct tool calls. The bridge itself does not launch servers or authenticate; remote/authenticated transports remain unverified. |
 | MCP formatting | Partial: semantic comparison and unrelated value preservation | Writes can reformat JSON/TOML and remove TOML comments; explicit `allowReformat` required. [T3](#test-evidence) |
 | Plugin identity + portable skills | Partial: common metadata, portable skill assets, compatibility/portable Codex layouts | Authoring directories only; not a general plugin converter. [T4](#test-evidence) |
 | Bundled MCP | Candidate: currently rejected in plugin packages | A plugin-relative path/root and transport contract is required; standalone MCP support does not imply bundled MCP support. |
 | Hooks | Partial: standalone startup-only SessionStart command configuration; still rejected in plugin packages | Explicit timeout and absolute executable; no script execution, trust grants or behavioral equivalence. [Portable adapters](portable-adapters.md) |
 | Bundled agents, commands, UI/app mappings and other components | Host-managed pending component-specific review | No silent dropping of components; unknown fields/layouts fail. [T4](#test-evidence) |
-| Marketplace install / update / enable / trust / cache | Host-managed | No installation or refresh side effects. Synced authoring files may not affect an already installed copy. [T4](#test-evidence) |
+| Marketplace install / update / enable / trust / cache | Host-managed; fixture lifecycle verified | Native tests install/remove translated plugins in disposable hosts and verify Codex reinstall refresh. Bridge sync has no installation/refresh side effects; installed copies can remain stale. [Native evidence](native-testing.md) |
 
 Native references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli), [Claude extension overview](https://code.claude.com/docs/en/features-overview), [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference), [OpenAI package formats](https://developers.openai.com/plugins/build/plugins). Exact implemented mappings are in the [adapter reference](adapters.md).
 
@@ -47,12 +47,12 @@ Native references: [Codex MCP](https://learn.chatgpt.com/docs/extend/mcp?surface
 
 | Feature | Bridge today | Limits / intended boundary |
 | --- | --- | --- |
-| Global + project resources | Partial: explicit paths, base-profile inheritance and whole-resource overrides | No automatic scanning, project discovery, or emulation of host precedence. [T5](#test-evidence) |
+| Global + project resources | Partial: explicit paths, inheritance, overrides and opt-in read-only discovery | Explicit roots only; no automatic enrollment or emulation of host precedence. [Onboarding](onboarding.md) |
 | Existing native root symlinks | Partial: explicit physical-target pins | No link creation, nested/chained links, hardlinks, aliases, or retargeting. [T5](#test-evidence) |
 | Ongoing bidirectional sync | Supported for registered resources: one-second polling; writes opt in | Not an installed background service; newly created unregistered skills/plugins are not discovered. [T6](#test-evidence) |
 | Read-only compatibility audit | Partial: per-resource planner checks, selected native field inventory, private diagnostics | Reports review requirements, not behavioral equivalence; no host execution or output compilation. [T8](#test-evidence) |
 | Conflict / drift handling | Supported: baseline comparison, conflicting edits block all writes | No last-writer-wins; deletions/renames need manual reconciliation. [T1](#test-evidence) |
-| Interrupted writes / recovery | Supported: private journals and guarded rollback | Per-file atomic replacement, not globally atomic visibility or proven power-loss durability. Locks do not coordinate separate state directories. [T7](#test-evidence) |
+| Interrupted writes / recovery | Supported: private journals and guarded rollback | Per-file atomic replacement, not globally atomic visibility or proven power-loss durability. Separate state directories coordinate only when using the same explicit `coordinationDir`. [Coordination](onboarding.md#multiple-profiles) |
 | Permissions / sandbox / enterprise policy | Host-managed | No translation; never infer equivalent security guarantees from similar setting names. |
 | Model selection, reasoning, UI settings, shortcuts | Host-managed | No model equivalence mapping or settings adapter; candidate subagent work must preserve host-local choices. |
 | Memory, conversations, resume state, scheduled tasks | Host-managed | No adapter or transfer contract. Any future handoff should be explicit, user-reviewed content, not automatic copying of internal state. |

@@ -1,6 +1,6 @@
 # Native host acceptance tests
 
-Run `AGENT_BRIDGE_NATIVE_TESTS=1 go test -v ./internal/bridge -run '^TestNative' -count=1` with both CLIs installed. Normal `go test` runs skip native acceptance tests. Missing binaries also skip, never pass as certified. Each native host process has a 20-second timeout and a minimal environment pointing its actual configuration roots at disposable fixture directories; tokens and auth helper variables are not inherited. The harness does not copy credentials, issue prompts, install plugins, or invoke model APIs. The MCP runtime test approves only its fixed Go fixture server in disposable Claude settings; it never approves a production server.
+Run `AGENT_BRIDGE_NATIVE_TESTS=1 go test -v ./internal/bridge -run '^TestNative' -count=1` with both CLIs installed. Normal `go test` runs skip native acceptance tests. Missing binaries also skip, never pass as certified. Each native host process has a 20-second timeout and a minimal environment pointing its actual configuration roots at disposable fixture directories; tokens and auth helper variables are not inherited. The harness does not copy credentials, issue prompts, or invoke model APIs. MCP approvals and plugin installs cover only generated fixtures in disposable settings and caches, never production resources.
 
 Verified locally on macOS, 2026-09-08:
 
@@ -24,9 +24,24 @@ this local stdio runtime path, not remote HTTP authentication or arbitrary serve
 The initial pending-approval test remains separate and still verifies that the
 bridge itself does not grant approval.
 
-Codex plugin installation and agent execution, hook execution, host instruction
+Agent execution, hook execution, host instruction
 loading, and model behavior still need separate coverage. Machine-managed policies
 may influence native CLIs even with disposable user directories; this is
 configuration isolation, not an OS security sandbox.
+
+## Disposable plugin lifecycle
+
+The native plugin tests install and remove only a generated skill-only fixture.
+Claude installs the reverse-translated package from a temporary local marketplace
+and reports its updated version. Codex installs both supported manifest layouts,
+discovers the skill from its installed cache, and removes it. The Codex test also
+changes the authoring skill, verifies the installed copy stays unchanged, then
+uninstalls/reinstalls and verifies discovery of the updated description. Authoring
+sources survive removal. These tests use disposable host settings and caches;
+they do not install anything in the user's actual hosts.
+
+This validates a native lifecycle path, not automatic bridge-managed installation,
+cache refresh, arbitrary plugin execution or hook trust. Users still install and
+refresh reviewed packages with their native host tools.
 
 Isolation references: [Codex environment variables](https://learn.chatgpt.com/docs/config-file/environment-variables), [Claude configuration locations](https://code.claude.com/docs/en/settings). Commands and flags are also checked against each installed CLI's help.
