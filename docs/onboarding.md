@@ -1,5 +1,11 @@
 # Global and project onboarding
 
+For ordinary project instruction files, use [convention-based setup](conventions.md)
+instead of registering each root/nested pair manually. `init PROFILE --conventions`
+selects the profile's containing project and enables ongoing instruction discovery.
+The explicit discovery workflow below remains available for other adapters,
+global configuration, and exceptions.
+
 Discovery is read-only and opt-in per root. It inventories filenames and metadata,
 not native file contents. It does not import, enroll, approve, or execute anything.
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 // Retirement changes only the selected profile. Baselines and every resource
@@ -24,9 +25,15 @@ func checkCurrentConfig(c Config) error {
 	}
 	current, err := LoadAuditConfig(c.ConfigFiles[0])
 	if err != nil {
+		if c.Conventions != nil {
+			return ErrObservationChanged
+		}
 		return err
 	}
 	if !reflect.DeepEqual(c, current) {
+		if c.Conventions != nil {
+			return ErrObservationChanged
+		}
 		return fmt.Errorf("profile changed; reload before writing")
 	}
 	return nil
@@ -98,6 +105,23 @@ func prepareRetirement(filename, id string) (Config, *Snapshot, *Snapshot, Retir
 	var raw configInput
 	if err = decodeEnrollmentJSON(before, &raw); err != nil {
 		return c, nil, nil, r, err
+	}
+	if c.Conventions != nil {
+		for _, resource := range c.Resources {
+			if resource.ID != id {
+				continue
+			}
+			for _, side := range sides[1:] {
+				path := resource.Paths[side]
+				if inside(c.Conventions.Root, path) && (filepath.Base(path) == "CLAUDE.md" || filepath.Base(path) == "AGENTS.md") {
+					rel, e := filepath.Rel(c.Conventions.Root, path)
+					if e != nil || strings.HasPrefix(rel, "..") {
+						return c, nil, nil, r, fmt.Errorf("unsafe convention retirement")
+					}
+					raw.Conventions.Exclude = append(raw.Conventions.Exclude, rel)
+				}
+			}
+		}
 	}
 	remaining := []resourceInput{}
 	for _, resource := range raw.Resources {

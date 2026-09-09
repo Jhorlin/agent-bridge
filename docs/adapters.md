@@ -4,6 +4,11 @@ All examples are sandbox-relative. Never start by pointing an unreviewed profile
 
 ## Global/base and project profiles
 
+The optional `conventions: {"root": ".", "exclude": ["generated"]}` field enables
+ongoing nested instruction discovery in one project. See [conventions](conventions.md)
+for default boundaries, explicit exceptions, compatibility limits, and migration.
+It belongs only in the leaf profile and does not change existing explicit profiles.
+
 Each file has config `version: 1`, its own `stateDir`, and a `resources` array (which can be empty). `extends` names one parent profile. The child overrides whole resources by matching ID. Fields are not merged: an override must supply its complete definition. Paths resolve relative to the file that declared them, not the child working directory. Cycles and depth over 32 are rejected.
 
 ```json

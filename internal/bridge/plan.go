@@ -225,6 +225,9 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 					return result, err
 				}
 				item.Values[side] = value
+				if err := validateConventionContent(c, item, value); err != nil {
+					return result, err
+				}
 				semantic[side] = value
 				stage = "normalize"
 				switch item.Adapter {

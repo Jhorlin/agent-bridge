@@ -15,10 +15,11 @@ func LoadAuditConfig(filename string) (Config, error) {
 // Only resource IDs and fixed vocabulary enter diagnostics; never raw errors,
 // filenames, server names, unknown keys, or native configuration values.
 type AuditReport struct {
-	Version      int             `json:"version"`
-	ReadOnly     bool            `json:"readOnly"`
-	HostVerified bool            `json:"hostVerified"`
-	Resources    []AuditResource `json:"resources"`
+	ConventionWarnings []string        `json:"conventionWarnings,omitempty"`
+	Version            int             `json:"version"`
+	ReadOnly           bool            `json:"readOnly"`
+	HostVerified       bool            `json:"hostVerified"`
+	Resources          []AuditResource `json:"resources"`
 }
 type AuditResource struct {
 	ID        string       `json:"id"`
@@ -48,6 +49,7 @@ func (a AuditReport) Blocked() bool {
 
 func Audit(c Config) AuditReport {
 	report := AuditReport{Version: 1, ReadOnly: true, Resources: []AuditResource{}}
+	report.ConventionWarnings = c.ConventionWarnings
 	resources := append([]Resource(nil), c.Resources...)
 	sort.Slice(resources, func(i, j int) bool { return resources[i].ID < resources[j].ID })
 	for _, r := range resources {

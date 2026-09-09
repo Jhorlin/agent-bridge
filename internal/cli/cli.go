@@ -146,14 +146,20 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	}
 	command, filename := args[0], args[1]
 	if command == "init" {
-		if len(args) != 2 {
+		if len(args) != 2 && !(len(args) == 3 && args[2] == "--conventions") {
 			return usage(errOut)
 		}
-		if err := bridge.InitProfile(filename); err != nil {
+		init := bridge.InitProfile
+		message := "Created an empty private profile. Add reviewed resources, then audit and plan before syncing."
+		if len(args) == 3 {
+			init = bridge.InitConventionProfile
+			message = "Created a private convention-based instruction profile for the containing project. Review exclusions, then audit and plan before syncing. No instruction files changed."
+		}
+		if err := init(filename); err != nil {
 			fmt.Fprintln(errOut, "Could not create profile; check path safety, permissions, and whether it already exists.")
 			return 1
 		}
-		if _, err := fmt.Fprintln(out, "Created an empty private profile. Add reviewed resources, then audit and plan before syncing."); err != nil {
+		if _, err := fmt.Fprintln(out, message); err != nil {
 			return 1
 		}
 		return 0
@@ -188,6 +194,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	last := ""
 	watchBlocked := false
 	lastObservation := ""
+	lastConventionWarnings := ""
 	for {
 		if ctx.Err() != nil {
 			return 0
@@ -238,11 +245,21 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			return 0
 		}
 		if command == "config" {
+			// The resolved inventory includes convention warnings.
 			if err = json.NewEncoder(out).Encode(c); err != nil {
 				fmt.Fprintln(errOut, err)
 				return 1
 			}
 			return 0
+		}
+		warnings, _ := json.Marshal(c.ConventionWarnings)
+		if string(warnings) != lastConventionWarnings {
+			for _, warning := range c.ConventionWarnings {
+				if _, err := fmt.Fprintln(errOut, "Conventions:", warning); err != nil {
+					return 1
+				}
+			}
+			lastConventionWarnings = string(warnings)
 		}
 		if command == "recover" {
 			result, err := bridge.RecoverObserved(c, observer(ctx))
@@ -348,6 +365,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge init <config.json> [--conventions]")
 	fmt.Fprintln(w, "       agent-bridge logs <config.json> [--tail 1..1000]\n       agent-bridge doctor <config.json>\n       agent-bridge support-bundle <config.json> <new-output.json>")
 	fmt.Fprintln(w, "       agent-bridge review-retirement <config.json> <resource-id>")
 	fmt.Fprintln(w, "       agent-bridge apply-retirement <config.json> <observation> <resource-id>")
@@ -378,6 +396,11 @@ func usage(w io.Writer) int {
 func writeAudit(w io.Writer, report bridge.AuditReport) error {
 	if _, err := fmt.Fprintln(w, "Compatibility audit (read-only; host behavior not verified)"); err != nil {
 		return err
+	}
+	for _, warning := range report.ConventionWarnings {
+		if _, err := fmt.Fprintln(w, "Conventions:", warning); err != nil {
+			return err
+		}
 	}
 	for _, r := range report.Resources {
 		if _, err := fmt.Fprintf(w, "%s [%s, %s, %s]: %s\n", r.ID, r.Kind, r.Scope, r.Direction, r.Status); err != nil {

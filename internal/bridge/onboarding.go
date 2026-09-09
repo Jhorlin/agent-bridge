@@ -147,6 +147,16 @@ func Discover(root, scope string) (Discovery, error) {
 // InitProfile creates only a private, empty profile; never overwrite an existing
 // file, create host config, or enroll resources based on filename similarity.
 func InitProfile(filename string) error {
+	return initProfile(filename, false)
+}
+
+// InitConventionProfile creates a profile that selects the containing project,
+// not individual files. Creating the profile itself performs no synchronization.
+func InitConventionProfile(filename string) error {
+	return initProfile(filename, true)
+}
+
+func initProfile(filename string, conventions bool) error {
 	absolute, err := filepath.Abs(filename)
 	if err != nil {
 		return err
@@ -154,7 +164,11 @@ func InitProfile(filename string) error {
 	if err := assertSafe(absolute); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(configInput{Version: 1, StateDir: ".agent-bridge", Resources: []resourceInput{}}, "", "  ")
+	raw := configInput{Version: 1, StateDir: ".agent-bridge", Resources: []resourceInput{}}
+	if conventions {
+		raw.Conventions = &Conventions{Root: "."}
+	}
+	data, err := json.MarshalIndent(raw, "", "  ")
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,10 @@
 # Architecture diagram
 
+Current source also expands a selected project through convention-based
+instruction discovery before adapter planning. Derived file pairs use the same
+baseline, journal, conflict and recovery paths shown below; no separate copying
+daemon is introduced. See [convention-based instructions](conventions.md).
+
 The [README image](architecture.svg), [PNG](architecture.png), and [interactive HTML](architecture.html) describe the core Go synchronization architecture at the verified revision below, not every subsequent feature. The HTML is standalone: download it and open it in a browser. It supports themes, zoom, component inspection, code references, and clean image exports. The CLI remains a standalone Go executable; the documentation viewer is not a runtime dependency.
 
 Current source adds a content-free observer path from the CLI and transaction

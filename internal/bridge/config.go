@@ -61,10 +61,12 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 }
 
 type Config struct {
-	CoordinationDir string     `json:"coordinationDir,omitempty"`
-	StateDir        string     `json:"stateDir"`
-	Resources       []Resource `json:"resources"`
-	ConfigFiles     []string   `json:"configFiles"`
+	Conventions        *Conventions `json:"conventions,omitempty"`
+	ConventionWarnings []string     `json:"conventionWarnings,omitempty"`
+	CoordinationDir    string       `json:"coordinationDir,omitempty"`
+	StateDir           string       `json:"stateDir"`
+	Resources          []Resource   `json:"resources"`
+	ConfigFiles        []string     `json:"configFiles"`
 }
 type resourceInput struct {
 	ID                       string            `json:"id"`
@@ -83,6 +85,7 @@ type resourceInput struct {
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 }
 type configInput struct {
+	Conventions     *Conventions    `json:"conventions,omitempty"`
 	CoordinationDir string          `json:"coordinationDir,omitempty"`
 	Version         int             `json:"version"`
 	StateDir        string          `json:"stateDir"`
@@ -120,6 +123,16 @@ func loadConfig(filename string, audit bool) (Config, error) {
 	}
 	c.StateDir = resolve(filepath.Dir(absolute), raw.StateDir)
 	c.ConfigFiles = configFiles
+	c.CoordinationDir = raw.CoordinationDir
+	c.Conventions = raw.Conventions
+	if c.Conventions != nil {
+		var discovered []resourceInput
+		discovered, c.ConventionWarnings, err = discoverConventions(c, raw.Resources)
+		if err != nil {
+			return c, err
+		}
+		raw.Resources = append(raw.Resources, discovered...)
+	}
 	destinations := append([]string{c.StateDir}, configFiles...)
 	if raw.CoordinationDir != "" {
 		c.CoordinationDir = raw.CoordinationDir
@@ -319,6 +332,11 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 	}
 	files := []string{file}
 	base := filepath.Dir(file)
+	if raw.Conventions != nil {
+		if err := raw.Conventions.resolve(base); err != nil {
+			return raw, nil, err
+		}
+	}
 	if raw.CoordinationDir != "" {
 		if strings.HasPrefix(raw.CoordinationDir, "~") {
 			return raw, nil, fmt.Errorf("coordinationDir requires an explicit path")
@@ -332,6 +350,9 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 			return raw, nil, err
 		}
 		merged = parent.Resources
+		if parent.Conventions != nil {
+			return raw, nil, fmt.Errorf("conventions must be declared in the leaf profile, not an inherited profile")
+		}
 		if raw.CoordinationDir == "" {
 			raw.CoordinationDir = parent.CoordinationDir
 		}

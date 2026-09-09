@@ -6,8 +6,11 @@ Experimental, local-first synchronization between Claude Code and Codex configur
 
 ## Run
 
-New setup: use the [global/project onboarding guide](docs/onboarding.md) for
-read-only discovery and creation of an empty profile before enrolling resources.
+For project instructions, start with [convention-based setup](docs/conventions.md):
+select a project once, then automatically pair root and nested `CLAUDE.md` ↔
+`AGENTS.md` files, including new files while watching. Current source builds only;
+not included in the published alpha. Other adapters and global configuration use
+the [global/project onboarding guide](docs/onboarding.md).
 
 Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
@@ -76,7 +79,7 @@ profile. These commands are not in the published alpha; see the
 
 [Interactive diagram](docs/architecture.html) · [PNG](docs/architecture.png) · [Diagram source and validation notes](docs/architecture-notes.md). Download the HTML and open it locally to explore components and code references; GitHub displays the HTML source rather than running the viewer.
 
-Each explicitly registered file has three peers: a shared-store file, a Claude path, and a Codex path. A manifest records their last synchronized content/executable-bit SHA-256 digest. Changes to any one peer propagate to the others. Different concurrent edits to the same file block the entire sync. Identical concurrent edits converge. This is baseline-based reconciliation, not last-writer-wins copying.
+Each managed file (explicitly registered or convention-discovered) has three peers: a shared-store file, a Claude path, and a Codex path. A manifest records their last synchronized content/executable-bit SHA-256 digest. Changes to any one peer propagate to the others. Different concurrent edits to the same file block the entire sync. Identical concurrent edits converge. This is baseline-based reconciliation, not last-writer-wins copying.
 
 Configuration paths resolve relative to their declaring file; absolute paths are supported. Profiles can explicitly `extends` a global/base profile and replace whole resources by ID or `disable` inherited resources. `scope` remains a label: Agent Bridge does not emulate either host's instruction-loading precedence or automatically discover projects. Start with sandbox fixtures, not your home configuration. See [configuration and adapter reference](docs/adapters.md).
 
@@ -121,7 +124,7 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 
 | Capability | Supported now | Explicit limits |
 | --- | --- | --- |
-| Shared instructions | Common marker-delimited sections in CLAUDE.md ↔ AGENTS.md, preserving host-only text | No semantic translation of instructions, imports or precedence |
+| Shared instructions | Automatic root/nested whole-file pairs within a selected project; optional marker-delimited sections for explicit resources | No semantic translation of instructions, imports or precedence |
 | Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML; source builds offer bounded host-local settings retention | Settings are not equivalent cross-host permissions; unsupported fields rejected |
 | Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit, Stop and exact-Bash PreToolUse/PostToolUse | Absolute executable paths; no trust grants, script execution by the bridge, other tool-name or arbitrary output-policy translation |
 | MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
