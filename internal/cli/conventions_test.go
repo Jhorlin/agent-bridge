@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,6 +47,76 @@ func TestConventionsWatcherDiscoversWithoutProfileEdits(t *testing.T) {
 			t.Fatal(err)
 		}
 		waitFile(t, filepath.Join(sub, side), "reverse edit")
+	}
+}
+
+func TestAllFeatureConventionWatcher(t *testing.T) {
+	for _, scope := range []string{"project", "global"} {
+		t.Run(scope, func(t *testing.T) {
+			dir, _ := setup(t)
+			profile := filepath.Join(dir, "all.json")
+			args := []string{"init", profile, "--conventions"}
+			if scope == "global" {
+				args = []string{"init", profile, "--global", dir}
+			}
+			if code := Run(context.Background(), args, io.Discard, io.Discard); code != 0 {
+				t.Fatal(code)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan int, 1)
+			go func() { done <- Run(ctx, []string{"watch", profile, "--apply"}, io.Discard, io.Discard) }()
+			defer func() {
+				cancel()
+				select {
+				case code := <-done:
+					if code != 0 {
+						t.Errorf("watch exit %d", code)
+					}
+				case <-time.After(3 * time.Second):
+					t.Error("watch did not stop")
+				}
+			}()
+			write := func(path, text string) {
+				t.Helper()
+				path = filepath.Join(dir, path)
+				if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(text), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			write(".claude/skills/demo/SKILL.md", "---\nname: demo\ndescription: Demo.\n---\nWATCH_SKILL_BODY\n")
+			write(".claude/agents/reviewer.md", "---\nname: reviewer\ndescription: Review.\n---\nWATCH_AGENT_BODY\n")
+			write(".claude/settings.json", `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"/fixture/stop","timeout":5}]}]}}`)
+			write(".agent-bridge-plugins/codex/demo/.codex-plugin/plugin.json", `{"name":"demo"}`)
+			mcp := ".mcp.json"
+			if scope == "global" {
+				mcp = ".claude.json"
+			}
+			write(mcp, `{"mcpServers":{"one":{"command":"first"}}}`)
+			waitContains := func(path, want string) {
+				t.Helper()
+				deadline := time.Now().Add(8 * time.Second)
+				for time.Now().Before(deadline) {
+					data, _ := os.ReadFile(filepath.Join(dir, path))
+					if strings.Contains(string(data), want) {
+						return
+					}
+					time.Sleep(25 * time.Millisecond)
+				}
+				t.Fatalf("watch failed for %s", path)
+			}
+			waitContains(".agents/skills/demo/SKILL.md", "WATCH_SKILL_BODY")
+			waitContains(".codex/agents/reviewer.toml", "WATCH_AGENT_BODY")
+			waitContains(".codex/hooks.json", "/fixture/stop")
+			waitContains(".agent-bridge-plugins/claude/demo/.claude-plugin/plugin.json", "demo")
+			waitContains(".codex/config.toml", "first")
+			write(mcp, `{"mcpServers":{"one":{"command":"first"},"two":{"command":"WATCH_LATE_SERVER"}}}`)
+			waitContains(".codex/config.toml", "WATCH_LATE_SERVER")
+			write(".codex/agents/reviewer.toml", "name = 'reviewer'\ndescription = 'Review.'\ndeveloper_instructions = 'WATCH_REVERSE_AGENT'\n")
+			waitContains(".claude/agents/reviewer.md", "WATCH_REVERSE_AGENT")
+		})
 	}
 }
 

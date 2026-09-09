@@ -125,6 +125,13 @@ func loadConfig(filename string, audit bool) (Config, error) {
 	c.ConfigFiles = configFiles
 	c.CoordinationDir = raw.CoordinationDir
 	c.Conventions = raw.Conventions
+	if c.Conventions == nil {
+		for _, r := range raw.Resources {
+			if automaticResource(r.ID) {
+				return c, fmt.Errorf("automatic resource IDs require a convention policy")
+			}
+		}
+	}
 	if c.Conventions != nil {
 		var discovered []resourceInput
 		discovered, c.ConventionWarnings, err = discoverConventions(c, raw.Resources)
@@ -176,7 +183,7 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			res.TranslateSkillInvocation = true
 		}
 		if r.PreserveAgentSettings {
-			if r.Kind != "agent-file" && !(r.Kind == "plugin-directory" && len(r.CodexAgentExports) > 0) {
+			if r.Kind != "agent-file" && !(r.Kind == "plugin-directory" && (len(r.CodexAgentExports) > 0 || featureResourceID(r.ID))) {
 				return c, fmt.Errorf("preserveAgentSettings requires agent-file or explicit plugin agent exports")
 			}
 			res.PreserveAgentSettings = true
@@ -194,7 +201,7 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			res.CodexPluginLayout = r.CodexPluginLayout
 		}
 		if r.Kind == "mcp-config" || (r.Kind == "plugin-directory" && len(r.Servers) > 0) {
-			if len(r.Servers) == 0 || !r.AllowReformat {
+			if (len(r.Servers) == 0 && !featureResourceID(r.ID)) || !r.AllowReformat {
 				return c, fmt.Errorf("mcp-config requires a servers allowlist and allowReformat: true")
 			}
 			seen := map[string]bool{}
@@ -209,7 +216,7 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			if r.Kind == "plugin-directory" && r.CodexPluginLayout == "portable" {
 				return c, fmt.Errorf("bundled MCP currently requires the compatibility plugin layout")
 			}
-		} else if r.Kind == "plugin-directory" && len(r.CodexAgentExports) > 0 {
+		} else if r.Kind == "plugin-directory" && (len(r.CodexAgentExports) > 0 || featureResourceID(r.ID)) {
 			res.AllowReformat = true
 		} else if r.Kind == "skill-directory" {
 			if len(r.Servers) > 0 {

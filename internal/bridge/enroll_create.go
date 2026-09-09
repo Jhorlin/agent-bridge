@@ -58,7 +58,7 @@ func flatProfile(c Config) (*Snapshot, error) {
 	raw := configInput{Version: 1, StateDir: c.StateDir, CoordinationDir: c.CoordinationDir, Resources: []resourceInput{}}
 	raw.Conventions = c.Conventions
 	for _, r := range c.Resources {
-		if c.Conventions != nil && strings.HasPrefix(r.ID, conventionPrefix) {
+		if c.Conventions != nil && automaticResource(r.ID) {
 			continue
 		}
 		entry := resourceInput{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Portable: true, Claude: r.Paths["claude"], Codex: r.Paths["codex"], Servers: r.Servers, AllowReformat: r.AllowReformat, CodexPluginLayout: r.CodexPluginLayout, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings}

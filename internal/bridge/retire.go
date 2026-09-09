@@ -113,7 +113,7 @@ func prepareRetirement(filename, id string) (Config, *Snapshot, *Snapshot, Retir
 			}
 			for _, side := range sides[1:] {
 				path := resource.Paths[side]
-				if inside(c.Conventions.Root, path) && (filepath.Base(path) == "CLAUDE.md" || filepath.Base(path) == "AGENTS.md") {
+				if inside(c.Conventions.Root, path) && (automaticResource(resource.ID) || filepath.Base(path) == "CLAUDE.md" || filepath.Base(path) == "AGENTS.md") {
 					rel, e := filepath.Rel(c.Conventions.Root, path)
 					if e != nil || strings.HasPrefix(rel, "..") {
 						return c, nil, nil, r, fmt.Errorf("unsafe convention retirement")

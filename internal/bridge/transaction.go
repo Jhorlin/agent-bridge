@@ -347,8 +347,17 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				operations = append(operations, Operation{item.Key + "-" + side, item.Paths[side], before, &Snapshot{content.Data, mode}})
 			}
 			result.Manifest.Files[item.Key] = item.Digest
-			if item.Adapter == "mcp" {
-				if err := recordMCPBaselines(item.Resource, item.Content, &result.Manifest); err != nil {
+			if item.Adapter == "mcp" || (item.Adapter == "plugin-mcp" && featureResourceID(item.ID)) {
+				resource := item.Resource
+				if item.Adapter == "plugin-mcp" {
+					resource.ID = item.ID + "@mcp"
+				}
+				if err := recordMCPBaselines(resource, item.Content, &result.Manifest); err != nil {
+					return err
+				}
+			}
+			if item.Adapter == "skill-invocation" && featureResourceID(item.ID) {
+				if err := recordConventionSkillPolicy(item, &result.Manifest); err != nil {
 					return err
 				}
 			}

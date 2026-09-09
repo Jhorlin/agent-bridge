@@ -147,16 +147,38 @@ func Discover(root, scope string) (Discovery, error) {
 // InitProfile creates only a private, empty profile; never overwrite an existing
 // file, create host config, or enroll resources based on filename similarity.
 func InitProfile(filename string) error {
-	return initProfile(filename, false)
+	return initProfile(filename, nil)
 }
 
 // InitConventionProfile creates a profile that selects the containing project,
 // not individual files. Creating the profile itself performs no synchronization.
 func InitConventionProfile(filename string) error {
-	return initProfile(filename, true)
+	return initProfile(filename, &Conventions{Root: ".", Scope: "project", Features: append([]string{}, conventionFeatures...)})
 }
 
-func initProfile(filename string, conventions bool) error {
+func InitGlobalConventionProfile(filename, root string) error {
+	if root == "" || strings.HasPrefix(root, "~") {
+		return fmt.Errorf("global conventions require an explicit root path")
+	}
+	absolute, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+	if err := assertSafe(absolute); err != nil {
+		return err
+	}
+	info, err := os.Stat(absolute)
+	if err != nil || !info.IsDir() {
+		return fmt.Errorf("global convention root must exist")
+	}
+	policy := &Conventions{Root: absolute, Scope: "global", Features: append([]string{}, conventionFeatures...)}
+	if err := policy.resolve(filepath.Dir(absolute)); err != nil {
+		return err
+	}
+	return initProfile(filename, policy)
+}
+
+func initProfile(filename string, conventions *Conventions) error {
 	absolute, err := filepath.Abs(filename)
 	if err != nil {
 		return err
@@ -165,9 +187,7 @@ func initProfile(filename string, conventions bool) error {
 		return err
 	}
 	raw := configInput{Version: 1, StateDir: ".agent-bridge", Resources: []resourceInput{}}
-	if conventions {
-		raw.Conventions = &Conventions{Root: "."}
-	}
+	raw.Conventions = conventions
 	data, err := json.MarshalIndent(raw, "", "  ")
 	if err != nil {
 		return err

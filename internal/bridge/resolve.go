@@ -58,7 +58,7 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 	case "plugin-agent":
 		return normalizePluginAgent(i, side, raw)
 	case "skill-invocation":
-		return normalizeSkillInvocation(side, raw)
+		return normalizeConventionSkill(i, side, raw, Manifest{})
 	case "plugin-command":
 		return normalizePluginCommand(raw)
 	case "skill-metadata":

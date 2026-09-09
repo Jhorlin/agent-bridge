@@ -13,12 +13,14 @@ import (
 	"strings"
 )
 
-// Conventions opts one project tree into whole-file instruction synchronization.
+// Conventions opts an explicit project tree or global root into feature discovery.
 // Exclude entries are root-relative files or directory subtrees, not globs.
 // Resource identities and all writes still use the ordinary transaction engine.
 type Conventions struct {
-	Root    string   `json:"root"`
-	Exclude []string `json:"exclude,omitempty"`
+	Root     string   `json:"root"`
+	Exclude  []string `json:"exclude,omitempty"`
+	Scope    string   `json:"scope,omitempty"`
+	Features []string `json:"features,omitempty"`
 }
 
 // Unknown policy keys must fail even in the legacy permissive config loader:
@@ -38,6 +40,19 @@ func (c *Conventions) UnmarshalJSON(data []byte) error {
 const conventionPrefix = "auto-instructions-"
 
 func (c *Conventions) resolve(base string) error {
+	if c.Scope != "" && c.Scope != "project" && c.Scope != "global" {
+		return fmt.Errorf("conventions.scope must be project or global")
+	}
+	seen := map[string]bool{}
+	if c.Features != nil && len(c.Features) == 0 {
+		return fmt.Errorf("conventions.features must select at least one feature")
+	}
+	for _, feature := range c.Features {
+		if !hasField(conventionFeatures, feature) || seen[feature] {
+			return fmt.Errorf("invalid or duplicate convention feature")
+		}
+		seen[feature] = true
+	}
 	if c.Root == "" || strings.HasPrefix(c.Root, "~") {
 		return fmt.Errorf("conventions.root requires an explicit project path")
 	}
@@ -78,7 +93,7 @@ func conventionStorage(c Config, path string) bool {
 	return inside(strings.ToLower(c.StateDir), path) || (c.CoordinationDir != "" && inside(strings.ToLower(c.CoordinationDir), path))
 }
 
-func discoverConventions(c Config, explicit []resourceInput) ([]resourceInput, []string, error) {
+func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resourceInput, []string, error) {
 	policy := c.Conventions
 	if err := assertSafe(policy.Root); err != nil {
 		return nil, nil, err
@@ -282,7 +297,7 @@ func conventionTracked(c Config) (map[string]Resource, error) {
 			return nil, fmt.Errorf("invalid convention recovery manifest")
 		}
 		for id, r := range proposed.Resources {
-			if old, ok := m.Resources[id]; ok && !reflect.DeepEqual(old, r) {
+			if old, ok := m.Resources[id]; ok && !sameResourceIdentity(old, r) {
 				return nil, fmt.Errorf("convention recovery identity changed")
 			}
 			m.Resources[id] = r
@@ -292,7 +307,7 @@ func conventionTracked(c Config) (map[string]Resource, error) {
 }
 
 func validateConventionContent(c Config, item Item, value *Snapshot) error {
-	if c.Conventions == nil || !strings.HasPrefix(item.ID, conventionPrefix) || value == nil {
+	if c.Conventions == nil || !(strings.HasPrefix(item.ID, conventionPrefix) || (featureResourceID(item.ID) && item.Kind == "portable-file")) || value == nil {
 		return nil
 	}
 	data, err := snapshotBytes(value)

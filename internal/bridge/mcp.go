@@ -353,10 +353,10 @@ func normalizeMCP(r Resource, side string, raw *Snapshot) (*Snapshot, error) {
 		}
 		normalized[name] = s
 	}
-	if len(normalized) == 0 {
+	if len(normalized) == 0 && !featureResourceID(r.ID) {
 		return nil, nil
 	}
-	if len(normalized) != len(r.Servers) {
+	if len(normalized) != len(r.Servers) && !featureResourceID(r.ID) {
 		return nil, fmt.Errorf("partial MCP allowlist: every selected server must be present or all absent")
 	}
 	if side == "shared" && len(entries) != len(normalized) {

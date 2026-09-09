@@ -52,7 +52,7 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 				}
 				names[file] = true
 			case ".mcp.json":
-				if file != ".mcp.json" || len(r.Servers) == 0 || !r.AllowReformat || r.CodexPluginLayout == "portable" {
+				if file != ".mcp.json" || (len(r.Servers) == 0 && !featureResourceID(r.ID)) || !r.AllowReformat || r.CodexPluginLayout == "portable" {
 					return nil, fmt.Errorf("unsupported component: bundled MCP requires an explicit servers allowlist, allowReformat and compatibility layout")
 				}
 				names[file] = true

@@ -1,6 +1,6 @@
 # Shared instructions, agents, and startup hooks
 
-These adapters use the same conflict detection, journal, rollback and polling engine as MCP. They do not execute instructions, agents or hooks. All require `portable: true` after reviewing content. Agent and hook adapters also require `allowReformat: true`. Use explicit files, not an entire settings directory. New adapter kinds require the current binary; do not downgrade an adopted profile to an older binary.
+These adapters use the same conflict detection, journal, rollback and polling engine as MCP. They do not execute instructions, agents or hooks. All require `portable: true` after reviewing content. Agent and hook adapters also require `allowReformat: true`. Explicit profiles select individual files, not entire settings directories. [All-feature conventions](conventions.md) derive those selections and strict adapter options automatically; review the inventory and plan before syncing. New adapter kinds require the current binary; do not downgrade an adopted profile to an older binary.
 
 ## Shared instruction sections
 

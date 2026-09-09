@@ -141,19 +141,23 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		return 0
 	}
-	if len(args) < 2 || len(args) > 3 {
+	if len(args) < 2 || (len(args) > 3 && !(len(args) == 4 && args[0] == "init" && args[2] == "--global")) {
 		return usage(errOut)
 	}
 	command, filename := args[0], args[1]
 	if command == "init" {
-		if len(args) != 2 && !(len(args) == 3 && args[2] == "--conventions") {
+		if len(args) != 2 && !(len(args) == 3 && args[2] == "--conventions") && !(len(args) == 4 && args[2] == "--global") {
 			return usage(errOut)
 		}
 		init := bridge.InitProfile
 		message := "Created an empty private profile. Add reviewed resources, then audit and plan before syncing."
 		if len(args) == 3 {
 			init = bridge.InitConventionProfile
-			message = "Created a private convention-based instruction profile for the containing project. Review exclusions, then audit and plan before syncing. No instruction files changed."
+			message = "Created a private all-feature convention profile for the containing project. Review exclusions and compatibility, then audit and plan before syncing. No native files changed."
+		}
+		if len(args) == 4 {
+			init = func(filename string) error { return bridge.InitGlobalConventionProfile(filename, args[3]) }
+			message = "Created a private all-feature global convention profile for the selected root. No native files changed; audit and plan before syncing."
 		}
 		if err := init(filename); err != nil {
 			fmt.Fprintln(errOut, "Could not create profile; check path safety, permissions, and whether it already exists.")
@@ -366,6 +370,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 }
 func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge init <config.json> [--conventions]")
+	fmt.Fprintln(w, "       agent-bridge init <config.json> --global <explicit-home-root>")
 	fmt.Fprintln(w, "       agent-bridge logs <config.json> [--tail 1..1000]\n       agent-bridge doctor <config.json>\n       agent-bridge support-bundle <config.json> <new-output.json>")
 	fmt.Fprintln(w, "       agent-bridge review-retirement <config.json> <resource-id>")
 	fmt.Fprintln(w, "       agent-bridge apply-retirement <config.json> <observation> <resource-id>")

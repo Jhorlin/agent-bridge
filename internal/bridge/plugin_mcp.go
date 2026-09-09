@@ -14,11 +14,11 @@ func normalizePluginMCP(r Resource, side string, raw *Snapshot) (*Snapshot, erro
 		return nil, err
 	}
 	entries, ok := doc["mcpServers"].(map[string]any)
-	if len(doc) != 1 || !ok || len(entries) != len(r.Servers) {
+	if len(doc) != 1 || !ok || (len(entries) != len(r.Servers) && !featureResourceID(r.ID)) {
 		return nil, fmt.Errorf("bundled MCP must contain exactly the allowlisted servers")
 	}
 	for _, name := range r.Servers {
-		if _, ok := entries[name]; !ok {
+		if _, ok := entries[name]; !ok && !featureResourceID(r.ID) {
 			return nil, fmt.Errorf("bundled MCP server missing from allowlist")
 		}
 	}

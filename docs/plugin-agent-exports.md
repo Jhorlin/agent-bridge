@@ -1,4 +1,4 @@
-# Explicit plugin agent exports
+# Standalone plugin agent exports
 
 Codex 0.153.4 did not discover agents inside an installed compatibility plugin in
 our isolated native test. Source builds offer an explicit alternative: map each
@@ -6,7 +6,11 @@ reviewed Claude plugin agent to a **standalone Codex agent file**, not to an
 unsupported package component. The official [Codex custom-agent contract](https://learn.chatgpt.com/docs/agent-configuration/subagents)
 documents standalone personal/project TOML files and their required fields.
 
-Add this resource to a new version-1 profile, using your own explicit paths:
+[All-feature conventions](conventions.md) discover these exports from reviewed
+packages in the bridge authoring directories, including later additions. The
+following manual alternative uses explicitly selected paths:
+
+Add this resource to a new version-1 profile:
 
 ```json
 {
@@ -32,11 +36,11 @@ with duplicate names elsewhere. Review global/project precedence yourself.
 
 Export paths may be config-relative or absolute; inherited relative paths belong
 to the declaring profile. Select the actual standalone directory for the intended
-Codex scope. The bridge does not discover or alter the host's agent directory
-automatically. Project-scoped exports work through explicitly selected project
+Codex scope. Explicit profiles do not derive these paths. Convention profiles derive only
+namespaced exports under the selected root's `.codex/agents` directory. Project-scoped exports work through explicitly selected project
 paths. New native sessions may be needed to observe changed definitions.
 
-Every package agent must be individually listed. Unlisted/nested agent files,
+In explicit profiles, every package agent must be individually listed. Unlisted/nested agent files,
 wrong names, unsupported metadata, plugin-root macros,
 symlinks and overlapping exports are rejected. Exports cannot overlap package
 roots, other managed paths, profile/state/coordinator files or service storage.
@@ -65,9 +69,11 @@ Review bodies for both hosts; discovery alone does not prove equal execution.
 Explicit export paths are included in profile identity, inheritance/enrollment,
 ownership overlap checks, stale review, conflict selection, history, journal
 target validation and rollback. Ordinary deletion remains a conflict, not an
-implicit uninstall. Adding/changing exports changes resource identity: retain
+implicit uninstall. For explicit profiles, adding/changing exports changes resource identity: retain
 old profiles/state, stop their writers and review adoption into a new
-non-overlapping profile/state. Do not erase baselines to bypass that check.
+non-overlapping profile/state. Do not erase baselines to bypass that check. Convention exports may grow without
+changing existing paths; deletion still conflicts, and historical restore across
+member-list changes remains blocked.
 
 ## Separate lifecycle
 
@@ -79,8 +85,7 @@ two lifecycles are equivalent or use production-unsupported install APIs.
 
 `compare-plugin-copy` compares package copies, excluding external exports; its
 warning calls out that distinction. Stop the relevant watcher and review native
-agent availability independently when retiring a package. Automatic whole-resource
-retirement remains unsupported. No native approvals, credentials or permissions
+agent availability independently when retiring a package. Whole-resource retirement is a separate reviewed command, not automatic uninstall. No native approvals, credentials or permissions
 are copied, and no model call runs merely because you sync a definition.
 
 ## Evidence

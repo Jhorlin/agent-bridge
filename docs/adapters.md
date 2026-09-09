@@ -1,12 +1,14 @@
 # Configuration and adapter reference
 
-All examples are sandbox-relative. Never start by pointing an unreviewed profile at your real home configuration. `plan` reads and reports; `sync` writes; `watch --apply` repeats guarded syncs. `config` shows effective resource paths without reading their contents.
+All examples are sandbox-relative. Never start by pointing an unreviewed profile at your real home configuration. `plan` reads and reports; `sync` writes; `watch --apply` repeats guarded syncs. `config` shows effective resource paths; convention discovery also inspects native metadata/content to derive component identities.
 
 ## Global/base and project profiles
 
 The optional `conventions: {"root": ".", "exclude": ["generated"]}` field enables
 ongoing nested instruction discovery in one project. See [conventions](conventions.md)
-for default boundaries, explicit exceptions, compatibility limits, and migration.
+for all-feature project/global policies, default boundaries, explicit exceptions,
+compatibility limits, and migration. New `init --conventions` profiles select all
+six categories; the minimal policy above stays instruction-only for compatibility.
 It belongs only in the leaf profile and does not change existing explicit profiles.
 
 Each file has config `version: 1`, its own `stateDir`, and a `resources` array (which can be empty). `extends` names one parent profile. The child overrides whole resources by matching ID. Fields are not merged: an override must supply its complete definition. Paths resolve relative to the file that declared them, not the child working directory. Cycles and depth over 32 are rejected.
@@ -66,9 +68,9 @@ The Claude path must already be a symlink resolving directly to the specified ta
 }
 ```
 
-Claude inputs use a top-level `mcpServers` object; Codex inputs use `mcp_servers` TOML tables. This also supports explicitly configured user-level files with those top-level structures. Nested local-project entries inside Claude's user config are not extracted. Only allowlisted servers are synchronized. Group all servers sharing a config-file pair into one resource; overlapping config paths are rejected.
+Claude inputs use a top-level `mcpServers` object; Codex inputs use `mcp_servers` TOML tables. This also supports explicitly configured user-level files with those top-level structures. Nested local-project entries inside Claude's user config are not extracted. Explicit resources synchronize only allowlisted servers. All-feature convention policies discover the union of native top-level server names and retain tracked names. Group all servers sharing a config-file pair into one resource; overlapping config paths are rejected.
 
-Source builds record per-server baselines after a successful sync, allowing independent edits to different selected servers to merge. Differing edits to the same server conflict. Legacy or stale granular baselines retain whole-set reconciliation until a successful sync records current hashes; the published alpha remains whole-set only. Each peer must have all selected servers or none, preventing a partial initial target from being silently overwritten. Deleting selected entries is blocked. Unselected servers and unrelated settings retain their values. JSON formatting changes; TOML formatting and comments can be lost, hence explicit reformat consent. No-op syncs do not rewrite native comments, although baseline seeding can update the manifest. See [MCP merge acceptance](phase-two.md#per-server-mcp-merging).
+Source builds record per-server baselines after a successful sync, allowing independent edits to different selected servers to merge. Differing edits to the same server conflict. Legacy or stale granular baselines retain whole-set reconciliation until a successful sync records current hashes; the published alpha remains whole-set only. For explicit resources, each peer must have all selected servers or none. Convention resources instead reconcile each initial/new name independently, so disjoint sets can safely converge without dropping definitions. Deleting selected entries is blocked. Unselected servers and unrelated settings retain their values. JSON formatting changes; TOML formatting and comments can be lost, hence explicit reformat consent. No-op syncs do not rewrite native comments, although baseline seeding can update the manifest. See [MCP merge acceptance](phase-two.md#per-server-mcp-merging).
 
 | Common setting | Claude representation | Codex representation |
 | --- | --- | --- |
@@ -140,7 +142,7 @@ layout are rejected. Bundled MCP currently conflicts as one selected server set;
 standalone MCP's granular per-server merge does not apply to this component.
 
 Source builds also bridge bounded [conventional static commands](plugin-commands.md)
-in compatibility layout, and explicitly selected [standalone Codex agent exports](plugin-agent-exports.md).
+in compatibility layout, and explicit or convention-derived [standalone Codex agent exports](plugin-agent-exports.md).
 Unsupported files or fields block the entire conversion:
 unlisted agents, direct bundled Codex agents, dynamic command arguments/execution settings, app mappings, settings,
 host-specific presentation/options, and unrecognized root schemas. No installation,

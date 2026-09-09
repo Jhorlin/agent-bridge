@@ -3,6 +3,7 @@ package bridge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -142,6 +143,31 @@ func TestNativeCodexSkillAndHookDiscovery(t *testing.T) {
 		t.Fatalf("hook not discovered: %s", hooks)
 	}
 	t.Logf("Codex discovered generated skill and hook; no hook trust or execution was requested")
+}
+
+func TestNativeConventionProjectDiscovery(t *testing.T) {
+	f := allConventionFixture(t, "project")
+	tools := nativeTools(t, f)
+	f.write(".claude/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: Harmless convention fixture.\n---\nExplain that this is a test.\n")
+	f.write(".claude/settings.json", `{"hooks":{"SessionStart":[{"matcher":"^startup$","hooks":[{"type":"command","command":"/usr/bin/true","timeout":10}]}]}}`)
+	reloadConventions(t, f)
+	f.apply()
+	skills := nativeRPC(t, f, tools["codex"], "skills/list", map[string]any{"cwds": []string{f.dir}, "forceReload": true})
+	if !strings.Contains(string(skills), `"name":"bridge-demo"`) {
+		t.Fatalf("convention-generated project skill not discovered: %s", skills)
+	}
+	hooks := nativeRPC(t, f, tools["codex"], "hooks/list", map[string]any{"cwds": []string{f.dir}})
+	// Project configuration is ignored until the native host trusts the project.
+	// Trust only this disposable fixture, never copy trust through the bridge.
+	if strings.Contains(string(hooks), "/usr/bin/true") {
+		t.Fatal("untrusted project unexpectedly exposed its hooks")
+	}
+	f.write("codex-home/config.toml", fmt.Sprintf("[projects.%q]\ntrust_level='trusted'\n", f.dir))
+	hooks = nativeRPC(t, f, tools["codex"], "hooks/list", map[string]any{"cwds": []string{f.dir}})
+	if !strings.Contains(string(hooks), "/usr/bin/true") || !strings.Contains(string(hooks), `"trustStatus":"untrusted"`) {
+		t.Fatalf("convention-generated project hook not discovered as untrusted: %s", hooks)
+	}
+	t.Log("Native Codex found convention-generated project skill and hook after fixture-only project trust; no hook trust or execution requested")
 }
 
 func TestNativeClaudeAgentValidation(t *testing.T) {

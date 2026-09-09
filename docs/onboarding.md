@@ -1,10 +1,10 @@
 # Global and project onboarding
 
-For ordinary project instruction files, use [convention-based setup](conventions.md)
-instead of registering each root/nested pair manually. `init PROFILE --conventions`
-selects the profile's containing project and enables ongoing instruction discovery.
-The explicit discovery workflow below remains available for other adapters,
-global configuration, and exceptions.
+For ongoing project/global component discovery, use [convention-based setup](conventions.md).
+`init PROFILE --conventions` selects the containing project and all six supported
+categories; `init PROFILE --global ROOT` selects known global locations under an
+explicit root without traversing the home. The manual workflow below remains
+available for tighter selection and nonstandard-path exceptions.
 
 Discovery is read-only and opt-in per root. It inventories filenames and metadata,
 not native file contents. It does not import, enroll, approve, or execute anything.
@@ -23,8 +23,10 @@ outside managed state. Discovery, audit, plan and preview watch remain read-only
 
 Discovery looks for conventional instruction files, skill directories, individual
 agent files and hook settings. Project discovery also offers MCP configuration.
-Global MCP is deliberately excluded because Claude's `.claude.json` also contains
-unrelated account and trust state. Installed plugin caches, credentials, histories,
+This filename-only `discover` command excludes global MCP because Claude's
+`.claude.json` mixes account and trust state. The separate all-feature convention
+policy explicitly supports its top-level MCP definitions with local-data preservation
+and a warning that private transaction backups include the original mixed file. Installed plugin caches, credentials, histories,
 automatic memories, and unregistered project trees are not scanned. Custom host
 configuration roots require manually specified profile paths. Symlink candidates
 are rejected, not followed.

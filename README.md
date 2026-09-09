@@ -6,11 +6,13 @@ Experimental, local-first synchronization between Claude Code and Codex configur
 
 ## Run
 
-For project instructions, start with [convention-based setup](docs/conventions.md):
-select a project once, then automatically pair root and nested `CLAUDE.md` ↔
-`AGENTS.md` files, including new files while watching. Current source builds only;
-not included in the published alpha. Other adapters and global configuration use
-the [global/project onboarding guide](docs/onboarding.md).
+Start with [convention-based setup](docs/conventions.md): select a project or an
+explicit global root once, then discover instructions, skills, agents, hooks, MCP
+and plugin authoring packages, including new components while watching. Source
+builds only; not included in the published alpha. Plugin installation, credentials
+and security enforcement remain host-managed. Existing instruction-only profiles
+stay instruction-only until explicitly upgraded. The [onboarding guide](docs/onboarding.md)
+also covers manual resource exceptions.
 
 Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
@@ -28,7 +30,7 @@ go build -o agent-bridge ./cmd/agent-bridge
 ./agent-bridge plan examples/bridge.json
 ./agent-bridge audit examples/bridge.json
 ./agent-bridge audit examples/mcp.bridge.json --json
-# Inspect resolved profiles and target paths without reading native contents:
+# Inspect resolved profiles and paths (conventions inspect native metadata):
 ./agent-bridge config examples/bridge.json
 ./agent-bridge sync examples/bridge.json
 ./agent-bridge watch examples/bridge.json
@@ -44,7 +46,7 @@ On macOS, opt-in `service install|start|stop|status|uninstall` commands manage a
 
 Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped. Unreadable or unsupported inputs pause writes and are retried, with redacted pause/resume diagnostics; transaction and output errors stop the watcher. It never automatically recovers a pending transaction. Signals finish the current sync before shutdown.
 
-`audit CONFIG [--json]` is a read-only compatibility preflight for explicitly registered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
+`audit CONFIG [--json]` is a read-only compatibility preflight for explicit and convention-discovered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
 
 Source builds also provide [whole-resource retirement that preserves files](docs/retirement.md),
 [reviewed supporting-file rename/delete and historical undo](docs/supporting-file-changes.md)
@@ -114,7 +116,7 @@ Claude's `disable-model-invocation` maps to the inverse Codex
 invocation remains available; other rich skill metadata is unsupported. See
 [invocation policy, adoption and native test limits](docs/skill-invocation.md).
 
-For minimal Claude plugin agents, source builds support explicitly mapped,
+For minimal Claude plugin agents, source builds support explicit or convention-derived,
 namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
 Those files have an independent lifecycle; Codex plugin uninstall does not remove them.
 
@@ -124,11 +126,11 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 
 | Capability | Supported now | Explicit limits |
 | --- | --- | --- |
-| Shared instructions | Automatic root/nested whole-file pairs within a selected project; optional marker-delimited sections for explicit resources | No semantic translation of instructions, imports or precedence |
+| Shared instructions | Automatic root/nested project pairs and a selected global pair; optional explicit shared sections | No semantic translation of instructions, imports or precedence |
 | Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML; source builds offer bounded host-local settings retention | Settings are not equivalent cross-host permissions; unsupported fields rejected |
 | Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit, Stop and exact-Bash PreToolUse/PostToolUse | Absolute executable paths; no trust grants, script execution by the bridge, other tool-name or arbitrary output-policy translation |
-| MCP | Named allowlist; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial allowlists, and deleting selected servers block sync |
-| Plugins | Portable skill packages, common metadata, supporting files; source builds add bounded conventional hooks, static commands, allowlisted MCP and explicit standalone agent exports | No automatic installation/cache refresh, OAuth, marketplace management, portable-layout hooks/MCP/commands, direct bundled Codex agents, app mappings or arbitrary host-specific fields |
+| MCP | Explicit allowlist or convention-discovered names; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial explicit allowlists, and deleting tracked servers block sync |
+| Plugins | Portable skill packages, common metadata, supporting files; source builds add bounded conventional hooks, static commands, selected MCP and explicit or convention-derived standalone agent exports | No automatic installation/cache refresh, OAuth, marketplace management, portable-layout hooks/MCP/commands, direct bundled Codex agents, app mappings or arbitrary host-specific fields |
 | Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |
 | Inheritance | Explicit base/global profile, declaring-file-relative paths, full-resource project overrides, disabling inherited resources | No automatic project discovery, host instruction inheritance or partial-field merging; cross-profile coordination/enrollment is separately explicit |
 

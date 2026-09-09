@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -93,7 +92,7 @@ func readManifest(c Config) (Manifest, *Snapshot, error) {
 		}
 	}
 	for _, r := range c.Resources {
-		if previous, ok := m.Resources[r.ID]; ok && !reflect.DeepEqual(previous, r) {
+		if previous, ok := m.Resources[r.ID]; ok && !sameResourceIdentity(previous, r) {
 			return m, nil, fmt.Errorf("managed resource changed identity: %s; use a new ID and review adoption", r.ID)
 		}
 	}
@@ -234,7 +233,7 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 				case "plugin-agent":
 					semantic[side], err = normalizePluginAgent(item, side, value)
 				case "skill-invocation":
-					semantic[side], err = normalizeSkillInvocation(side, value)
+					semantic[side], err = normalizeConventionSkill(item, side, value, result.Manifest)
 				case "plugin-command":
 					semantic[side], err = normalizePluginCommand(value)
 				case "skill-metadata":
@@ -292,8 +291,12 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 				selected = "shared"
 			}
 			item.Content = semantic[selected]
-			if item.Adapter == "mcp" && tracked {
-				merged, conflict, handled, err := mergeMCPServers(item.Resource, semantic, result.Manifest)
+			if (item.Adapter == "mcp" && (tracked || featureResourceID(item.ID))) || (item.Adapter == "plugin-mcp" && featureResourceID(item.ID)) {
+				resource := item.Resource
+				if item.Adapter == "plugin-mcp" {
+					resource.ID = item.ID + "@mcp"
+				}
+				merged, conflict, handled, err := mergeMCPServers(resource, semantic, result.Manifest)
 				if err != nil {
 					return result, err
 				}
