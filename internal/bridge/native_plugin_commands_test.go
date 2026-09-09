@@ -34,6 +34,38 @@ func TestNativePluginCommandDiscovery(t *testing.T) {
 	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "add", f.dir)
 	nativeRun(t, f, tools["claude"], "plugin", "install", "demo@bridge-fixture", "--scope", "user")
 	nativeRun(t, f, tools["claude"], "plugin", "validate", f.path("claude-plugin"))
+	server, requests := nativePluginFixtureProvider(t)
+	nativeRunEnvironment(t, f, tools["claude"], []string{"ANTHROPIC_BASE_URL=" + server.URL, "ANTHROPIC_API_KEY=bridge-fixture-not-a-real-key"}, "--print", "--model", "sonnet", "--max-turns", "1", "--no-session-persistence", "--setting-sources", "user", "/demo:bridge-command")
+	assertNativeRequestMarker(t, requests, "Return the fixed word fixture.")
+	f.write("codex-home/config.toml", nativePluginProviderConfig(server.URL))
+	nativeRPC(t, f, tools["codex"], "plugin/install", map[string]any{"marketplacePath": f.path("home/.agents/plugins/marketplace.json"), "pluginName": "demo"})
+	nativeRun(t, f, tools["codex"], "exec", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "$demo:source-command-bridge-command")
+	assertNativeRequestMarker(t, requests, "Return the fixed word fixture.")
+	nativeRPC(t, f, tools["codex"], "plugin/uninstall", map[string]any{"pluginId": "demo@personal"})
+	nativeRun(t, f, tools["claude"], "plugin", "uninstall", "demo@bridge-fixture", "--scope", "user")
+	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "remove", "bridge-fixture")
+	if !strings.Contains(f.read("claude-plugin/commands/bridge-command.md"), "Reverse command marker") {
+		t.Fatal("reverse command update missing")
+	}
+}
+
+func nativePluginProviderConfig(url string) string {
+	return fmt.Sprintf("model='fixture'\nmodel_provider='fixture'\n[model_providers.fixture]\nname='Local test fixture'\nbase_url=%q\nwire_api='responses'\nrequires_openai_auth=false\nrequest_max_retries=0\nstream_max_retries=0\n", url)
+}
+
+func assertNativeRequestMarker(t *testing.T, requests chan string, marker string) {
+	t.Helper()
+	found := false
+	for len(requests) > 0 {
+		found = strings.Contains(<-requests, marker) || found
+	}
+	if !found {
+		t.Fatal("native request did not contain expected fixture marker")
+	}
+}
+
+func nativePluginFixtureProvider(t *testing.T) (*httptest.Server, chan string) {
+	t.Helper()
 	requests := make(chan string, 16)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/responses") {
@@ -81,32 +113,6 @@ func TestNativePluginCommandDiscovery(t *testing.T) {
 			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", envelope.Type, event)
 		}
 	}))
-	defer server.Close()
-	nativeRunEnvironment(t, f, tools["claude"], []string{"ANTHROPIC_BASE_URL=" + server.URL, "ANTHROPIC_API_KEY=bridge-fixture-not-a-real-key"}, "--print", "--model", "sonnet", "--max-turns", "1", "--no-session-persistence", "--setting-sources", "user", "/demo:bridge-command")
-	if len(requests) == 0 {
-		t.Fatal("no local command invocation request")
-	}
-	found := false
-	for len(requests) > 0 {
-		found = strings.Contains(<-requests, "Return the fixed word fixture.") || found
-	}
-	if !found {
-		t.Fatal("Claude did not expand the reverse-generated command body")
-	}
-	f.write("codex-home/config.toml", fmt.Sprintf("model='fixture'\nmodel_provider='fixture'\n[model_providers.fixture]\nname='Local test fixture'\nbase_url=%q\nwire_api='responses'\nrequires_openai_auth=false\nrequest_max_retries=0\nstream_max_retries=0\n", server.URL))
-	nativeRPC(t, f, tools["codex"], "plugin/install", map[string]any{"marketplacePath": f.path("home/.agents/plugins/marketplace.json"), "pluginName": "demo"})
-	nativeRun(t, f, tools["codex"], "exec", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "$demo:source-command-bridge-command")
-	found = false
-	for len(requests) > 0 {
-		found = strings.Contains(<-requests, "Return the fixed word fixture.") || found
-	}
-	if !found {
-		t.Fatal("Codex did not expand the installed migrated command body")
-	}
-	nativeRPC(t, f, tools["codex"], "plugin/uninstall", map[string]any{"pluginId": "demo@personal"})
-	nativeRun(t, f, tools["claude"], "plugin", "uninstall", "demo@bridge-fixture", "--scope", "user")
-	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "remove", "bridge-fixture")
-	if !strings.Contains(f.read("claude-plugin/commands/bridge-command.md"), "Reverse command marker") {
-		t.Fatal("reverse command update missing")
-	}
+	t.Cleanup(server.Close)
+	return server, requests
 }

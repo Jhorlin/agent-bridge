@@ -14,7 +14,7 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Bounded conventional hooks, static commands and allowlisted MCP added for compatibility layout with native loading tests; agents and package-root relocation remain pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Bounded opt-in host-local agent settings retained with loading tests; skill invocation/dependency mapping remains pending |
-| 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Source builds add prompt/Stop command definitions with native payload/trust tests; broader runtime/policy equivalence pending |
+| 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Prompt/Stop plus exact-Bash pre/post definitions, native payloads, denial, failure, timeout and Codex trust checks implemented; other tools/events and arbitrary policy equivalence pending |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging, rollback, opt-in Codex-local policy retention and verified scalar text patches implemented; structural formatting preservation and plugin-relative support remain pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Explicit side selection and retained file-version selection with bound review and transaction rollback implemented; rename/delete pending |
 | 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Ownership checks, Linux lifecycle, user-manager restart and same-source binary replacement passed with an isolated CI user manager; reboot/login, cross-version migrations and automatic upgrades remain outside current acceptance |
@@ -24,6 +24,14 @@ enrollment, MCP and component contracts, richer definitions/hooks, plugin refres
 drift workflows, then broader platform/hardening acceptance. Safety tests accompany
 each increment rather than waiting until the end. Push only verified milestones;
 do not modify or republish the existing alpha assets.
+
+Bundled agents remain a real compatibility gap, not an untested copy operation:
+an isolated Codex 0.153.4 probe did not advertise either `agents/*.md` or
+`agents/*.toml` from an installed compatibility plugin, while a standalone
+`CODEX_HOME/agents/*.toml` positive control was advertised in the same request.
+The bridge continues to reject package agents. A separately owned standalone
+export or another verified loader contract is required; this expected-rejection
+evidence does not complete that feature.
 
 ## Fixture and evidence rules
 

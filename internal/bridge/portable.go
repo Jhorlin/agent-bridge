@@ -170,7 +170,8 @@ func renderAgent(side string, content *Snapshot) (*Snapshot, error) {
 var hookExecutable = regexp.MustCompile(`^/[A-Za-z0-9_./-]+$`)
 
 // Bounded hook contract: synchronous, explicitly timed startup SessionStart and
-// UserPromptSubmit/Stop commands. No shell expressions, prompt handlers or tool events.
+// UserPromptSubmit/Stop commands and exact Bash pre/post tool events. No shell
+// expressions or prompt handlers; output policy remains the host's responsibility.
 func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 	if raw == nil {
 		return nil, nil
@@ -194,8 +195,8 @@ func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 		return nil, nil
 	}
 	for event, groups := range hooks {
-		if event != "SessionStart" && event != "UserPromptSubmit" && event != "Stop" {
-			return nil, fmt.Errorf("only startup SessionStart, UserPromptSubmit and Stop hooks are mapped in this version")
+		if event != "SessionStart" && event != "UserPromptSubmit" && event != "Stop" && event != "PreToolUse" && event != "PostToolUse" {
+			return nil, fmt.Errorf("only startup, prompt, stop and Bash pre/post tool hooks are mapped in this version")
 		}
 		list, ok := groups.([]any)
 		if !ok || len(list) == 0 {
@@ -213,6 +214,9 @@ func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 			}
 			if event == "SessionStart" && group["matcher"] != "^startup$" {
 				return nil, fmt.Errorf("portable hooks require exact startup matcher")
+			}
+			if (event == "PreToolUse" || event == "PostToolUse") && group["matcher"] != "^Bash$" {
+				return nil, fmt.Errorf("tool hooks require the exact ^Bash$ matcher")
 			}
 			if event == "UserPromptSubmit" || event == "Stop" {
 				if _, ok := group["matcher"]; ok {
