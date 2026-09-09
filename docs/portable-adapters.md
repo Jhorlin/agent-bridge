@@ -51,6 +51,34 @@ Instruction body whitespace is preserved after normalizing Claude CRLF input to 
 
 Native schemas: [Claude agents](https://code.claude.com/docs/en/sub-agents), [Codex agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
+### Retaining host-local agent settings (source builds)
+
+Set `"preserveAgentSettings": true` on an `agent-file` resource to retain a bounded
+set of native settings while synchronizing name, description and instructions.
+The default strict mode above is unchanged. This option is part of resource
+identity and requires reviewed adoption, not an in-place toggle on a tracked ID.
+
+Claude retains `model`, `tools`, `disallowedTools`, `permissionMode` and positive
+integer `maxTurns`. Codex retains `model`, `model_reasoning_effort`, `sandbox_mode`
+and string `approval_policy`. Types and bounded mode values are checked. Model
+availability and the validity of particular tool names still require native review.
+Unrecognized settings, hooks, MCP definitions, skill preloads and memory remain
+blocked. YAML aliases, anchors and custom tags are rejected in this mode.
+
+These settings remain in their original host file; they are not copied into the
+shared model or translated to the other host. A newly generated counterpart has
+native defaults until configured independently. **A read-only agent on one side
+does not imply a read-only agent on the other.** Do not run either until its local
+settings are appropriate. Audit highlights this distinction.
+
+Policy-only edits stay local, but invalidate a prior raw-input review checkpoint.
+Conflict choices and historical portable-content restores retain today's native
+settings. Regenerated metadata may lose comments/formatting, not the supported
+setting values. Tests cover bidirectional updates, rollback, invalid metadata,
+consent/identity, stale review and historical restoration. Disposable native
+fixtures exercise loading after updates with retained settings; no live-provider
+calls or cross-host permission-equivalence claims are involved.
+
 ## Startup hooks
 
 Use `kind: "hook-config"` for Claude `settings.json` and Codex `hooks.json`. This adapter maps the entire top-level `hooks` object as one unit. Other top-level values remain local and are preserved semantically; JSON formatting is rewritten. The first portable hook subset is intentionally narrow:

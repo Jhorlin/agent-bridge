@@ -70,6 +70,9 @@ func Audit(c Config) AuditReport {
 			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; only bounded conventional compatibility-layout hooks and allowlisted MCP are bridged. Bundled agents remain unsupported.")
 		case "agent-file":
 			row.Actions = append(row.Actions, "Only name, description and instructions are mapped; review native agent discovery and host permissions separately.")
+			if r.PreserveAgentSettings {
+				row.Actions = append(row.Actions, "Bounded model and permission settings stay in their original host file. Configure each host independently; retained settings are not equivalent cross-host permissions.")
+			}
 		case "hook-config":
 			row.Actions = append(row.Actions, "Only startup SessionStart, UserPromptSubmit and Stop command configuration is mapped. Review and trust hooks in each host; executable behavior is not certified or run by this bridge.")
 		}

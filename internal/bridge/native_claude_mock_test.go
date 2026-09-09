@@ -18,7 +18,7 @@ func TestNativeClaudeAgentAndHookWithLocalEndpoint(t *testing.T) {
 			tools := nativeTools(t, f)
 			f.raw.Resources = []resourceInput{
 				{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
-				{ID: "agent", Kind: "agent-file", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/agents/reviewer.md", Codex: "codex-home/agents/reviewer.toml"},
+				{ID: "agent", Kind: "agent-file", Scope: "global", Portable: true, AllowReformat: true, PreserveAgentSettings: true, Claude: "claude-home/agents/reviewer.md", Codex: "codex-home/agents/reviewer.toml"},
 				{ID: "startup", Kind: "hook-config", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/settings.json", Codex: "codex-home/hooks.json"},
 				{ID: "instructions", Kind: "instruction-file", Scope: "global", Portable: true, Claude: "claude-home/CLAUDE.md", Codex: "codex-home/AGENTS.md"},
 			}
@@ -35,6 +35,11 @@ func TestNativeClaudeAgentAndHookWithLocalEndpoint(t *testing.T) {
 			data, err := json.Marshal(map[string]any{"hooks": map[string]any{event: []any{group}}})
 			must(t, err)
 			f.write("codex-home/hooks.json", string(data))
+			f.apply()
+			// Keep the ordinary skill-loading assertion independent of a tool
+			// allowlist: restricting this fixture to Read hides Skill context.
+			f.write("claude-home/agents/reviewer.md", strings.Replace(f.read("claude-home/agents/reviewer.md"), "name: reviewer", "name: reviewer\nmodel: inherit", 1))
+			f.write("codex-home/agents/reviewer.toml", strings.Replace(f.read("codex-home/agents/reviewer.toml"), "Review fixture", "Updated review fixture", 1))
 			f.apply()
 			requests := make(chan string, 16)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

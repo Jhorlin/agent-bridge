@@ -20,7 +20,7 @@ func TestNativeCodexStartupHookTrustAndExecution(t *testing.T) {
 			f.raw.Resources = append(f.raw.Resources,
 				resourceInput{ID: "instructions", Kind: "instruction-file", Scope: "global", Portable: true, Claude: "claude-home/CLAUDE.md", Codex: "codex-home/AGENTS.md"},
 				resourceInput{ID: "skill", Kind: "skill-directory", Scope: "global", Portable: true, Claude: "claude-home/skills/bridge-demo", Codex: "home/.agents/skills/bridge-demo"},
-				resourceInput{ID: "agent", Kind: "agent-file", Scope: "global", Portable: true, AllowReformat: true, Claude: "claude-home/agents/reviewer.md", Codex: "codex-home/agents/reviewer.toml"})
+				resourceInput{ID: "agent", Kind: "agent-file", Scope: "global", Portable: true, AllowReformat: true, PreserveAgentSettings: true, Claude: "claude-home/agents/reviewer.md", Codex: "codex-home/agents/reviewer.toml"})
 			f.load()
 			f.write("claude-home/CLAUDE.md", instructionStart+"\nBRIDGE_SHARED_INSTRUCTION_FIXTURE\n"+instructionEnd+"\n")
 			f.write("claude-home/skills/bridge-demo/SKILL.md", "---\nname: bridge-demo\ndescription: BRIDGE_SKILL_DESCRIPTION_FIXTURE\n---\nThis is a harmless fixture.")
@@ -35,6 +35,9 @@ func TestNativeCodexStartupHookTrustAndExecution(t *testing.T) {
 			data, err := json.Marshal(map[string]any{"hooks": map[string]any{event: []any{group}}})
 			must(t, err)
 			f.write("claude-home/settings.json", string(data))
+			f.apply()
+			f.write("codex-home/agents/reviewer.toml", f.read("codex-home/agents/reviewer.toml")+"\nmodel_reasoning_effort = 'low'\nsandbox_mode = 'read-only'\n")
+			f.write("claude-home/agents/reviewer.md", strings.Replace(f.read("claude-home/agents/reviewer.md"), "Review the harmless fixture.", "Review the updated harmless fixture.", 1))
 			f.apply()
 			requests := make(chan string, 16)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

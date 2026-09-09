@@ -207,7 +207,7 @@ func Plan(c Config) (PlanResult, error) {
 				case "instruction-file":
 					semantic[side], err = normalizeInstructions(side, value)
 				case "agent-file":
-					semantic[side], err = normalizeAgent(side, value)
+					semantic[side], err = normalizeAgentResource(item.Resource, side, value)
 				case "hook-config":
 					semantic[side], err = normalizeHooks(side, value)
 				case "mcp":

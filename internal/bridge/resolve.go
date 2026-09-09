@@ -60,7 +60,7 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 	case "instruction-file":
 		return normalizeInstructions(side, raw)
 	case "agent-file":
-		return normalizeAgent(side, raw)
+		return normalizeAgentResource(i.Resource, side, raw)
 	case "hook-config":
 		return normalizeHooks(side, raw)
 	case "mcp":

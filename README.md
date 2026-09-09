@@ -100,6 +100,8 @@ opt-in; these are **not** translated into Claude permissions. See [policy retent
 Try `./agent-bridge plan examples/mcp.bridge.json`, then `sync` with the same file. It generates an isolated example TOML config under `examples/sandbox`; it does not launch a server, authenticate, or contact the example endpoint.
 
 See [shared instructions, agents and hooks](docs/portable-adapters.md) for consent requirements, supported fields and sandbox examples.
+Source builds can retain bounded host-local agent settings with
+`preserveAgentSettings`; this does not translate models or permissions between hosts.
 
 ## Recovery
 

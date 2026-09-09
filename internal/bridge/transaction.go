@@ -232,7 +232,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				case "instruction-file":
 					content, err = renderInstructions(side, item.Content, before)
 				case "agent-file":
-					content, err = renderAgent(side, item.Content)
+					content, err = renderAgentResource(item.Resource, side, item.Content, before)
 				case "hook-config":
 					content, err = renderHooks(side, item.Content, before)
 				case "mcp":
@@ -252,7 +252,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				case "instruction-file":
 					roundTrip, err = normalizeInstructions(side, content)
 				case "agent-file":
-					roundTrip, err = normalizeAgent(side, content)
+					roundTrip, err = normalizeAgentResource(item.Resource, side, content)
 				case "hook-config":
 					roundTrip, err = normalizeHooks(side, content)
 				case "mcp":

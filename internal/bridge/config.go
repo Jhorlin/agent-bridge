@@ -25,6 +25,7 @@ type Resource struct {
 	AllowReformat            bool              `json:"allowReformat,omitempty"`
 	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
+	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 }
 
 type Link struct {
@@ -50,7 +51,8 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		AllowReformat            bool            `json:"allowReformat,omitempty"`
 		CodexPluginLayout        string          `json:"codexPluginLayout,omitempty"`
 		PreserveCodexMCPPolicies bool            `json:"preserveCodexMCPPolicies,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies})
+		PreserveAgentSettings    bool            `json:"preserveAgentSettings,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings})
 }
 
 type Config struct {
@@ -71,6 +73,7 @@ type resourceInput struct {
 	AllowReformat            bool              `json:"allowReformat,omitempty"`
 	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
+	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 }
 type configInput struct {
 	CoordinationDir string          `json:"coordinationDir,omitempty"`
@@ -140,6 +143,12 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			return c, fmt.Errorf("each resource needs global or project scope")
 		}
 		res := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"shared": filepath.Join(c.StateDir, "shared", r.ID)}}
+		if r.PreserveAgentSettings {
+			if r.Kind != "agent-file" {
+				return c, fmt.Errorf("preserveAgentSettings requires agent-file")
+			}
+			res.PreserveAgentSettings = true
+		}
 		if r.PreserveCodexMCPPolicies {
 			if r.Kind != "mcp-config" {
 				return c, fmt.Errorf("preserveCodexMCPPolicies requires mcp-config")
