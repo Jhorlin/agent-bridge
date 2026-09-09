@@ -26,6 +26,7 @@ type Resource struct {
 	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
+	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
 }
 
 type Link struct {
@@ -52,7 +53,8 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		CodexPluginLayout        string          `json:"codexPluginLayout,omitempty"`
 		PreserveCodexMCPPolicies bool            `json:"preserveCodexMCPPolicies,omitempty"`
 		PreserveAgentSettings    bool            `json:"preserveAgentSettings,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings})
+		TranslateSkillInvocation bool            `json:"translateSkillInvocation,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation})
 }
 
 type Config struct {
@@ -74,6 +76,7 @@ type resourceInput struct {
 	CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
+	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
 }
 type configInput struct {
 	CoordinationDir string          `json:"coordinationDir,omitempty"`
@@ -143,6 +146,12 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			return c, fmt.Errorf("each resource needs global or project scope")
 		}
 		res := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"shared": filepath.Join(c.StateDir, "shared", r.ID)}}
+		if r.TranslateSkillInvocation {
+			if r.Kind != "skill-directory" || !r.AllowReformat {
+				return c, fmt.Errorf("translateSkillInvocation requires a strict skill-directory")
+			}
+			res.TranslateSkillInvocation = true
+		}
 		if r.PreserveAgentSettings {
 			if r.Kind != "agent-file" {
 				return c, fmt.Errorf("preserveAgentSettings requires agent-file")

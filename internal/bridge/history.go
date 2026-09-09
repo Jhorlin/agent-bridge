@@ -159,6 +159,26 @@ func prepareHistory(c Config, p *PlanResult, choice HistoryChoice) (string, erro
 	if !found || selected == nil {
 		return "", fmt.Errorf("selected historical file version is absent")
 	}
+	if i.Adapter == "skill-invocation" && choice.Side == "codex" {
+		var policy *Snapshot
+		foundPolicy := false
+		for _, op := range j.Operations {
+			if op.File == skillPolicyPath(*i) && op.Label == i.Key+"-codex-policy" {
+				foundPolicy = true
+				policy = op.After
+				if choice.Snapshot == "before" {
+					policy = op.Before
+				}
+			}
+		}
+		if !foundPolicy {
+			return "", fmt.Errorf("historical skill policy companion missing")
+		}
+		selected, err = packSkillBundle(selected, policy)
+		if err != nil {
+			return "", err
+		}
+	}
 	old := *i
 	old.Values = map[string]*Snapshot{choice.Side: selected}
 	content, err := resolutionContent(old, choice.Side)

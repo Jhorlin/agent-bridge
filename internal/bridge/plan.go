@@ -120,6 +120,12 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 		}
 		hasSkill := false
 		for _, file := range files {
+			if r.TranslateSkillInvocation && strings.EqualFold(file, "agents/openai.yaml") {
+				if side != "codex" || file != "agents/openai.yaml" {
+					return nil, fmt.Errorf("invocation policy sidecar belongs only in Codex")
+				}
+				continue
+			}
 			names[file] = true
 			if file == "SKILL.md" {
 				hasSkill = true
@@ -164,6 +170,9 @@ func expand(r Resource, m Manifest) ([]Item, error) {
 		item := Item{Resource: entry, Key: prefix + name, Relative: name}
 		if r.AllowReformat && name == "SKILL.md" {
 			item.Adapter = "skill-metadata"
+			if r.TranslateSkillInvocation {
+				item.Adapter = "skill-invocation"
+			}
 		}
 		result = append(result, item)
 	}
@@ -198,13 +207,15 @@ func Plan(c Config) (PlanResult, error) {
 			semantic := map[string]*Snapshot{}
 			hashes := map[string]string{}
 			for _, side := range sides {
-				value, err := snapshot(item.Paths[side])
+				value, err := readItemSide(item, side)
 				if err != nil {
 					return result, err
 				}
 				item.Values[side] = value
 				semantic[side] = value
 				switch item.Adapter {
+				case "skill-invocation":
+					semantic[side], err = normalizeSkillInvocation(side, value)
 				case "plugin-command":
 					semantic[side], err = normalizePluginCommand(value)
 				case "skill-metadata":

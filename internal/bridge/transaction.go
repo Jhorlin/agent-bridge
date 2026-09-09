@@ -223,7 +223,7 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		operations := []Operation{}
 		for _, item := range result.Items {
 			for _, side := range sides {
-				current, err := snapshot(item.Paths[side])
+				current, err := readItemSide(item, side)
 				if err != nil {
 					return err
 				}
@@ -235,6 +235,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				before := item.Values[side]
 				content := item.Content
 				switch item.Adapter {
+				case "skill-invocation":
+					content, err = renderSkillInvocation(side, item.Content)
 				case "instruction-file":
 					content, err = renderInstructions(side, item.Content, before)
 				case "agent-file":
@@ -253,6 +255,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 				var roundTrip *Snapshot
 				switch item.Adapter {
+				case "skill-invocation":
+					roundTrip, err = normalizeSkillInvocation(side, content)
 				case "plugin-command":
 					roundTrip, err = normalizePluginCommand(content)
 				case "skill-metadata":
@@ -277,6 +281,14 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 				if fingerprint(roundTrip) != item.Digest {
 					return fmt.Errorf("adapter round-trip validation failed for %s", item.ID)
+				}
+				if item.Adapter == "skill-invocation" && side == "codex" {
+					extra, err := skillBundleOperations(item, before, content)
+					if err != nil {
+						return err
+					}
+					operations = append(operations, extra...)
+					continue
 				}
 				mode := uint32(0600)
 				if before != nil {
