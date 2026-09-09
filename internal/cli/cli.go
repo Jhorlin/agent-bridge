@@ -26,6 +26,24 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && args[0] == "draft-profile" {
+		if len(args) < 4 || (args[2] != "--global" && args[2] != "--project") {
+			return usage(errOut)
+		}
+		scope := "project"
+		if args[2] == "--global" {
+			scope = "global"
+		}
+		draft, err := bridge.DraftProfile(args[1], scope, args[3:])
+		if err != nil {
+			fmt.Fprintln(errOut, "Could not draft profile: check the explicit root, scope, selected IDs and unsafe or ambiguous paths. No files changed.")
+			return 1
+		}
+		if err := json.NewEncoder(out).Encode(draft); err != nil {
+			return 1
+		}
+		return 0
+	}
 	if len(args) > 0 && args[0] == "check-overlap" {
 		report, err := bridge.CheckOverlaps(args[1:])
 		if err != nil {
@@ -239,6 +257,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge draft-profile <root> <--project|--global> <candidate-id> [more IDs...]")
 	fmt.Fprintln(w, "       agent-bridge check-overlap <profile.json> <other.json> [more profiles...]")
 	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge <discover|watch-discovery> <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")
 	return 1

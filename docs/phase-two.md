@@ -10,7 +10,7 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 
 | # | Workstream | Required acceptance evidence | Current phase-two status |
 |---|---|---|---|
-| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch implemented; automated reviewed enrollment remains pending; optional manual roster enforcement below |
+| 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Read-only candidate watch and selected-profile drafts implemented; transactional reviewed enrollment remains pending; optional manual roster enforcement below |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Planned; existing isolated lifecycle tests are groundwork |
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Upstream manifest and bundled-MCP seed fixtures added; component support pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Upstream sidecar rejection fixture added; richer mappings pending |
@@ -64,6 +64,31 @@ This watches candidate identities/paths, not skill contents or whether an alread
 known candidate now also exists on its other peer. It does not create profiles,
 write state, enroll resources, execute hooks or grant portability/trust. There is
 no `--apply` flag. Reviewed enrollment is the next step, not implicitly complete.
+
+## Selected profile drafts
+
+After `discover`, explicitly select candidate IDs to prepare a review envelope:
+
+```sh
+agent-bridge draft-profile /absolute/project --project instructions skill-directory-example
+```
+
+Use `--global` with an explicit home-shaped fixture/root for global candidates.
+Output is JSON on stdout only: a `profile` proposal, `reviewRequired: true`, and
+review guidance. It is deliberately not a runnable configuration. No file,
+state, ownership roster, watcher, or native configuration is created or changed.
+The inventory is refreshed; missing IDs, duplicate selections, case-ambiguous
+candidates and unsafe links fail. Output/error failures return exit 1.
+
+This reads names/metadata, not native contents. It does not pin content, verify
+host behavior or grant portability/trust. Review both sides privately, choose
+a non-overlapping state directory, then extract/edit `profile` into a new private
+configuration. Skill/agent/hook consent flags remain false; MCP server selection
+and reformat consent remain unset. Instructions default to a whole-file candidate:
+choose `instruction-file` and prepare marked sections if sharing only part of it.
+Run `audit`, `plan`, and `check-overlap` before enabling any writes. Never turn on
+all consent flags just to make validation pass. Transactional enrollment with
+stale-content refusal, roster updates and rollback remains unfinished.
 
 ## Cross-profile overlap preflight
 
