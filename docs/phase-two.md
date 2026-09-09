@@ -25,6 +25,14 @@ drift workflows, then broader platform/hardening acceptance. Safety tests accomp
 each increment rather than waiting until the end. Push only verified milestones;
 do not modify or republish the existing alpha assets.
 
+Operational hardening now also includes [private rotating JSON logs, read-only
+diagnostic discovery and sanitized support bundles](diagnostics.md). Sync-stage
+events correlate build/run/transaction and hashed resource/path references.
+Tests cover secret leakage, unsafe filesystem targets, bounded retention,
+disk-full/short writes, read-only behavior and useful injected-failure records.
+This is best-effort troubleshooting, not guaranteed delivery or a tamper-proof
+audit log; raw backups/service output are excluded from bundles.
+
 Bundled agents remain a real compatibility gap, not an untested copy operation:
 an isolated Codex 0.153.4 probe did not advertise either `agents/*.md` or
 `agents/*.toml` from an installed compatibility plugin, while a standalone

@@ -1,6 +1,13 @@
 # Architecture diagram
 
-The [README image](architecture.svg), [PNG](architecture.png), and [interactive HTML](architecture.html) describe the current Go implementation. The HTML is standalone: download it and open it in a browser. It supports themes, zoom, component inspection, code references, and clean image exports. The CLI remains a standalone Go executable; the documentation viewer is not a runtime dependency.
+The [README image](architecture.svg), [PNG](architecture.png), and [interactive HTML](architecture.html) describe the core Go synchronization architecture at the verified revision below, not every subsequent feature. The HTML is standalone: download it and open it in a browser. It supports themes, zoom, component inspection, code references, and clean image exports. The CLI remains a standalone Go executable; the documentation viewer is not a runtime dependency.
+
+Current source adds a content-free observer path from the CLI and transaction
+engine to `internal/diagnostics`. Its private rotating files live outside the
+shared/native/state peers shown in the diagram. Read-only diagnostic commands
+inspect selected-profile state and re-encode validated events into sanitized
+bundles; they do not feed log data into synchronization. See the
+[diagnostic architecture and privacy boundary](diagnostics.md) for that addition.
 
 The [Archify specification](architecture.json) is the editable source. Its code references were verified against commit `b64fa028bb39e53892a4cdecc54a5b156ec0be3b`. Arrows summarize component responsibilities, not every function call: recovery uses the same transaction module, and adapter rendering and round-trip verification occur before writes. The three peers are local paths, not remote services. “Private local state” means files on disk, not a database server.
 

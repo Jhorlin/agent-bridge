@@ -35,7 +35,7 @@ go build -o agent-bridge ./cmd/agent-bridge
 ./agent-bridge recover examples/bridge.json
 ```
 
-The example touches only demo files and the ignored `.agent-bridge` directory. Watch mode polls every second; without `--apply` it only reports changes. Applying requires two identical consecutive observations of the resolved profile and raw inputs, followed by a recheck under the write lock. This adds at least one polling interval before a change is applied. Stop with Ctrl-C.
+The example synchronizes only demo files and the ignored `.agent-bridge` directory. Current source builds also write private, rotating diagnostics for mutating commands in the OS user's log/state directory, outside synchronized files; preview commands do not create those logs. Watch mode polls every second; without `--apply` it only reports changes. Applying requires two identical consecutive observations of the resolved profile and raw inputs, followed by a recheck under the write lock. This adds at least one polling interval before a change is applied. Stop with Ctrl-C.
 
 On macOS, opt-in `service install|start|stop|status|uninstall` commands manage a per-user background watcher. Installation is preview-only unless you explicitly pass `--apply`; uninstall preserves native files, state, backups and logs. See the [service setup and lifecycle guide](docs/services.md) before enabling it.
 
@@ -51,6 +51,24 @@ do not make ordinary synchronization propagate deletions automatically.
 `compare-plugin-copy CONFIG ID SIDE ABS_COPY` [checks an explicitly selected
 plugin copy for stale authoring files](docs/plugin-copy.md), without invoking
 installers or changing native enablement, authentication or trust.
+
+## Logs and troubleshooting
+
+Current source builds provide private rotating JSON logs and sanitized diagnostics:
+
+```sh
+./agent-bridge doctor /absolute/path/bridge.json
+./agent-bridge logs /absolute/path/bridge.json --tail 100
+./agent-bridge support-bundle /absolute/path/bridge.json /absolute/path/new-support.json
+```
+
+`doctor` is read-only and reports service mode/status, locks, pending recovery and
+recent events. `logs` locates logs and maps hashed references back to local files;
+keep that mapping private. `support-bundle` creates a new private file excluding
+configuration, credentials, raw service output and recovery snapshots. Review it
+before sharing; nothing is uploaded. Structured event retention is 4 MiB per
+profile. These commands are not in the published alpha; see the
+[troubleshooting, privacy and error-code guide](docs/diagnostics.md).
 
 ## Architecture
 
@@ -181,18 +199,25 @@ is also implemented. See the [release readiness and validation record](docs/rele
 for exact scope, evidence and exclusions. This remains experimental, not full
 Claude/Codex parity or a claim of 100% testing.
 
-Future expansion, not capabilities promised by this initial boundary:
+Remaining expansion beyond the bounded current source implementation:
 
-- Stronger filesystem-race/power-loss guarantees, metadata preservation, deletion
-  policy and historical restore.
-- Automatic enrollment/project discovery and resource ownership coordination;
-  host-level instruction precedence emulation.
-- Host-specific skill invocation/dependency mapping and nested-link support.
-- Broader MCP policy support and comment-preserving editing. Source builds now
-  merge independent server edits after recording per-server baselines; see [MCP merging](docs/phase-two.md#per-server-mcp-merging).
-- Richer plugin components, bundled MCP and automatic installed-cache refresh.
-- Additional hook events, richer agents, Linux service installation and broader
-  real-model execution evidence.
+- Stronger filesystem-race/power-loss guarantees, broader metadata preservation
+  and automatic/native-entry-point deletion policies. Reviewed supporting-file
+  changes and bounded historical restore already exist.
+- Enrollment without per-candidate review, host instruction-precedence emulation,
+  and nested-link support. Read-only discovery and opt-in ownership coordination
+  already exist.
+- Richer skill argument/dependency semantics and broader host-policy equivalence;
+  see the existing bounded [invocation translation](docs/skill-invocation.md).
+- Structural MCP formatting preservation and package-relative paths beyond the
+  existing [per-server merging](docs/phase-two.md#per-server-mcp-merging) and
+  [scalar text patches](docs/mcp-formatting.md).
+- In-package Codex agents, package-root relocation and production native plugin
+  install/cache refresh. Selected plugin MCP/commands/hooks and explicit standalone
+  agent exports already exist; see [phase-two scope](docs/phase-two.md).
+- More hook tools/events, richer agents, broader real-model execution evidence,
+  reboot/login coverage and automatic binary upgrades. Experimental macOS/Linux
+  service lifecycle and structured diagnostics are implemented.
 
 ## Prior art
 

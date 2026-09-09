@@ -7,6 +7,9 @@ with standalone macOS/Linux assets. This record is not a claim of universal host
 interoperability or 100% testing.
 
 This page records the original alpha boundary, not the expanded current source.
+Current source also includes [rotating diagnostics and sanitized support bundles](diagnostics.md),
+with their own privacy/fault-injection tests and validation record. This is not a
+new tagged release or a change to the immutable alpha assets.
 See [phase-two progress](phase-two.md) and [upgrade boundaries](upgrading.md) for
 subsequent work. A native-plus-upgrade-plus-race run at source commit `e1a0b17` measured **84.4%
 overall statement coverage** (bridge 85.4%, CLI 82.9%, release helpers 69.1%).

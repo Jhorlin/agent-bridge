@@ -51,6 +51,15 @@ The label is `com.jhorlin.agent-bridge.<profile-path-hash>`. Files live under
 settings and credentials are not embedded in the plist. The service runs as the
 logged-in user, not root, and is not a system-wide daemon or an OS sandbox.
 
+Current source builds additionally write **rotating structured events** for
+applying watchers and mutating service commands outside those raw log files.
+Use `agent-bridge doctor PROFILE` for sanitized status, apply mode, pending work
+and recent events, or `agent-bridge logs PROFILE --tail 100` for local log paths
+and reference mappings. [Diagnostic bundles](diagnostics.md) exclude raw
+stdout/stderr and journals; their structured 4 MiB limit does not rotate or redact
+these legacy macOS `.out.log`/`.err.log` files. Preview watchers still have native
+stdout/stderr but do not create structured event logs.
+
 The binary receives the absolute profile path with no shell evaluation and runs
 from the profile's directory. Relative profile resource paths keep their normal
 declaring-file semantics. Profiles referring to service files/state are rejected
@@ -111,6 +120,13 @@ can finish. Inspect the manager and pending journals rather than killing/restart
 blindly. Upgrade by stopping and uninstalling the owned unit, updating the stable
 binary, then reinstalling with reviewed apply consent. In-place automatic upgrade
 remains pending.
+
+Linux service stdout/stderr use the user journal and its retention policy. The
+new structured logs instead use `$XDG_STATE_HOME/agent-bridge/<profile-hash>/`
+(default `$HOME/.local/state/agent-bridge/<profile-hash>/`). Run diagnostics in the
+same user/state-root environment as the watcher. `logs PROFILE` also prints the
+exact `journalctl` query for local inspection; journal output is never included
+in support bundles. Service removal preserves structured logs too.
 
 Linux Docker tests cover the state machine with an injected manager and the
 native systemd parser. They do not prove login/start/stop against a running

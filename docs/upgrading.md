@@ -44,6 +44,16 @@ cross-version data/journal test are distinct: neither implies arbitrary-version
 service migration, automatic upgrade installation or successful reboot/login.
 No published alpha asset is modified by these tests.
 
+## Diagnostic logging in source builds
+
+Current source binaries automatically log mutating command attempts and applying
+watchers to a private per-profile OS log/state directory. These are separate from
+sync state and the legacy service stdout/stderr streams. No profile migration or
+consent flags are needed; read-only commands still create no structured logs.
+`doctor`, `logs` and `support-bundle` are new commands, unavailable in the immutable
+published alpha. See [locations, retention, privacy and troubleshooting](diagnostics.md).
+The diagnostic schema does not change config, manifest or recovery-journal schemas.
+
 ## Creation-ownership recovery
 
 Config schema 1, manifest schema 2, and the recovery journal's version-1 encoding

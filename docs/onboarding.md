@@ -11,7 +11,9 @@ agent-bridge init /absolute/profiles/bridge.json
 
 The profile parent directory must already exist. `init` creates a private (0600),
 empty profile and refuses to overwrite an existing file. It does not create host
-settings or synchronization state.
+settings or synchronization state. In current source builds, `init` and other
+mutating commands also produce private rotating [diagnostic events](diagnostics.md)
+outside managed state. Discovery, audit, plan and preview watch remain read-only.
 
 Discovery looks for conventional instruction files, skill directories, individual
 agent files and hook settings. Project discovery also offers MCP configuration.
