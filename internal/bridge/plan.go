@@ -35,11 +35,23 @@ type PlanResult struct {
 // Observation identifies all raw inputs and the resolved profile, not just
 // semantic changes or public summaries. It is ephemeral and never logged.
 func Observation(c Config, plan PlanResult) string {
-	// These fixed data types contain only JSON-serializable fields.
+	// Item embeds Resource's custom JSON marshaler, so serializing Item directly
+	// would silently omit its raw values. Use explicit non-embedded fields.
+	type observedItem struct {
+		Resource Resource
+		Key      string
+		Values   map[string]*Snapshot
+	}
+	items := make([]observedItem, 0, len(plan.Items))
+	for _, item := range plan.Items {
+		items = append(items, observedItem{item.Resource, item.Key, item.Values})
+	}
 	data, _ := json.Marshal(struct {
-		Config Config
-		Plan   PlanResult
-	}{c, plan})
+		Config         Config
+		Items          []observedItem
+		Manifest       Manifest
+		ManifestBefore *Snapshot
+	}{c, items, plan.Manifest, plan.ManifestBefore})
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
