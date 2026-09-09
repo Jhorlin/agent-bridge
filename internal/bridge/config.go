@@ -109,6 +109,10 @@ func LoadConfig(filename string) (Config, error) {
 }
 
 func loadConfig(filename string, audit bool) (Config, error) {
+	return loadConfigMode(filename, audit, true)
+}
+
+func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 	var c Config
 	absolute, err := filepath.Abs(filename)
 	if err != nil {
@@ -125,14 +129,14 @@ func loadConfig(filename string, audit bool) (Config, error) {
 	c.ConfigFiles = configFiles
 	c.CoordinationDir = raw.CoordinationDir
 	c.Conventions = raw.Conventions
-	if c.Conventions == nil {
+	if c.Conventions == nil || !discover {
 		for _, r := range raw.Resources {
 			if automaticResource(r.ID) {
 				return c, fmt.Errorf("automatic resource IDs require a convention policy")
 			}
 		}
 	}
-	if c.Conventions != nil {
+	if c.Conventions != nil && discover {
 		var discovered []resourceInput
 		discovered, c.ConventionWarnings, err = discoverConventions(c, raw.Resources)
 		if err != nil {

@@ -310,6 +310,42 @@ func TestLoggingNeverEntersManagedState(t *testing.T) {
 	}
 }
 
+func TestLoggingConventionProtectionReloadsWithoutDiscovery(t *testing.T) {
+	dir, profile := diagnosticFixture(t)
+	write := func(scope, root string) {
+		t.Helper()
+		b, err := json.Marshal(map[string]any{
+			"version": 1, "stateDir": "state", "resources": []any{},
+			"conventions": map[string]any{"root": root, "scope": scope, "features": []string{"mcp"}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(profile, b, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("global", dir)
+	logs := filepath.Join(dir, "Library", "Logs", "agent-bridge", "future")
+	if diagnosticOverlap(profile, logs) {
+		t.Fatal("ordinary global logs rejected")
+	}
+	if !diagnosticOverlap(profile, filepath.Join(dir, ".claude", "future")) {
+		t.Fatal("future native path unprotected")
+	}
+	// No timestamp cache: a scope-only edit must immediately change the result.
+	write("project", dir)
+	if err := os.WriteFile(filepath.Join(dir, ".mcp.json"), []byte("invalid native data"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if !diagnosticOverlap(profile, logs) {
+		t.Fatal("project edit or invalid native data bypassed protection")
+	}
+	if diagnosticOverlap(profile, dir+"-sibling") {
+		t.Fatal("sibling rejected")
+	}
+}
+
 func TestDoctorReportsServiceModeAndNoWrites(t *testing.T) {
 	dir, profile := diagnosticFixture(t)
 	before := tree(t, dir)

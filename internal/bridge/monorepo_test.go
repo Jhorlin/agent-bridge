@@ -88,6 +88,44 @@ func TestConventionAlternateFileExclusions(t *testing.T) {
 	f.missing("services/one/AGENTS.md")
 }
 
+func TestDiagnosticPathsAvoidNativeDiscovery(t *testing.T) {
+	f := allConventionFixture(t, "project")
+	f.write(".mcp.json", "unparseable native config")
+	paths, err := DiagnosticProtectedPaths(f.path("config.json"))
+	must(t, err)
+	found := false
+	for _, p := range paths {
+		if p == f.dir {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("future project components not protected")
+	}
+	if _, err := LoadConfig(f.path("config.json")); err == nil {
+		t.Fatal("fixture should block native discovery")
+	}
+	g := allConventionFixture(t, "global")
+	paths, err = DiagnosticProtectedPaths(g.path("config.json"))
+	must(t, err)
+	for _, p := range paths {
+		if p == g.dir {
+			t.Fatal("global home blanket would disable normal logs")
+		}
+	}
+	for _, name := range []string{".claude", ".codex", ".agents", ".agent-bridge-plugins", ".claude.json"} {
+		found = false
+		for _, p := range paths {
+			if p == g.path(name) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("global component root not protected")
+		}
+	}
+}
+
 func TestConventionInstructionCodeFences(t *testing.T) {
 	for _, input := range []string{"# Rules\n\n```sh\npnpm --filter @example/client build\n```\n", "~~~text\n@example/client -> library\n~~~~\n", "   ```text\n@sample/name\n   ```\n", "Run `tool @example/client` or ``tool `literal` @example/client``.\n"} {
 		f := allConventionFixture(t, "project")

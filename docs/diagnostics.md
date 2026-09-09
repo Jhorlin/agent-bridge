@@ -73,6 +73,13 @@ Logging is outside synchronized state and is disabled when a valid profile
 overlaps that location, including a reloaded applying-watch profile. Do not enroll
 the diagnostic directory as a managed resource.
 
+Each event rereads the profile and inherited profiles, without rescanning native
+assets or reading transaction journals. Convention profiles conservatively protect
+the entire project root (even excluded subtrees and not-yet-created assets).
+Global conventions protect the known native configuration roots instead of the
+whole home directory, so normal OS log locations remain usable. Put project logs
+outside the enrolled project tree; exclusions do not opt log paths back in.
+
 ## Retention and failure behavior
 
 `events.jsonl` holds current records. Rotation retains `events.1.jsonl` (newest

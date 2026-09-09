@@ -93,8 +93,8 @@ func diagnosticOverlap(profile, dir string) bool {
 	if err != nil || overlaps(abs, dir) {
 		return true
 	}
-	if c, err := bridge.LoadAuditConfig(profile); err == nil {
-		for _, p := range protectedPaths(c) {
+	if paths, err := bridge.DiagnosticProtectedPaths(profile); err == nil {
+		for _, p := range paths {
 			if p != "" && overlaps(p, dir) {
 				return true
 			}
