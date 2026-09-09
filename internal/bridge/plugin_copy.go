@@ -46,7 +46,10 @@ func ComparePluginCopy(filename, id, side, copyRoot string) (PluginCopyReport, e
 	if r.Kind != "plugin-directory" {
 		return result, fmt.Errorf("select a plugin resource")
 	}
-	for _, root := range r.Paths {
+	if len(r.CodexAgentExports) > 0 {
+		result.Warning += " Standalone Codex agent exports are outside this package-copy comparison."
+	}
+	for _, root := range resourceDestinations(r) {
 		a, b := strings.ToLower(root), strings.ToLower(copyRoot)
 		if inside(a, b) || inside(b, a) {
 			return result, fmt.Errorf("copy must be separate from managed authoring roots")

@@ -12,7 +12,7 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 |---|---|---|---|
 | 1 | Discovery and enrollment | New resources on either side; reviewed enrollment; naming collisions, exclusions, scoped roots, rollback and no implicit trust | Discovery, drafts, existing-profile enrollment and journaled creation/registration implemented; candidate consent remains explicit, not automatic |
 | 2 | Plugin install/refresh | Explicit opt-in; source-to-cache version/digest checks; failure-safe update; preserve native enable/auth/trust choices | Read-only selected-copy comparison and isolated lifecycle tests implemented; production install/refresh awaits an appropriate supported native contract |
-| 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Bounded conventional hooks, static commands and allowlisted MCP added for compatibility layout with native loading tests; agents and package-root relocation remain pending |
+| 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Bounded conventional hooks, static commands and allowlisted MCP plus explicit standalone agent exports implemented with native loading tests; in-package Codex agents and package-root relocation remain unsupported |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Bounded host-local agent settings and opt-in skill invocation-policy translation implemented with native loading/invocation tests; argument/dependency mapping remains pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Prompt/Stop plus exact-Bash pre/post definitions, native payloads, denial, failure, timeout and Codex trust checks implemented; other tools/events and arbitrary policy equivalence pending |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging, rollback, opt-in Codex-local policy retention and verified scalar text patches implemented; structural formatting preservation and plugin-relative support remain pending |
@@ -29,9 +29,10 @@ Bundled agents remain a real compatibility gap, not an untested copy operation:
 an isolated Codex 0.153.4 probe did not advertise either `agents/*.md` or
 `agents/*.toml` from an installed compatibility plugin, while a standalone
 `CODEX_HOME/agents/*.toml` positive control was advertised in the same request.
-The bridge continues to reject package agents. A separately owned standalone
-export or another verified loader contract is required; this expected-rejection
-evidence does not complete that feature.
+Direct Codex package agents remain rejected. An opt-in
+[standalone export](plugin-agent-exports.md) now provides a separately owned
+alternative with positive native discovery evidence. Its independent lifecycle
+is not equivalent to an installed plugin component.
 
 ## Fixture and evidence rules
 

@@ -74,6 +74,9 @@ func configPathClaims(c Config) []PathClaim {
 		claims = append(claims, PathClaim{profile, "coordination", c.CoordinationDir})
 	}
 	for _, r := range c.Resources {
+		for _, path := range resourceDestinations(Resource{CodexAgentExports: r.CodexAgentExports}) {
+			claims = append(claims, PathClaim{profile, r.ID + ":codex-agent-export", path})
+		}
 		for _, side := range sides[1:] {
 			claims = append(claims, PathClaim{profile, r.ID + ":" + side, r.Paths[side]})
 			if link, ok := r.Links[side]; ok {

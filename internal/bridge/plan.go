@@ -214,6 +214,8 @@ func Plan(c Config) (PlanResult, error) {
 				item.Values[side] = value
 				semantic[side] = value
 				switch item.Adapter {
+				case "plugin-agent":
+					semantic[side], err = normalizePluginAgent(item, side, value)
 				case "skill-invocation":
 					semantic[side], err = normalizeSkillInvocation(side, value)
 				case "plugin-command":

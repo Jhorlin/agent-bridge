@@ -39,6 +39,12 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			}
 			top := strings.Split(filepath.ToSlash(file), "/")[0]
 			switch top {
+			case "agents":
+				name := strings.TrimSuffix(strings.TrimPrefix(file, "agents/"), ".md")
+				if side == "codex" || file != "agents/"+name+".md" || r.CodexAgentExports[name] == "" {
+					return nil, fmt.Errorf("unsupported component: plugin agents require individually reviewed standalone Codex exports; no bundled Codex agents are written")
+				}
+				names[file] = true
 			case "commands":
 				parts := strings.Split(filepath.ToSlash(file), "/")
 				if r.CodexPluginLayout == "portable" || len(parts) != 2 || len(parts[1]) > 67 || !strings.HasSuffix(parts[1], ".md") || !skillName.MatchString(strings.TrimSuffix(parts[1], ".md")) {
@@ -87,6 +93,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 				return nil, fmt.Errorf("plugin skill is missing SKILL.md")
 			}
 		}
+	}
+	for name := range r.CodexAgentExports {
+		names["agents/"+name+".md"] = true
 	}
 	prefix := r.ID + "/"
 	for key := range m.Files {
@@ -139,6 +148,14 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 			entry.Paths[side] = filepath.Join(r.Paths[side], name)
 		}
 		item := Item{Resource: entry, Key: prefix + name, Relative: name}
+		if strings.HasPrefix(name, "agents/") {
+			agent := strings.TrimSuffix(strings.TrimPrefix(name, "agents/"), ".md")
+			if r.CodexAgentExports[agent] == "" {
+				return nil, fmt.Errorf("agent baseline lacks a reviewed export")
+			}
+			item.Paths["codex"] = r.CodexAgentExports[agent]
+			item.Adapter = "plugin-agent"
+		}
 		if strings.HasPrefix(name, "commands/") {
 			item.Adapter = "plugin-command"
 		}

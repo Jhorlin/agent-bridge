@@ -99,7 +99,7 @@ func (s SystemdService) Install(c Config, binary string, apply bool) error {
 	}
 	paths := append([]string{c.StateDir, c.CoordinationDir}, c.ConfigFiles...)
 	for _, r := range c.Resources {
-		for _, p := range r.Paths {
+		for _, p := range resourceDestinations(r) {
 			paths = append(paths, p)
 		}
 		for _, link := range r.Links {

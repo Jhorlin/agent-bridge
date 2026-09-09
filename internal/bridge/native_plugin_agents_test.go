@@ -5,6 +5,27 @@ import (
 	"testing"
 )
 
+func TestNativePluginAgentExport(t *testing.T) {
+	f := pluginAgentFixture(t)
+	tools := nativeTools(t, f)
+	f.apply()
+	server, requests := nativePluginFixtureProvider(t)
+	f.write("codex-home/config.toml", nativePluginProviderConfig(server.URL)+"\n[features]\nplugins=false\n")
+	nativeRun(t, f, tools["codex"], "exec", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "Return fixture complete.")
+	assertNativeRequestMarker(t, requests, "BRIDGE_PLUGIN_EXPORT_DESCRIPTION")
+	f.write("codex-home/agents/bridge-bundle-reviewer.toml", strings.ReplaceAll(f.read("codex-home/agents/bridge-bundle-reviewer.toml"), "BRIDGE_PLUGIN_EXPORT_DESCRIPTION", "BRIDGE_PLUGIN_REVERSE_DESCRIPTION"))
+	f.apply()
+	f.write(".claude-plugin/marketplace.json", `{"name":"bridge-fixture","owner":{"name":"Bridge tests"},"plugins":[{"name":"demo","source":"./claude-plugin"}]}`)
+	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "add", f.dir)
+	nativeRun(t, f, tools["claude"], "plugin", "install", "demo@bridge-fixture", "--scope", "user")
+	nativeRun(t, f, tools["claude"], "plugin", "validate", f.path("claude-plugin"))
+	nativeRunEnvironment(t, f, tools["claude"], []string{"ANTHROPIC_BASE_URL=" + server.URL, "ANTHROPIC_API_KEY=bridge-fixture-not-a-real-key"}, "--print", "--model", "sonnet", "--max-turns", "1", "--no-session-persistence", "--setting-sources", "user", "Return fixture complete.")
+	assertNativeRequestMarker(t, requests, "BRIDGE_PLUGIN_REVERSE_DESCRIPTION")
+	nativeRun(t, f, tools["claude"], "plugin", "uninstall", "demo@bridge-fixture", "--scope", "user")
+	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "remove", "bridge-fixture")
+	f.missing("codex-plugin/agents/reviewer.md")
+}
+
 func TestNativePluginAgentCompatibilityBoundary(t *testing.T) {
 	f := pluginFixture(t)
 	tools := nativeTools(t, f)

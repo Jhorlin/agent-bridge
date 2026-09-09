@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -27,6 +28,7 @@ type Resource struct {
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 }
 
 type Link struct {
@@ -43,18 +45,19 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		Codex  string `json:"codex"`
 	}
 	return json.Marshal(struct {
-		ID                       string          `json:"id"`
-		Kind                     string          `json:"kind"`
-		Scope                    string          `json:"scope"`
-		Paths                    orderedPaths    `json:"paths"`
-		Servers                  []string        `json:"servers,omitempty"`
-		Links                    map[string]Link `json:"links,omitempty"`
-		AllowReformat            bool            `json:"allowReformat,omitempty"`
-		CodexPluginLayout        string          `json:"codexPluginLayout,omitempty"`
-		PreserveCodexMCPPolicies bool            `json:"preserveCodexMCPPolicies,omitempty"`
-		PreserveAgentSettings    bool            `json:"preserveAgentSettings,omitempty"`
-		TranslateSkillInvocation bool            `json:"translateSkillInvocation,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation})
+		ID                       string            `json:"id"`
+		Kind                     string            `json:"kind"`
+		Scope                    string            `json:"scope"`
+		Paths                    orderedPaths      `json:"paths"`
+		Servers                  []string          `json:"servers,omitempty"`
+		Links                    map[string]Link   `json:"links,omitempty"`
+		AllowReformat            bool              `json:"allowReformat,omitempty"`
+		CodexPluginLayout        string            `json:"codexPluginLayout,omitempty"`
+		PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
+		PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
+		TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+		CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.CodexAgentExports})
 }
 
 type Config struct {
@@ -77,6 +80,7 @@ type resourceInput struct {
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 }
 type configInput struct {
 	CoordinationDir string          `json:"coordinationDir,omitempty"`
@@ -146,6 +150,12 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			return c, fmt.Errorf("each resource needs global or project scope")
 		}
 		res := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"shared": filepath.Join(c.StateDir, "shared", r.ID)}}
+		if r.CodexAgentExports != nil {
+			if r.Kind != "plugin-directory" || !r.AllowReformat || len(r.CodexAgentExports) == 0 || len(r.ID) > 64 || len(r.LinkTargets) != 0 {
+				return c, fmt.Errorf("codexAgentExports requires an unlinked plugin, explicit exports and allowReformat")
+			}
+			res.CodexAgentExports = r.CodexAgentExports
+		}
 		if r.TranslateSkillInvocation {
 			if r.Kind != "skill-directory" || !r.AllowReformat {
 				return c, fmt.Errorf("translateSkillInvocation requires a strict skill-directory")
@@ -186,6 +196,8 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			if r.Kind == "plugin-directory" && r.CodexPluginLayout == "portable" {
 				return c, fmt.Errorf("bundled MCP currently requires the compatibility plugin layout")
 			}
+		} else if r.Kind == "plugin-directory" && len(r.CodexAgentExports) > 0 {
+			res.AllowReformat = true
 		} else if r.Kind == "skill-directory" {
 			if len(r.Servers) > 0 {
 				return c, fmt.Errorf("skill-directory does not accept servers")
@@ -235,6 +247,27 @@ func loadConfig(filename string, audit bool) (Config, error) {
 			}
 			destinations = append(destinations, dest)
 			res.Paths[side] = dest
+		}
+		exports := []string{}
+		for name := range res.CodexAgentExports {
+			exports = append(exports, name)
+		}
+		sort.Strings(exports)
+		for _, name := range exports {
+			dest := res.CodexAgentExports[name]
+			if !skillName.MatchString(name) || len(name) > 64 || !filepath.IsAbs(dest) || filepath.Clean(dest) != dest || filepath.Base(dest) != exportedAgentName(r.ID, name)+".toml" {
+				return c, fmt.Errorf("agent exports require explicit paths with namespaced TOML filenames and kebab-case source names")
+			}
+			if err := assertSafe(dest); err != nil {
+				return c, err
+			}
+			for _, other := range destinations {
+				a, b := strings.ToLower(other), strings.ToLower(dest)
+				if inside(a, b) || inside(b, a) {
+					return c, fmt.Errorf("agent export paths must not overlap managed paths")
+				}
+			}
+			destinations = append(destinations, dest)
 		}
 		c.Resources = append(c.Resources, res)
 	}
@@ -321,6 +354,11 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 		for side, target := range r.LinkTargets {
 			if target != "" && !strings.HasPrefix(target, "~") {
 				r.LinkTargets[side] = resolve(base, target)
+			}
+		}
+		for name, target := range r.CodexAgentExports {
+			if target != "" && !strings.HasPrefix(target, "~") {
+				r.CodexAgentExports[name] = resolve(base, target)
 			}
 		}
 		found := false

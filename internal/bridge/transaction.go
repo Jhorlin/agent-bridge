@@ -86,6 +86,11 @@ func allowedTarget(c Config, file string) bool {
 		return true
 	}
 	for _, r := range c.Resources {
+		for _, target := range r.CodexAgentExports {
+			if target == file {
+				return true
+			}
+		}
 		for _, root := range r.Paths {
 			if (r.Kind == "portable-file" || r.Kind == "mcp-config" || r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config") && root == file {
 				return true
@@ -235,6 +240,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				before := item.Values[side]
 				content := item.Content
 				switch item.Adapter {
+				case "plugin-agent":
+					content, err = renderPluginAgent(item, side, item.Content)
 				case "skill-invocation":
 					content, err = renderSkillInvocation(side, item.Content)
 				case "instruction-file":
@@ -255,6 +262,8 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				}
 				var roundTrip *Snapshot
 				switch item.Adapter {
+				case "plugin-agent":
+					roundTrip, err = normalizePluginAgent(item, side, content)
 				case "skill-invocation":
 					roundTrip, err = normalizeSkillInvocation(side, content)
 				case "plugin-command":

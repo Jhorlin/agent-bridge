@@ -92,6 +92,10 @@ Claude's `disable-model-invocation` maps to the inverse Codex
 invocation remains available; other rich skill metadata is unsupported. See
 [invocation policy, adoption and native test limits](docs/skill-invocation.md).
 
+For minimal Claude plugin agents, source builds support explicitly mapped,
+namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
+Those files have an independent lifecycle; Codex plugin uninstall does not remove them.
+
 ## New adapters
 
 See the [compatibility matrix and implementation priorities](docs/compatibility.md) for current coverage, test evidence, and features that remain host-specific or intentionally excluded. File synchronization is not full behavioral compatibility.

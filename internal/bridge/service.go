@@ -206,7 +206,7 @@ func (s LaunchService) Install(c Config, binary string, apply bool) error {
 		return fmt.Errorf("service files overlap coordination directory")
 	}
 	for _, r := range c.Resources {
-		for _, path := range r.Paths {
+		for _, path := range resourceDestinations(r) {
 			if serviceOverlap(path, s.Root) {
 				return fmt.Errorf("service files overlap a resource")
 			}

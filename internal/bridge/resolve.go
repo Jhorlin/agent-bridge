@@ -55,6 +55,8 @@ func resolvePlan(p *PlanResult, choices map[string]string) error {
 func resolutionContent(i Item, side string) (*Snapshot, error) {
 	raw := i.Values[side]
 	switch i.Adapter {
+	case "plugin-agent":
+		return normalizePluginAgent(i, side, raw)
 	case "skill-invocation":
 		return normalizeSkillInvocation(side, raw)
 	case "plugin-command":
