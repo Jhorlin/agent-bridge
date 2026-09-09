@@ -126,6 +126,9 @@ The next phase is tracked in the [eight-workstream acceptance plan](docs/phase-t
 Its [public upstream fixture catalog](internal/bridge/testdata/upstream/README.md)
 records pinned sources and separate third-party licenses; fixtures are inert test
 data, not installed plugins. Phase-two features are not part of the published alpha.
+Source builds also provide `watch-discovery` and `check-overlap`; see the plan
+for their read-only behavior, usage and limits. Neither enrolls resources nor
+enforces persistent cross-profile ownership.
 
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,

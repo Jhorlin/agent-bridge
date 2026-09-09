@@ -26,6 +26,20 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && args[0] == "check-overlap" {
+		report, err := bridge.CheckOverlaps(args[1:])
+		if err != nil {
+			fmt.Fprintln(errOut, "Overlap check failed: supply at least two distinct, valid, safe profiles. Configuration details withheld.")
+			return 1
+		}
+		if err := json.NewEncoder(out).Encode(report); err != nil {
+			return 1
+		}
+		if len(report.Overlaps) > 0 {
+			return 2
+		}
+		return 0
+	}
 	if len(args) < 2 || len(args) > 3 {
 		return usage(errOut)
 	}
@@ -225,6 +239,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge check-overlap <profile.json> <other.json> [more profiles...]")
 	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge <discover|watch-discovery> <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")
 	return 1
 }

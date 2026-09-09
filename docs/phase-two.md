@@ -17,7 +17,7 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Planned; startup-only baseline remains unchanged |
 | 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Plugin-relative upstream fixture added; implementation pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Planned; never default to last-writer-wins |
-| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Planned; no universal atomicity or power-loss guarantee implied |
+| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Read-only explicit-profile overlap check implemented; persistent ownership and other hardening pending |
 
 Implementation sequence: fixture/evidence foundation, ownership and reviewed
 enrollment, MCP and component contracts, richer definitions/hooks, plugin refresh,
@@ -64,6 +64,25 @@ This watches candidate identities/paths, not skill contents or whether an alread
 known candidate now also exists on its other peer. It does not create profiles,
 write state, enroll resources, execute hooks or grant portability/trust. There is
 no `--apply` flag. Reviewed enrollment is the next step, not implicitly complete.
+
+## Cross-profile overlap preflight
+
+`agent-bridge check-overlap profile.json other.json [more.json ...]` strictly
+loads the explicitly listed profiles and returns a read-only JSON report. Exit 0
+means no path overlap found, 2 means overlaps, and 1 means invalid/unsafe input or
+an output failure. It checks native paths (including pinned link paths/targets),
+state directories, inherited configuration paths and coordination directories.
+Equal shared configuration and coordination paths are allowed. Nested paths and
+case-only collisions are conservatively reported, even on case-sensitive systems.
+
+The report contains profile/resource paths, not native configuration contents.
+No directory, registry, lock or baseline is written. This is a point-in-time
+preflight, **not persistent ownership enforcement**: profiles omitted from the
+command, later edits, filesystem aliases such as hard links, and concurrent
+changes are not covered. Passing it does not grant portability or trust, and
+does not replace `audit` and `plan`. Do not run overlapping profiles merely
+because they share a coordinator: serialization alone does not prevent baseline
+disagreements. Reviewed enrollment and enforcement remain pending.
 
 ## Documentation anchors
 
