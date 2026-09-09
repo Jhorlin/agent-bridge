@@ -103,3 +103,6 @@ Tests cover read-only history/review, rename/delete undo, exact modes, newer
 unrelated state, repeated-undo refusal, stale journal/input, path/identity checks,
 every-write rollback, interrupted recovery, later-edit and ambiguous-ownership
 preservation, and CLI output privacy. Whole-resource retirement is not included.
+Corrupted-journal tests additionally verify that invalid targets, baselines,
+snapshot data, resource identity and ownership receipts fail before any write
+for deletion, rename and restoration journals.

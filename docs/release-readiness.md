@@ -8,10 +8,12 @@ interoperability or 100% testing.
 
 This page records the original alpha boundary, not the expanded current source.
 See [phase-two progress](phase-two.md) and [upgrade boundaries](upgrading.md) for
-subsequent work. A native-plus-race run at source commit `982fb9e` measured **84.3%
-overall statement coverage** (bridge 85.3%, CLI 82.8%, release helpers 69.1%).
+subsequent work. A native-plus-upgrade-plus-race run at source commit `e1a0b17` measured **84.4%
+overall statement coverage** (bridge 85.4%, CLI 82.9%, release helpers 69.1%).
 That run passed using disposable homes and fake local providers; optional native
-service/package/upgrade tests were not enabled in that coverage invocation.
+service/package tests were not enabled in that coverage invocation. The upgrade
+test built the pinned alpha source and current source; it did not replace an
+installed binary or publish a release.
 
 [Distribution packaging](distribution.md) is implemented separately: four
 platform archives, checksums, version reporting and CI smoke tests. Each subsequent
