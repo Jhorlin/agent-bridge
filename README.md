@@ -126,4 +126,4 @@ Design references, not vendored implementations:
 - [gaal](https://github.com/getgaal/gaal): centralized configuration, scopes, reconciliation.
 - [agent-sync-template](https://github.com/benthamite/agent-sync-template): counterpart audits and behavioral compatibility.
 
-This repository currently contains an independent implementation. Public visibility does not itself grant an open-source license; license selection remains pending.
+This independent implementation is available under the [MIT License](LICENSE).
