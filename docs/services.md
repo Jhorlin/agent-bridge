@@ -4,7 +4,7 @@ The published alpha's service management is opt-in and macOS-only. It installs a
 for one explicit profile; it does not discover resources, install Claude/Codex,
 copy authentication, or grant native host trust. Linux users can run `watch`
 under their own supervisor. Source builds additionally include the experimental
-Linux implementation described below; its native lifecycle acceptance is pending.
+Linux implementation described below, with isolated native lifecycle acceptance.
 
 Build the Go executable at a stable absolute location before installing. Do not
 use `go run` or move/delete the binary while a service is installed. Review the

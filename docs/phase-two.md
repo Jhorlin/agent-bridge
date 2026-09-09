@@ -94,8 +94,9 @@ configuration. Skill/agent/hook consent flags remain false; MCP server selection
 and reformat consent remain unset. Instructions default to a whole-file candidate:
 choose `instruction-file` and prepare marked sections if sharing only part of it.
 Run `audit`, `plan`, and `check-overlap` before enabling any writes. Never turn on
-all consent flags just to make validation pass. Transactional enrollment with
-stale-content refusal, roster updates and rollback remains unfinished.
+all consent flags just to make validation pass. For transactional profile creation
+and registration with stale-content refusal and rollback, use the separate
+[reviewed enrollment workflow](enrollment-creation.md).
 
 ## Guarding a reviewed sync
 
@@ -125,8 +126,9 @@ or host trust grant. It does not pin comments/formatting in the profile, runtime
 host behavior, omitted files or external changes after checking. Roster policy
 is checked live, not included in the digest. Review output can expose resource
 IDs and relative file names, so keep it private. These commands operate on an
-existing reviewed profile: creating it and updating rosters atomically, automatic
-enrollment and historical rollback selection remain unfinished.
+existing reviewed profile. Separate commands support [journaled creation and
+registration](enrollment-creation.md) and [historical file-version selection](conflict-resolution.md).
+Automatic enrollment remains deliberately unsupported.
 
 ## Enrolling an existing reviewed profile
 
