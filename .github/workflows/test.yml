@@ -79,6 +79,9 @@ jobs:
       - name: Fuzz MCP JSON parser
         if: runner.os == 'Linux'
         run: go test ./internal/bridge -run '^$' -fuzz '^FuzzMCPJSON$' -fuzztime=5s -parallel=2
+      - name: Fuzz MCP text preservation
+        if: runner.os == 'Linux'
+        run: go test ./internal/bridge -run '^$' -fuzz '^FuzzMCPTextPreservation$' -fuzztime=5s -parallel=2
       - name: Fuzz agent adapter
         if: runner.os == 'Linux'
         run: go test ./internal/bridge -run '^$' -fuzz '^FuzzPortableAgentRoundTrip$' -fuzztime=5s -parallel=2

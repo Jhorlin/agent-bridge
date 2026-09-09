@@ -15,9 +15,9 @@ host version. Known incompatibilities must remain explicit, never silently dropp
 | 3 | Complete plugin components | Bundled MCP, agents, commands and hooks; package-root relocation; path traversal rejection; forward/reverse native loading | Bounded conventional hooks and allowlisted MCP added for compatibility layout with native loading tests; agents, commands and package-root relocation remain pending |
 | 4 | Richer skills/agents | Field-by-field metadata, argument/dependency and host-local choice handling; reject non-equivalent policies; native discovery/invocation evidence | Bounded opt-in host-local agent settings retained with loading tests; skill invocation/dependency mapping remains pending |
 | 5 | Additional hook events | Per-event input/output contract; tool-name mapping, ordering, timeout, failure and trust behavior in both hosts | Source builds add prompt/Stop command definitions with native payload/trust tests; broader runtime/policy equivalence pending |
-| 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging, rollback and opt-in Codex-local policy retention implemented; formatting preservation and plugin-relative support remain pending |
+| 6 | MCP merging | Per-server baselines; independent/concurrent edits; preserve policies and formatting; package/transport fixtures; exact recovery | Independent server merging, rollback, opt-in Codex-local policy retention and verified scalar text patches implemented; structural formatting preservation and plugin-relative support remain pending |
 | 7 | Drift resolution | Reviewed conflict decisions; renames/deletions/history selection; preview; stale-input refusal and exact rollback | Explicit side selection and retained file-version selection with bound review and transaction rollback implemented; rename/delete pending |
-| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Ownership checks and Linux lifecycle/restart passed with a real isolated CI user manager; manager/login restart and automatic upgrade tests remain pending |
+| 8 | Operational hardening | Overlapping-profile ownership; races/crash injection; Linux service lifecycle in Linux; upgrade/restart tests | Ownership checks, Linux lifecycle, user-manager restart and same-source binary replacement passed with an isolated CI user manager; reboot/login, cross-version migrations and automatic upgrades remain outside current acceptance |
 
 Implementation sequence: fixture/evidence foundation, ownership and reviewed
 enrollment, MCP and component contracts, richer definitions/hooks, plugin refresh,
@@ -212,8 +212,9 @@ Subsequent edits to different servers can merge across shared, Claude and Codex
 inputs. Identical edits to one server converge; differing edits to that same
 server block every write. Native documents remain single transactional writes,
 with unchanged rollback and later-edit checks. Unselected entries and unrelated
-document fields are preserved semantically, but comments/formatting are still
-not preserved. Unknown policies, literal credentials, plugin-relative interpolation,
+document fields are preserved semantically. Source builds also preserve surrounding
+comments/layout for [supported scalar edits](mcp-formatting.md); structural edits
+can still reformat. Unknown policies, literal credentials, plugin-relative interpolation,
 partial allowlists and selected-server deletions remain unsupported.
 
 Manifest schema remains 2: additional hash entries record granular baselines and

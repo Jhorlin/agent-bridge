@@ -122,6 +122,11 @@ It created a disposable account/home on an ephemeral Linux VM, then verified
 preview without writes, apply-mode sync, stop, restart, uninstall and native/state
 data preservation. [Acceptance run](https://github.com/Jhorlin/agent-bridge/actions/runs/34315726344/job/102351418930).
 The bridge did not enable lingering or create accounts; the CI harness did so
-only for its temporary fixture. Reboot/login, manager restart, automatic binary
-upgrade, power loss and every distribution remain outside this evidence. The
+only for its temporary fixture. A subsequent [acceptance run](https://github.com/Jhorlin/agent-bridge/actions/runs/34317089042/job/102355475500)
+also passed a full user-manager stop/start, automatic return of the enabled
+watcher, and the documented stop/uninstall/replace/reinstall/start procedure.
+The replacement executable carries a different version label but is built from
+the same source revision: this proves retained-state replacement, not arbitrary
+historical-version migration. Reboot/login, automatic binary upgrade, power loss
+and every distribution remain outside this evidence. The
 Linux backend remains experimental and has not been added to the published alpha.

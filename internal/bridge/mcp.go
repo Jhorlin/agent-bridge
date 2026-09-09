@@ -451,6 +451,9 @@ func renderMCP(r Resource, side string, content, before *Snapshot) (*Snapshot, e
 		entries[name] = output
 	}
 	doc[key] = entries
+	if preserved := preserveMCPText(side, before, doc); preserved != nil {
+		return preserved, nil
+	}
 	if side == "claude" {
 		return encoded(doc)
 	}
