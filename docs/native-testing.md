@@ -24,14 +24,14 @@ this local stdio runtime path, not remote HTTP authentication or arbitrary serve
 The initial pending-approval test remains separate and still verifies that the
 bridge itself does not grant approval.
 
-Broader agent orchestration, hook failure semantics, and real model behavior still
+Broader agent orchestration, arbitrary hook failure semantics, and real model behavior still
 need separate coverage. Machine-managed policies
 may influence native CLIs even with disposable user directories; this is
 configuration isolation, not an OS security sandbox.
 
 ## Disposable plugin lifecycle
 
-The native plugin tests install and remove only a generated skill-only fixture.
+The base plugin lifecycle tests install and remove a generated skill-only fixture.
 Claude installs the reverse-translated package from a temporary local marketplace
 and reports its updated version. Codex installs both supported manifest layouts,
 discovers the skill from its installed cache, and removes it. The Codex test also
@@ -43,6 +43,26 @@ they do not install anything in the user's actual hosts.
 This validates a native lifecycle path, not automatic bridge-managed installation,
 cache refresh, arbitrary plugin execution or hook trust. Users still install and
 refresh reviewed packages with their native host tools.
+
+## Expanded source-build checks (2026-09-09)
+
+The same disposable harness additionally checks bounded plugin MCP, conventional
+hooks and commands, [standalone agent exports](plugin-agent-exports.md), and the
+[skill invocation-policy matrix](skill-invocation.md). Agent export tests verify
+Codex discovery and Claude loading after reverse sync/fixture installation,
+including retained local settings. Imported upstream agent instructions remain
+inert; synthetic fixed-provider fixtures supply native loading evidence.
+
+[Prompt/Stop and exact-Bash hooks](tool-hooks.md) have native input, denial,
+error, timeout and trust checks. These do not establish equivalent arbitrary
+output policies or scripts. The negative bundled-agent and plugin-root MCP probes
+remain explicit unsupported boundaries, not successful feature acceptance.
+
+[Published-alpha upgrade tests](upgrading.md) use a separate
+`AGENT_BRIDGE_UPGRADE_TESTS=1` opt-in and build the pinned historical source.
+[Linux service CI](services.md#linux-systemd-user-services-experimental-source-builds)
+uses a disposable real user manager; it is separate from native AI-host testing.
+No test result implies universal versions, reboot/login or automatic upgrades.
 
 ## Local fake-provider startup tests
 

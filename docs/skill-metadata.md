@@ -5,6 +5,10 @@ behavior. Set both `portable: true` and `allowReformat: true` to opt into strict
 common metadata. This mode applies to the root `SKILL.md`; supporting files still
 use byte-level reconciliation and retain executable bits.
 
+This page describes strict common metadata without additional policy options.
+For the separately opted-in `translateSkillInvocation` extension and its paired
+Codex sidecar, see [skill invocation policy](skill-invocation.md).
+
 ```json
 {
   "version": 1,

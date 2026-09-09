@@ -55,6 +55,8 @@ Native schemas: [Claude agents](https://code.claude.com/docs/en/sub-agents), [Co
 
 Set `"preserveAgentSettings": true` on an `agent-file` resource to retain a bounded
 set of native settings while synchronizing name, description and instructions.
+The same opt-in is available for explicitly configured
+[plugin agent exports](plugin-agent-exports.md), with their separate lifecycle.
 The default strict mode above is unchanged. This option is part of resource
 identity and requires reviewed adoption, not an in-place toggle on a tracked ID.
 

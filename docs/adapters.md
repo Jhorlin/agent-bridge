@@ -135,8 +135,9 @@ layout are rejected. Bundled MCP currently conflicts as one selected server set;
 standalone MCP's granular per-server merge does not apply to this component.
 
 Source builds also bridge bounded [conventional static commands](plugin-commands.md)
-in compatibility layout. Unsupported files or fields block the entire conversion:
-agents, dynamic command arguments/execution settings, app mappings, settings,
+in compatibility layout, and explicitly selected [standalone Codex agent exports](plugin-agent-exports.md).
+Unsupported files or fields block the entire conversion:
+unlisted agents, direct bundled Codex agents, dynamic command arguments/execution settings, app mappings, settings,
 host-specific presentation/options, and unrecognized root schemas. No installation,
 marketplace edits, cache refresh, enablement, trust changes, or login happens. A
 changed source package may therefore require an explicit host reinstall/refresh
