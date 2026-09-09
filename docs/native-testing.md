@@ -59,7 +59,8 @@ and startup paths without API charges or subscription usage.
   requests contain the translated global shared instructions, skill description,
   and custom agent description (with multi-agent support enabled in the fixture).
 - Claude: `--agent reviewer` loads a reverse-translated minimal agent. The local
-  request contains its instruction body and the shared global instructions. The
+  request contains its instruction body, the shared global instructions, and a
+  strict-mode skill description generated from the Codex peer. The
   reverse-translated startup hook captures the expected event/source/directory.
 
 The first app-server-only probe did not execute the startup hook; CLI startup is
@@ -82,5 +83,9 @@ on macOS/Linux. It synchronizes temporary files, sends SIGINT or SIGTERM, verifi
 clean exit with no state/coordinator locks or pending journal, restarts, and
 verifies another edit synchronizes. These tests do not install an OS background
 service or certify power-loss recovery.
+
+The separately opt-in [macOS service fixture](services.md#validation) does test a
+real launchd job with temporary profiles and homes, including sync, stop, restart,
+uninstall and persistent-data preservation. It does not test actual login/reboot.
 
 Isolation references: [Codex environment variables](https://learn.chatgpt.com/docs/config-file/environment-variables), [Claude configuration locations](https://code.claude.com/docs/en/settings). Commands and flags are also checked against each installed CLI's help.

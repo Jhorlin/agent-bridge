@@ -113,17 +113,27 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 - OAuth/session tokens, permission policy, arbitrary hook behavior, and semantic instruction translation are not implemented. Startup-hook configuration and minimal agent definitions are supported only within the documented subset. Unsupported fields/components fail explicitly. Plugin packages are authored, not installed or enabled.
 - Resource paths cannot overlap (conservative case-insensitive comparison on every OS). Changing the paths/kind/scope of an already managed ID requires new explicit adoption. Config files and state directories must be trusted and kept private.
 
-## Roadmap / acceptance gates
+## Release boundary and future work
 
-The [native host acceptance harness](docs/native-testing.md) checks generated MCP configuration and portable package validation with disposable host configuration directories. These checks do not certify model behavior or full host interoperability.
+The agreed bounded feature set is implemented: shared instruction sections,
+portable skills (with opt-in strict common metadata), selected MCP configuration,
+skill-only plugin packages, minimal agents, startup-hook configuration,
+audit/recovery, and global/project onboarding. macOS background service management
+is also implemented. See the [release readiness and validation record](docs/release-readiness.md)
+for exact scope, evidence and exclusions. This remains experimental, not full
+Claude/Codex parity or a claim of 100% testing.
 
-1. Further hardening: filesystem races, power-loss durability, richer metadata preservation, ownership and deletion policy, safe historical restore.
-2. Project discovery and multi-profile coordination; host-level instruction inheritance.
-3. Semantic skill compatibility reports and safe nested-link support (root pins and recursive file syncing are implemented).
-4. Broader MCP coverage, per-server reconciliation, and comment-preserving editing (bounded JSON/TOML adapters are implemented).
-5. Structured instructions with shared content and tool-specific overlays.
-6. Richer plugin components, bundled MCP, hooks, and installed-cache lifecycle; no blanket parity claims.
-7. Watcher lifecycle, debouncing, onboarding previews, safe uninstall and macOS service integration.
+Future expansion, not capabilities promised by this initial boundary:
+
+- Stronger filesystem-race/power-loss guarantees, metadata preservation, deletion
+  policy and historical restore.
+- Automatic enrollment/project discovery and resource ownership coordination;
+  host-level instruction precedence emulation.
+- Host-specific skill invocation/dependency mapping and nested-link support.
+- Broader MCP policy support, per-server reconciliation and comment-preserving editing.
+- Richer plugin components, bundled MCP and automatic installed-cache refresh.
+- Additional hook events, richer agents, Linux service installation and broader
+  real-model execution evidence.
 
 ## Prior art
 
