@@ -41,6 +41,12 @@ type Options struct {
 var ErrObservationChanged = errors.New("inputs changed since the watched observation; retry planning")
 
 func locked(c Config, fn func() error) (err error) {
+	guarded := func() error {
+		if err := checkCurrentConfig(c); err != nil {
+			return err
+		}
+		return fn()
+	}
 	if err = validateLinks(c); err != nil {
 		return err
 	}
@@ -52,10 +58,10 @@ func locked(c Config, fn func() error) (err error) {
 			if err := enforceOwnership(c); err != nil {
 				return err
 			}
-			return directoryLocked(c.StateDir, fn)
+			return directoryLocked(c.StateDir, guarded)
 		})
 	}
-	return directoryLocked(c.StateDir, fn)
+	return directoryLocked(c.StateDir, guarded)
 }
 
 // All coordinated profiles acquire the common lock before their state lock.

@@ -12,7 +12,17 @@ import (
 func runFileChange(args []string, out, errOut io.Writer) int {
 	var result any
 	var err error
-	if args[0] == "file-change-history" {
+	if args[0] == "review-retirement" {
+		if len(args) != 3 {
+			return usage(errOut)
+		}
+		result, err = bridge.ReviewRetirement(args[1], args[2])
+	} else if args[0] == "apply-retirement" {
+		if len(args) != 4 {
+			return usage(errOut)
+		}
+		result, err = bridge.ApplyRetirement(args[1], args[2], args[3])
+	} else if args[0] == "file-change-history" {
 		if len(args) != 2 {
 			return usage(errOut)
 		}
@@ -57,10 +67,10 @@ func runFileChange(args []string, out, errOut io.Writer) int {
 	}
 	if err != nil {
 		if errors.Is(err, bridge.ErrObservationChanged) {
-			fmt.Fprintln(errOut, "Reviewed inputs changed; review the supporting-file change again.")
+			fmt.Fprintln(errOut, "Reviewed inputs changed; review the requested change again.")
 			return 2
 		}
-		fmt.Fprintln(errOut, "Supporting-file change failed; inspect baseline, paths, choices, ownership and pending recovery privately.")
+		fmt.Fprintln(errOut, "Reviewed change failed; inspect profile, baseline, paths, choices, ownership and pending recovery privately.")
 		return 1
 	}
 	if err := json.NewEncoder(out).Encode(result); err != nil {
