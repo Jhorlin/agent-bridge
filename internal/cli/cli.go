@@ -43,13 +43,16 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		}
 		return 0
 	}
-	if command == "discover" {
+	if command == "discover" || command == "watch-discovery" {
 		if len(args) != 3 || (args[2] != "--global" && args[2] != "--project") {
 			return usage(errOut)
 		}
 		scope := "project"
 		if args[2] == "--global" {
 			scope = "global"
+		}
+		if command == "watch-discovery" {
+			return watchDiscovery(ctx, filename, scope, out, errOut)
 		}
 		report, err := bridge.Discover(filename, scope)
 		if err != nil {
@@ -222,7 +225,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
-	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge discover <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")
+	fmt.Fprintln(w, "Usage: agent-bridge <config|plan|sync|watch|recover|audit|init> <config.json> [--apply (watch only) | --json (audit only)]\n       agent-bridge <discover|watch-discovery> <root> <--project|--global>\n       agent-bridge service <install|start|stop|status|uninstall> <config.json> [--apply (install only)]")
 	return 1
 }
 

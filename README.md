@@ -122,6 +122,11 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 
 ## Release boundary and future work
 
+The next phase is tracked in the [eight-workstream acceptance plan](docs/phase-two.md).
+Its [public upstream fixture catalog](internal/bridge/testdata/upstream/README.md)
+records pinned sources and separate third-party licenses; fixtures are inert test
+data, not installed plugins. Phase-two features are not part of the published alpha.
+
 The agreed bounded feature set is implemented: shared instruction sections,
 portable skills (with opt-in strict common metadata), selected MCP configuration,
 skill-only plugin packages, minimal agents, startup-hook configuration,

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "id": "fakechat-mcp",
+      "file": "fakechat/mcp.json",
+      "sha256": "3917f449284d362f213a42e0d7ef3bb9a75db795b7909d6febdb1fd94d0df68e",
+      "repository": "anthropics/claude-plugins-official",
+      "revision": "517b2fcd1b60fa2181ac52dcf8492361ba341180",
+      "sourcePath": "external_plugins/fakechat/.mcp.json",
+      "sourceBlob": "f9f04a674319e0a393c168504ee2307f164cbc5d",
+      "license": "Apache-2.0",
+      "licenseFile": "fakechat/LICENSE",
+      "licenseSHA256": "746bc52848eabf8765635fe532e0680756a10b18e7b3fb26e7433ab4edf34034",
+      "transformations": ["Stored under an inert fixture filename; configuration bytes unchanged."],
+      "workstreams": [3, 6],
+      "expected": "blocked",
+      "reason": "Plugin-relative MCP arguments need a reviewed package-root translation contract."
+    },
+    {
+      "id": "fakechat-manifest",
+      "file": "fakechat/plugin.json",
+      "sha256": "f8ab6ee13afeb0f988a1e48ac6c955efd671c9ed3a67b47ad8c6e1fd8a215f48",
+      "repository": "anthropics/claude-plugins-official",
+      "revision": "517b2fcd1b60fa2181ac52dcf8492361ba341180",
+      "sourcePath": "external_plugins/fakechat/.claude-plugin/plugin.json",
+      "sourceBlob": "1f621f1628eb27383acd7d1748a0294ad0f97b1c",
+      "license": "Apache-2.0",
+      "licenseFile": "fakechat/LICENSE",
+      "licenseSHA256": "746bc52848eabf8765635fe532e0680756a10b18e7b3fb26e7433ab4edf34034",
+      "transformations": ["Stored under an inert fixture filename; manifest bytes unchanged."],
+      "workstreams": [2, 3],
+      "expected": "manifest-roundtrip-only",
+      "reason": "Common manifest fields round-trip; this does not certify the complete MCP package or installation."
+    },
+    {
+      "id": "cli-creator-sidecar",
+      "file": "cli-creator/openai.yaml",
+      "sha256": "356c648dcdd7e10d65df0c348175344b36f28c7da51e031010a7385124a89f4c",
+      "repository": "openai/skills",
+      "revision": "49f948faa9258a0c61caceaf225e179651397431",
+      "sourcePath": "skills/.curated/cli-creator/agents/openai.yaml",
+      "sourceBlob": "74da6bf568e409b6dff8d47d85de2b6f1341c61c",
+      "license": "Apache-2.0",
+      "licenseFile": "cli-creator/LICENSE",
+      "licenseSHA256": "4dd13869245e356246a5b770723247bbb80a8f07a181d1d3d873a1734297cdb9",
+      "transformations": ["Stored outside any skill discovery root; sidecar bytes unchanged."],
+      "workstreams": [4],
+      "expected": "blocked",
+      "reason": "Strict skill mode has no host-specific UI/default-prompt sidecar mapping."
+    }
+  ]
+}
