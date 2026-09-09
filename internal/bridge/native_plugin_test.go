@@ -50,6 +50,14 @@ func nativeCodexPluginLifecycle(t *testing.T, layout string) {
 	f.apply()
 	// Only a disposable personal marketplace is created; no user cache is read.
 	f.write("home/.agents/plugins/marketplace.json", `{"name":"personal","interface":{"displayName":"Personal"},"plugins":[{"name":"demo","source":{"source":"local","path":"./plugins/demo"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Productivity"}]}`)
+	compare := func(want bool) {
+		t.Helper()
+		report, err := ComparePluginCopy(f.path("config.json"), "bundle", "codex", f.path("codex-home/plugins/cache/personal/demo/1.0.0"))
+		must(t, err)
+		if report.Matches != want {
+			t.Fatalf("unexpected native cache comparison: %+v", report)
+		}
+	}
 	nativeRPCSession(t, f, tools["codex"], func(call func(string, any) json.RawMessage) {
 		call("plugin/install", map[string]any{"marketplacePath": f.path("home/.agents/plugins/marketplace.json"), "pluginName": "demo"})
 		if layout != "portable" {
@@ -62,12 +70,14 @@ func nativeCodexPluginLifecycle(t *testing.T, layout string) {
 		if !strings.Contains(string(skills), "demo") || !strings.Contains(string(skills), "plugins/cache") {
 			t.Fatalf("installed plugin skill not discovered: %s", skills)
 		}
+		compare(true)
 		f.write("claude-plugin/skills/demo/SKILL.md", "---\nname: demo\ndescription: Updated bridge reload fixture.\n---\nRead the updated docs.")
 		f.apply()
 		skills = call("skills/list", map[string]any{"cwds": []string{f.dir}, "forceReload": true})
 		if strings.Contains(string(skills), "Updated bridge reload fixture") {
 			t.Fatal("installed copy unexpectedly changed with authoring source")
 		}
+		compare(false)
 		call("plugin/uninstall", map[string]any{"pluginId": "demo@personal"})
 		skills = call("skills/list", map[string]any{"cwds": []string{f.dir}, "forceReload": true})
 		if strings.Contains(string(skills), "plugins/cache/personal/demo") {
@@ -78,6 +88,7 @@ func nativeCodexPluginLifecycle(t *testing.T, layout string) {
 		if !strings.Contains(string(skills), "Updated bridge reload fixture") {
 			t.Fatalf("reinstalled plugin did not refresh: %s", skills)
 		}
+		compare(true)
 		call("plugin/uninstall", map[string]any{"pluginId": "demo@personal"})
 	})
 	f.expect("home/plugins/demo/skills/demo/SKILL.md", f.read("claude-plugin/skills/demo/SKILL.md"))

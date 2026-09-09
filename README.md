@@ -47,6 +47,10 @@ Source builds also provide [reviewed supporting-file rename/delete](docs/support
 with retained backups and interrupted-operation recovery. These explicit commands
 do not make ordinary synchronization propagate deletions automatically.
 
+`compare-plugin-copy CONFIG ID SIDE ABS_COPY` [checks an explicitly selected
+plugin copy for stale authoring files](docs/plugin-copy.md), without invoking
+installers or changing native enablement, authentication or trust.
+
 ## Architecture
 
 ![Agent Bridge Go architecture: explicit profiles feed the CLI; adapters normalize three local peers for baseline reconciliation; opt-in transactions journal and apply guarded writes.](docs/architecture.svg)
