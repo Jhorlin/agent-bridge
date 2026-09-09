@@ -243,11 +243,16 @@ func inspectDiagnostics(ctx context.Context, profile, dir string, tail int, serv
 		mapping[diagnostics.Ref(resource.ID)] = resource.ID
 	}
 	for key, name := range map[string]string{"syncLock": "sync.lock", "syncPending": "pending.json", "fileChangePending": "file-change-pending.json", "manifest": "manifest.json"} {
-		r.State[key] = stateStatus(filepath.Join(c.StateDir, name))
+		path := filepath.Join(c.StateDir, name)
+		r.State[key] = stateStatus(path)
+		mapping[diagnostics.Ref(path)] = path
 	}
 	if c.CoordinationDir != "" {
-		r.State["coordinationLock"] = stateStatus(filepath.Join(c.CoordinationDir, "sync.lock"))
-		r.State["enrollmentPending"] = stateStatus(filepath.Join(c.CoordinationDir, "enrollment-pending.json"))
+		for key, name := range map[string]string{"coordinationLock": "sync.lock", "enrollmentPending": "enrollment-pending.json"} {
+			path := filepath.Join(c.CoordinationDir, name)
+			r.State[key] = stateStatus(path)
+			mapping[diagnostics.Ref(path)] = path
+		}
 	}
 	plan, err := bridge.Plan(c)
 	r.Plan = bridge.DiagnosticCode(err)

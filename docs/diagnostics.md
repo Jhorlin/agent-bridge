@@ -18,7 +18,8 @@ Use the same explicit profile path and OS user that ran the failing command:
    `service`, and recent `logs.events`. It does not fix anything automatically.
 2. `logs` shows the structured log directory, recent validated events, legacy
    service-log locations, and a **local-only reference map**. This maps hashed
-   resource/path references back to the current profile's IDs and files. It does
+   resource/path references back to the current profile's IDs and files, including
+   the manifest, pending markers and lock paths. It does
    not print native file contents. Treat this output as private: it includes paths
    and names, unlike a support bundle.
 3. `support-bundle` writes one new private JSON file. Choose an existing directory

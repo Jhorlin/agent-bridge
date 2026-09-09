@@ -334,3 +334,26 @@ func TestDoctorReportsServiceModeAndNoWrites(t *testing.T) {
 		t.Fatal("incorrect service diagnostics")
 	}
 }
+
+func TestLogReferenceMapIncludesEverySyncTarget(t *testing.T) {
+	_, profile := diagnosticFixture(t)
+	if RunLogged(context.Background(), []string{"sync", profile}, io.Discard, io.Discard) != 0 {
+		t.Fatal("sync failed")
+	}
+	var out bytes.Buffer
+	if runDiagnosticsWith(context.Background(), []string{"logs", profile}, &out, io.Discard, fakeStatus) != 0 {
+		t.Fatal("log discovery failed")
+	}
+	var report struct {
+		References map[string]string      `json:"localReferences"`
+		Logs       diagnostics.ReadResult `json:"logs"`
+	}
+	if e := json.Unmarshal(out.Bytes(), &report); e != nil {
+		t.Fatal(e)
+	}
+	for _, e := range report.Logs.Events {
+		if e.Path != "" && report.References[e.Path] == "" {
+			t.Fatalf("sync target cannot be resolved locally: stage=%s pathRef=%s", e.Stage, e.Path)
+		}
+	}
+}
