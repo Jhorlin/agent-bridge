@@ -126,6 +126,8 @@ Source builds can retain bounded host-local agent settings with
 
 Before changing any target, a private journal records all before/after snapshots, including the manifest. A pending marker blocks new syncs until the transaction commits or is recovered. Ordinary write failures trigger rollback automatically. If a later edit differs from both recorded snapshots, rollback stops and preserves that edit.
 
+New syncs create absent targets exclusively and record creation ownership in a separate private receipt. Recovery refuses to delete a file whose creation was not recorded—even if another writer produced identical bytes. Missing/invalid required receipts or interruption between creation and its receipt require inspection; pending state remains intact. See [recovery compatibility](docs/upgrading.md#creation-ownership-recovery).
+
 `recover CONFIG` rolls back the pending transaction; it does not restore arbitrary historic backups. Inspect `stateDir/pending.json` and its referenced `backups/<transaction>/journal.json` privately. If a process was killed, inspect the PID in `sync.lock`, confirm that no writer remains, and remove only that stale lock before running recovery. The CLI never steals a lock automatically. Retain the same configuration paths during recovery. Backups remain after recovery; newly created empty directories may remain too.
 
 Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schema 1. Resource options are recorded in resource identity; changing an already adopted binding requires a new ID or separately reviewed adoption. Unsupported state schemas are rejected. No live state migration runs automatically.
@@ -136,7 +138,7 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 - Conflicting initial copies require manual reconciliation before adoption.
 - Deletions are conflicts; no automatic pruning.
 - Only explicitly pinned native root symlinks are accepted. Symlinked parents, nested/chained links, and hard-linked files are rejected. Pins are rechecked before writes.
-- Writes use fsynced sibling temporary files and rename. Private before/after snapshots are retained in journals under `stateDir/backups`.
+- Writes use fsynced sibling temporary files, with rename for replacements and exclusive hard-link creation for absent targets. Private before/after snapshots and creation receipts are retained under `stateDir/backups`.
 - A state-directory lock excludes writers using the same state. Profiles can share an explicit `coordinationDir` to serialize sync and recovery across different state directories; see [coordination setup](docs/onboarding.md#multiple-profiles). Profiles using different or omitted coordination directories are not coordinated. External editors are not locked; a remaining check/write race exists. Do not use for security-sensitive production configuration yet.
 - Multi-file changes are recoverable but **not atomically visible**. External readers may observe partial progress. Process-interruption recovery is tested; full power-loss durability and adversarial filesystem races are not guaranteed.
 - New files use private read/write permissions plus source executable bits. Existing target read/write permissions are preserved. ACLs, ownership, extended attributes, timestamps, and directory metadata are not mirrored.

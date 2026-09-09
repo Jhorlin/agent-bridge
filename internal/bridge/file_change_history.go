@@ -40,6 +40,10 @@ func FileChangeHistory(filename string) ([]FileChangeHistoryEntry, error) {
 	if err != nil {
 		return nil, err
 	}
+	c, err = historyConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	root := filepath.Join(c.StateDir, "file-change-backups")
 	if err := assertSafe(root); err != nil {
 		return nil, err

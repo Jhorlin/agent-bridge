@@ -225,7 +225,13 @@ func serverFromNative(side string, m map[string]any) (MCPServer, error) {
 			return s, err
 		}
 		s.HeaderVars = map[string]string{}
+		seenHeaders := map[string]bool{}
 		for k, v := range headers {
+			fold := strings.ToLower(k)
+			if seenHeaders[fold] {
+				return s, fmt.Errorf("duplicate case-insensitive MCP header")
+			}
+			seenHeaders[fold] = true
 			if strings.EqualFold(k, "Authorization") {
 				if match := bearerRef.FindStringSubmatch(v); len(match) == 2 {
 					s.BearerEnv = match[1]

@@ -108,9 +108,12 @@ func allowedTarget(c Config, file string) bool {
 	}
 	return false
 }
-func rollback(c Config, j Journal) error {
+func rollbackWithOwnership(c Config, j Journal, receipt *syncOwnership) error {
+	if err := validateSyncOwnership(j, receipt); err != nil {
+		return err
+	}
 	seen := map[string]bool{}
-	for _, op := range j.Operations {
+	for index, op := range j.Operations {
 		if !filepath.IsAbs(op.File) || filepath.Clean(op.File) != op.File || !allowedTarget(c, op.File) || seen[op.File] {
 			return fmt.Errorf("recovery journal contains an invalid target")
 		}
@@ -128,6 +131,9 @@ func rollback(c Config, j Journal) error {
 		if err != nil {
 			return err
 		}
+		if receipt != nil && op.Before == nil && current != nil && !receipt.Created[index] {
+			return fmt.Errorf("ambiguous sync creation ownership; preserve the file and inspect pending recovery")
+		}
 		if !equal(current, op.Before) && !equal(current, op.After) {
 			return fmt.Errorf("recovery blocked by a later edit: %s", op.Label)
 		}
@@ -137,6 +143,9 @@ func rollback(c Config, j Journal) error {
 		current, err := snapshot(op.File)
 		if err != nil {
 			return err
+		}
+		if receipt != nil && op.Before == nil && current != nil && !receipt.Created[i] {
+			return fmt.Errorf("ambiguous sync creation ownership; preserve the file and inspect pending recovery")
 		}
 		if equal(current, op.Before) {
 			continue
@@ -168,8 +177,8 @@ func Recover(c Config) (Recovery, error) {
 		if err != nil || pending == nil {
 			return err
 		}
-		var pointer Pending
-		if err = decode(pending, &pointer); err != nil {
+		var pointer syncPending
+		if err = decodeEnrollmentJSON(pending, &pointer); err != nil {
 			return err
 		}
 		if !transactionPattern.MatchString(pointer.Transaction) {
@@ -183,13 +192,17 @@ func Recover(c Config) (Recovery, error) {
 			return fmt.Errorf("recovery journal is missing; manual inspection required")
 		}
 		var j Journal
-		if err = decode(stored, &j); err != nil {
+		if err = decodeEnrollmentJSON(stored, &j); err != nil {
 			return err
 		}
 		if j.Version != 1 || j.Operations == nil {
 			return fmt.Errorf("invalid recovery journal")
 		}
-		if err = rollback(c, j); err != nil {
+		receipt, err := readSyncOwnership(c, pointer, j)
+		if err != nil {
+			return err
+		}
+		if err = rollbackWithOwnership(c, j, receipt); err != nil {
 			return err
 		}
 		result = Recovery{Status: "recovered", Transaction: pointer.Transaction}
@@ -342,7 +355,14 @@ func Apply(c Config, options Options) ([]Summary, error) {
 		if err = writeJSON(filepath.Join(c.StateDir, "backups", transaction, "journal.json"), journal); err != nil {
 			return err
 		}
-		if err = writeJSON(pendingPath(c), Pending{transaction}); err != nil {
+		receipt, err := newSyncOwnership(journal)
+		if err != nil {
+			return err
+		}
+		if err = writeJSON(syncOwnershipPath(c, transaction), receipt); err != nil {
+			return err
+		}
+		if err = writeJSON(pendingPath(c), syncPending{transaction, true}); err != nil {
 			return err
 		}
 		writeErr := func() error {
@@ -362,14 +382,28 @@ func Apply(c Config, options Options) ([]Summary, error) {
 				if !equal(current, op.Before) {
 					return fmt.Errorf("input changed before write: %s", op.Label)
 				}
-				if err = writeSnapshot(op.File, op.After); err != nil {
+				if op.Before == nil {
+					// A fully written temporary inode is linked exclusively into place.
+					// Never replace an external creator that wins after our precheck.
+					if err = os.MkdirAll(filepath.Dir(op.File), 0700); err != nil {
+						return err
+					}
+					err = createRosterExclusive(op.File, op.After)
+					if err == nil {
+						receipt.Created[index] = true
+						err = writeJSON(syncOwnershipPath(c, transaction), receipt)
+					}
+				} else {
+					err = writeSnapshot(op.File, op.After)
+				}
+				if err != nil {
 					return err
 				}
 			}
 			return os.Remove(pendingPath(c))
 		}()
 		if writeErr != nil {
-			if recoveryErr := rollback(c, journal); recoveryErr != nil {
+			if recoveryErr := rollbackWithOwnership(c, journal, receipt); recoveryErr != nil {
 				return fmt.Errorf("%w; %v. Pending transaction retained; run recover after inspection", writeErr, recoveryErr)
 			}
 			return fmt.Errorf("%w; transaction rolled back", writeErr)

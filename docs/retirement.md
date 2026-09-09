@@ -11,14 +11,23 @@ Use the observation returned by review. The command removes a locally declared
 resource, or disables an inherited resource in this profile. If a local override
 also has an inherited definition, that definition is disabled too. Parent files,
 relative paths and inheritance are preserved; the edited JSON is reformatted.
-Other profiles that inherit this selected profile will naturally see its changed
-declarations: review that impact before retiring from a shared parent.
+Retirement is refused if another profile in the ownership roster inherits this
+selected profile (directly or indirectly). Retire in a leaf profile, or explicitly
+review and remove the dependency first. This prevents invalid child `disable`
+entries and a broken coordinator roster; children are never silently rewritten.
+Unregistered dependents cannot be discovered automatically: review their impact
+before retiring from an uncoordinated/shared parent.
 
 Every native/shared file, pinned symlink, plugin-agent export, baseline and old
 backup remains in place. Hosts may still load these files; retirement is **not**
 uninstall, disabling a native feature, revoking trust, or removing credentials.
 Installed plugin caches are untouched. Ownership of retired native paths is no
 longer claimed by this profile; its state directory remains reserved.
+
+Retained manifest identities keep ordinary and supporting-file history listings
+readable after retirement. Active resources can still be restored from mixed
+journals that also contain retired resources. Retired resources remain read-only:
+reactivate their reviewed declarations before attempting historical restoration.
 
 The only committed edit is an atomic replacement of the selected profile. An
 exact, private copy of the original profile is saved first at the returned
@@ -27,7 +36,8 @@ contain sensitive configuration: keep them private. A failed attempt can leave
 a backup without changing the profile. No separate pending journal is needed
 for this single-file operation; it does not promise durability across power loss.
 
-Reviews bind the profile chain and manifest bytes. Pending sync/supporting-file
+Reviews bind the profile chain, manifest, roster and enrolled profile-chain bytes.
+Pending sync/supporting-file
 recovery blocks retirement; coordinated profiles also enforce enrollment and
 ownership under the common lock. Loaded writers check their configuration again
 under the state lock, so an old watcher cannot resurrect a retired resource.

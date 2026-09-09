@@ -465,6 +465,7 @@ func TestMixedResourcesConflictIsAllOrNothing(t *testing.T) {
 }
 
 func FuzzMCPJSON(f *testing.F) {
+	f.Add(`{"mcpServers":{"docs":{"type":"http","url":"https://example.invalid/mcp","headers":{"Authorization":"Bearer ${FIRST}","authorization":"Bearer ${SECOND}"}}}}`)
 	for _, seed := range []string{`{}`, `null`, `{"mcpServers":{"docs":{"command":"server"}}}`, `{"mcpServers":{"docs":{"headers":[]}}}`, `{"mcpServers":{},"mcpServers":{}}`} {
 		f.Add(seed)
 	}

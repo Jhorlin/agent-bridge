@@ -57,6 +57,10 @@ func History(filename string) ([]HistoryEntry, error) {
 
 func readHistoryJournal(c Config, transaction string) (Journal, *Snapshot, error) {
 	var j Journal
+	archive, err := historyConfig(c)
+	if err != nil {
+		return j, nil, err
+	}
 	if !transactionPattern.MatchString(transaction) {
 		return j, nil, fmt.Errorf("invalid historical transaction")
 	}
@@ -84,7 +88,7 @@ func readHistoryJournal(c Config, transaction string) (Journal, *Snapshot, error
 	}
 	seen := map[string]bool{}
 	for _, op := range j.Operations {
-		if !filepath.IsAbs(op.File) || filepath.Clean(op.File) != op.File || seen[op.File] || !allowedTarget(c, op.File) {
+		if !filepath.IsAbs(op.File) || filepath.Clean(op.File) != op.File || seen[op.File] || !allowedTarget(archive, op.File) {
 			return j, nil, fmt.Errorf("historical journal has invalid or no-longer-managed targets")
 		}
 		seen[op.File] = true
@@ -99,6 +103,31 @@ func readHistoryJournal(c Config, transaction string) (Journal, *Snapshot, error
 		}
 	}
 	return j, raw, nil
+}
+
+// Retained manifest identities authorize reading archived journal metadata only.
+// Never use this configuration for planning, applying, or pending recovery.
+// A restore still selects an active item and verifies its historical identity.
+func historyConfig(c Config) (Config, error) {
+	m, _, err := readManifest(c)
+	if err != nil {
+		return c, err
+	}
+	archive := c
+	archive.Resources = append([]Resource{}, c.Resources...)
+	active := map[string]bool{}
+	for _, r := range c.Resources {
+		active[r.ID] = true
+	}
+	for id, r := range m.Resources {
+		if !active[id] {
+			if r.ID != id {
+				return c, fmt.Errorf("invalid archived resource identity")
+			}
+			archive.Resources = append(archive.Resources, r)
+		}
+	}
+	return archive, nil
 }
 
 // prepareHistory selects one recorded file version, then uses today's adapter

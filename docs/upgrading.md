@@ -43,3 +43,25 @@ same-source, version-labeled binary replacement. That service test and this
 cross-version data/journal test are distinct: neither implies arbitrary-version
 service migration, automatic upgrade installation or successful reboot/login.
 No published alpha asset is modified by these tests.
+
+## Creation-ownership recovery
+
+Config schema 1, manifest schema 2, and the recovery journal's version-1 encoding
+are unchanged. New syncs write `creation-ownership.json` beside `journal.json`
+and set `creationOwnership: true` in their pending pointer. This receipt is bound
+to the journal and records which previously absent files the transaction created.
+Recovery validates it before changing any file. A missing/malformed receipt or an
+existing file without a recorded creation blocks recovery and retains all evidence.
+
+If a process stops between exclusive file creation and recording its receipt,
+ownership is ambiguous even when the bytes match. Inspect and preserve that file;
+do not delete the receipt or pending marker to bypass the check. If another writer
+created it, moving that file aside to a safe location after inspection lets
+recovery roll back the bridge's other writes without deleting the external file.
+
+Legacy pending pointers without the flag or a receipt remain readable using legacy recovery
+semantics, as verified by the pinned-alpha test. They cannot provide creation
+ownership evidence retroactively. Never use an older binary to recover a new
+pending transaction: older code ignores the new flag and lacks this protection.
+These private local records are not signed ownership proofs against tampering,
+and full power-loss/adversarial filesystem-race guarantees remain out of scope.

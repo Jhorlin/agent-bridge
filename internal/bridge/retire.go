@@ -59,6 +59,35 @@ func prepareRetirement(filename, id string) (Config, *Snapshot, *Snapshot, Retir
 		return c, nil, nil, r, fmt.Errorf("recover pending sync before retirement")
 	}
 	files := map[string]*Snapshot{}
+	if c.CoordinationDir != "" {
+		rosterPath := filepath.Join(c.CoordinationDir, "profiles.json")
+		roster, err := snapshot(rosterPath)
+		if err != nil {
+			return c, nil, nil, r, err
+		}
+		files[rosterPath] = roster
+		if roster != nil {
+			var entries ownershipRoster
+			if err := decodeEnrollmentJSON(roster, &entries); err != nil || entries.Version != 1 || len(entries.Profiles) == 0 {
+				return c, nil, nil, r, fmt.Errorf("invalid ownership roster")
+			}
+			for _, profile := range entries.Profiles {
+				other, err := LoadAuditConfig(profile)
+				if err != nil {
+					return c, nil, nil, r, err
+				}
+				for _, file := range other.ConfigFiles {
+					if profile != c.ConfigFiles[0] && file == c.ConfigFiles[0] {
+						return c, nil, nil, r, fmt.Errorf("retirement blocked: another enrolled profile inherits this profile; retire in the leaf profile or review and remove the dependency first")
+					}
+					files[file], err = snapshot(file)
+					if err != nil {
+						return c, nil, nil, r, err
+					}
+				}
+			}
+		}
+	}
 	for _, file := range c.ConfigFiles {
 		files[file], err = snapshot(file)
 		if err != nil {
