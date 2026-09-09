@@ -195,6 +195,31 @@ legacy fallback and injected rollback. The public upstream corpus still verifies
 rejection of unsupported plugin-relative MCP; no new transport/runtime behavior
 or native execution support is claimed by this reconciliation change.
 
+## Linux unit export
+
+`agent-bridge systemd-unit ABSOLUTE_PROFILE ABSOLUTE_BINARY [--apply]` validates
+an explicit profile and existing executable, then emits a systemd user unit to
+stdout only. It never installs/enables/starts a service, changes a roster or
+writes native configuration. Paths must be valid on the intended Linux host;
+use canonical paths without symlink ancestors. Executable paths containing `$`
+or `%` are rejected. Profile arguments are quoted with literal dollar/percent
+escaping; no shell is used. Apply-mode export rejects current conflicts.
+
+The generated watcher is preview-only unless `--apply` is selected. `Restart=no`
+prevents error restart loops. `TimeoutStopSec=infinity` permits in-flight sync
+to finish but means a stuck process needs manual inspection. Output goes to the
+user journal: resource names/paths may appear, and journal access/retention is a
+host policy, not private-file logging. `UMask=0077` governs newly created files.
+No credentials, environment values or host trust settings are embedded.
+
+Offline Linux validation uses `systemd-analyze verify` through the opt-in
+`AGENT_BRIDGE_SYSTEMD_TESTS=1` test. Parser acceptance does **not** establish a
+working login/start/stop/uninstall lifecycle. Automatic installation, receipts,
+ownership-safe removal and actual user-manager lifecycle testing remain pending.
+The macOS test fixture resolves Go's temporary executable path explicitly;
+production still rejects symlink paths. Quoting follows the
+[upstream systemd service specification](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml).
+
 ## Documentation anchors
 
 [Codex hooks](https://learn.chatgpt.com/docs/hooks) describes event behavior and

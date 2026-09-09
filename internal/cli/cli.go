@@ -26,6 +26,20 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "service" {
 		return runService(ctx, args[1:], out, errOut)
 	}
+	if len(args) > 0 && args[0] == "systemd-unit" {
+		if len(args) < 3 || len(args) > 4 || (len(args) == 4 && args[3] != "--apply") {
+			return usage(errOut)
+		}
+		unit, err := bridge.SystemdUnit(args[1], args[2], len(args) == 4)
+		if err != nil {
+			fmt.Fprintln(errOut, "Unit export failed: check absolute paths, executable, profile safety and conflicts. No service installed.")
+			return 1
+		}
+		if _, err := fmt.Fprint(out, unit); err != nil {
+			return 1
+		}
+		return 0
+	}
 	if len(args) > 0 && (args[0] == "review-profile" || args[0] == "sync-reviewed") {
 		if args[0] == "review-profile" {
 			if len(args) != 2 {
@@ -289,6 +303,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
 	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")
 	fmt.Fprintln(w, "       agent-bridge draft-profile <root> <--project|--global> <candidate-id> [more IDs...]")
 	fmt.Fprintln(w, "       agent-bridge check-overlap <profile.json> <other.json> [more profiles...]")

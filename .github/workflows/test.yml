@@ -18,6 +18,9 @@ jobs:
         run: test -z "$(gofmt -l cmd internal)"
       - run: go vet ./...
       - run: go test -race ./...
+      - name: Verify exported systemd units without installing services
+        if: runner.os == 'Linux'
+        run: AGENT_BRIDGE_SYSTEMD_TESTS=1 go test ./internal/bridge -run '^TestNativeSystemdUnitVerify$' -count=1 -v
       - name: Package and smoke-test standalone archives
         run: AGENT_BRIDGE_PACKAGE_TESTS=1 go test ./internal/release -run '^TestNativePackage$' -count=1 -v
       - name: Fuzz MCP JSON parser
