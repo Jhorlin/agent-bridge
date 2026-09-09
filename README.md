@@ -125,7 +125,8 @@ Agent Bridge uses config schema 1, manifest schema 2, and recovery-journal schem
 Source builds provide `systemd-unit ABSOLUTE_PROFILE ABSOLUTE_BINARY [--apply]`
 to export a Linux user-unit proposal to stdout. It does not install or start a
 service; preview mode is the default. See [Linux unit export](docs/phase-two.md#linux-unit-export)
-for limitations. Automatic Linux service management remains unfinished.
+for limitations. Source builds also include an experimental owned Linux lifecycle;
+[native user-manager acceptance remains pending](docs/services.md#linux-systemd-user-services-experimental-source-builds).
 
 The next phase is tracked in the [eight-workstream acceptance plan](docs/phase-two.md).
 Its [public upstream fixture catalog](internal/bridge/testdata/upstream/README.md)

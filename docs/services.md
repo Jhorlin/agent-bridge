@@ -1,9 +1,10 @@
 # macOS background watcher
 
-Service management is opt-in and macOS-only. It installs a per-user LaunchAgent
+The published alpha's service management is opt-in and macOS-only. It installs a per-user LaunchAgent
 for one explicit profile; it does not discover resources, install Claude/Codex,
 copy authentication, or grant native host trust. Linux users can run `watch`
-under their own supervisor; Agent Bridge does not install a Linux service.
+under their own supervisor. Source builds additionally include the experimental
+Linux implementation described below; its native lifecycle acceptance is pending.
 
 Build the Go executable at a stable absolute location before installing. Do not
 use `go run` or move/delete the binary while a service is installed. Review the
@@ -84,3 +85,34 @@ including first sync, stop, restart, second sync, removal and data preservation.
 
 The plist lifecycle follows Apple's [launchd job documentation](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html);
 native command behavior is verified against the installed `launchctl`.
+
+## Linux systemd user services (experimental source builds)
+
+The same `service install|start|stop|status|uninstall PROFILE` commands select the
+Linux backend on Linux. Install is preview-only unless passed `--apply`. It creates
+one private unit, a private content receipt, and an exact symlink under
+`default.target.wants`, but never starts the user manager or watcher. The root is
+`$XDG_CONFIG_HOME/systemd/user`, defaulting to `$HOME/.config/systemd/user`.
+Custom XDG roots must also be known to the already-running user manager. No sudo,
+lingering, system-wide services, environment import or credentials are configured.
+
+Start reloads the manager, verifies the loaded fragment and absence of drop-ins,
+then starts the exact unit and checks its active state. Stop waits for an inactive
+state but leaves login enablement. Uninstall stops first and removes only the
+unchanged owned symlink, unit and receipt; native files, baselines, backups and
+journal logs remain. Modified files/links, overrides, inaccessible managers,
+unknown states or stale locks fail closed. Partial installation/removal evidence
+is retained, not automatically repaired. A post-removal daemon-reload failure
+can report failure after owned files were removed; inspect before retrying.
+
+Each systemctl invocation is bounded to 20 seconds. Timeout does not prove the
+service stopped: its unit grants infinite graceful stop time so in-flight writes
+can finish. Inspect the manager and pending journals rather than killing/restarting
+blindly. Upgrade by stopping and uninstalling the owned unit, updating the stable
+binary, then reinstalling with reviewed apply consent. In-place automatic upgrade
+and native user-manager lifecycle validation remain pending.
+
+Linux Docker tests cover the state machine with an injected manager and the
+native systemd parser. They do not prove login/start/stop against a running
+user manager: the unprivileged Docker user-manager probe did not start. This
+implementation is therefore not yet release-accepted for unattended use.

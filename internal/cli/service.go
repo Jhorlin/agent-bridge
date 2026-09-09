@@ -13,6 +13,9 @@ import (
 )
 
 func runService(ctx context.Context, args []string, out, errOut io.Writer) int {
+	if runtime.GOOS == "linux" {
+		return runLinuxService(ctx, args, out, errOut)
+	}
 	return runServiceWith(ctx, args, out, errOut, bridge.Launchctl)
 }
 

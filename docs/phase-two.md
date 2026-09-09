@@ -215,7 +215,8 @@ No credentials, environment values or host trust settings are embedded.
 Offline Linux validation uses `systemd-analyze verify` through the opt-in
 `AGENT_BRIDGE_SYSTEMD_TESTS=1` test. Parser acceptance does **not** establish a
 working login/start/stop/uninstall lifecycle. Automatic installation, receipts,
-ownership-safe removal and actual user-manager lifecycle testing remain pending.
+ownership-safe removal are implemented in the experimental Linux backend;
+actual user-manager lifecycle acceptance and automatic upgrades remain pending.
 The macOS test fixture resolves Go's temporary executable path explicitly;
 production still rejects symlink paths. Quoting follows the
 [upstream systemd service specification](https://github.com/systemd/systemd/blob/main/man/systemd.service.xml).

@@ -22,13 +22,14 @@ func TestServiceCLIValidation(t *testing.T) {
 func TestServiceCLIAbsentDoesNotWrite(t *testing.T) {
 	dir, profile := setup(t)
 	t.Setenv("HOME", filepath.Join(dir, "isolated-home"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "isolated-home", ".config"))
 	for _, action := range []string{"status", "stop", "uninstall"} {
 		var out, errors bytes.Buffer
 		code := Run(context.Background(), []string{"service", action, profile}, &out, &errors)
-		if runtime.GOOS == "darwin" && code != 0 {
+		if (runtime.GOOS == "darwin" || runtime.GOOS == "linux") && code != 0 {
 			t.Fatal(errors.String())
 		}
-		if runtime.GOOS != "darwin" && code != 1 {
+		if runtime.GOOS != "darwin" && runtime.GOOS != "linux" && code != 1 {
 			t.Fatal("accepted unsupported OS")
 		}
 	}
