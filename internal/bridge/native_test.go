@@ -13,7 +13,8 @@ import (
 )
 
 // Native tests are deliberately opt-in: a default unit-test run must not start
-// installed third-party CLIs. No prompts, logins, installs or approvals occur.
+// installed third-party CLIs. No prompts, logins or production approvals occur.
+// Runtime MCP tests approve only a fixed server in disposable test configuration.
 func nativeTools(t *testing.T, f *fixture) map[string]string {
 	t.Helper()
 	if os.Getenv("AGENT_BRIDGE_NATIVE_TESTS") != "1" {
@@ -57,6 +58,12 @@ func nativeEnvironment(f *fixture) []string {
 }
 
 func nativeRPC(t *testing.T, f *fixture, binary, method string, params any) json.RawMessage {
+	var result json.RawMessage
+	nativeRPCSession(t, f, binary, func(call func(string, any) json.RawMessage) { result = call(method, params) })
+	return result
+}
+
+func nativeRPCSession(t *testing.T, f *fixture, binary string, run func(func(string, any) json.RawMessage)) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -91,8 +98,12 @@ func nativeRPC(t *testing.T, f *fixture, binary, method string, params any) json
 	}
 	read(1)
 	must(t, encoder.Encode(map[string]any{"method": "initialized", "params": map[string]any{}}))
-	must(t, encoder.Encode(map[string]any{"id": 2, "method": method, "params": params}))
-	return read(2)
+	id := 1
+	run(func(method string, params any) json.RawMessage {
+		id++
+		must(t, encoder.Encode(map[string]any{"id": id, "method": method, "params": params}))
+		return read(id)
+	})
 }
 
 func TestNativeCodexSkillAndHookDiscovery(t *testing.T) {
