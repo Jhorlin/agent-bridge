@@ -10,8 +10,17 @@ import (
 	"time"
 )
 
+// Version is set by release builds; ordinary source builds identify as dev.
+var Version = "dev"
+
 func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if ctx.Err() != nil {
+		return 0
+	}
+	if len(args) == 1 && (args[0] == "--version" || args[0] == "version") {
+		if _, err := fmt.Fprintln(out, "agent-bridge "+Version); err != nil {
+			return 1
+		}
 		return 0
 	}
 	if len(args) > 0 && args[0] == "service" {

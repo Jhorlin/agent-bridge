@@ -5,6 +5,10 @@ code and tests and is available as public Go source. It remains **experimental**
 No tagged release or prebuilt release assets have been published. This record is
 not a claim of universal host interoperability or 100% testing.
 
+[Distribution packaging](distribution.md) is implemented separately: four
+platform archives, checksums, version reporting and CI smoke tests. Publication
+still requires a confirmed version, reviewed artifacts and an explicit release step.
+
 ## Implemented boundary
 
 - Shared instruction sections, preserving host-only surrounding text.

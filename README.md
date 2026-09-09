@@ -11,6 +11,11 @@ read-only discovery and creation of an empty profile before enrolling resources.
 
 Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
+`./agent-bridge --version` identifies the build (`dev` for ordinary source builds).
+The [distribution guide](docs/distribution.md) covers Go-only cross-platform
+packaging, archive verification and installation. Public binary releases are not
+published yet.
+
 ```sh
 go test -race ./...
 go vet ./...

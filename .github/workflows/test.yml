@@ -18,6 +18,8 @@ jobs:
         run: test -z "$(gofmt -l cmd internal)"
       - run: go vet ./...
       - run: go test -race ./...
+      - name: Package and smoke-test standalone archives
+        run: AGENT_BRIDGE_PACKAGE_TESTS=1 go test ./internal/release -run '^TestNativePackage$' -count=1 -v
       - name: Fuzz MCP JSON parser
         if: runner.os == 'Linux'
         run: go test ./internal/bridge -run '^$' -fuzz '^FuzzMCPJSON$' -fuzztime=5s -parallel=2
