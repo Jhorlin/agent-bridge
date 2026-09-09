@@ -221,3 +221,19 @@ Check the [workflow runs](https://github.com/Jhorlin/agent-bridge/actions/workfl
 for each commit's outcome; local acceptance is not a claim that a pending CI run
 has passed. Logs have their own schema: config 1, manifest 2 and recovery-journal 1
 encodings remain unchanged.
+
+### CI fuzz-budget follow-up
+
+Two subsequent CI runs ended different five-second fuzz targets with only
+`context deadline exceeded`, without a crashing counterexample. This matches
+the [reported Go fuzz-timeout issue](https://github.com/golang/go/issues/75804).
+CI now uses Go's [execution-count budget](https://go.dev/src/cmd/go/internal/test/test.go)
+of `-fuzztime=100000x` for each of the seven targets, retaining two workers and a
+separate `-timeout=2m` hang guard. Crashes still fail the run; there is no retry,
+error filtering or `continue-on-error`. The workflow regression test enforces
+these budgets and preserves all seven targets. Random fuzz inputs remain
+nondeterministic; a fixed execution count is not exhaustive input coverage.
+All seven 100,000-execution targets passed in an isolated Linux container using
+Go 1.25.4 on 2026-09-09, with the source mounted read-only and temporary home/cache
+directories (700,000 executions total). The full local race suite, vet and build
+also passed after this workflow adjustment. CI separately checks Go 1.25.0.
