@@ -63,6 +63,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -71,6 +73,8 @@ jobs:
         run: test -z "$(gofmt -l cmd internal)"
       - run: go vet ./...
       - run: go test -race ./...
+      - name: Verify published-alpha upgrade and legacy journal recovery
+        run: AGENT_BRIDGE_UPGRADE_TESTS=1 go test -race ./internal/bridge -run '^TestPublishedAlphaUpgrade$' -count=1 -v
       - name: Verify exported systemd units without installing services
         if: runner.os == 'Linux'
         run: AGENT_BRIDGE_SYSTEMD_TESTS=1 go test ./internal/bridge -run '^TestNativeSystemdUnitVerify$' -count=1 -v

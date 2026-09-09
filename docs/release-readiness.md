@@ -6,6 +6,13 @@ The first tagged prerelease is [v0.1.0-alpha.1](https://github.com/Jhorlin/agent
 with standalone macOS/Linux assets. This record is not a claim of universal host
 interoperability or 100% testing.
 
+This page records the original alpha boundary, not the expanded current source.
+See [phase-two progress](phase-two.md) and [upgrade boundaries](upgrading.md) for
+subsequent work. A native-plus-race run at source commit `982fb9e` measured **84.3%
+overall statement coverage** (bridge 85.3%, CLI 82.8%, release helpers 69.1%).
+That run passed using disposable homes and fake local providers; optional native
+service/package/upgrade tests were not enabled in that coverage invocation.
+
 [Distribution packaging](distribution.md) is implemented separately: four
 platform archives, checksums, version reporting and CI smoke tests. Each subsequent
 publication requires reviewed artifacts, verified CI and an explicit release step.
