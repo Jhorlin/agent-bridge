@@ -133,7 +133,7 @@ func discoverConventions(c Config, explicit []resourceInput) ([]resourceInput, [
 	result = append(result, more...)
 	warnings = append(warnings, notes...)
 	if c.Conventions.ProtectNativeSkills {
-		inventory, err := InventorySkills(c.Conventions.Root, true)
+		inventory, err := inventorySkillIdentities(c.Conventions.Root)
 		if err != nil {
 			return nil, nil, fmt.Errorf("native skill inventory unavailable; global skill adoption blocked")
 		}
@@ -142,16 +142,16 @@ func discoverConventions(c Config, explicit []resourceInput) ([]resourceInput, [
 				continue
 			}
 			names := map[string]bool{}
-			for _, installed := range inventory.Skills {
+			for _, installed := range inventory {
 				if installed.Path == r.Claude || installed.Path == r.Codex {
 					names[installed.Name] = true
 				}
 			}
-			for _, installed := range inventory.Skills {
+			for _, installed := range inventory {
 				if !names[installed.Name] {
 					continue
 				}
-				if installed.Status != "inspected" || (installed.Path != r.Claude && installed.Path != r.Codex) {
+				if installed.Status != "identity-inspected" || (installed.Path != r.Claude && installed.Path != r.Codex) {
 					return nil, nil, fmt.Errorf("global skill has another native or cached candidate; inspect inventory-skills and exclude installer-owned variants before adoption")
 				}
 			}

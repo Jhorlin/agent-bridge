@@ -54,6 +54,18 @@ const inventoryEntryLimit = 20000
 // Versions and matching names are hints; only a full inspected tree digest can
 // establish byte equality, and none of these results establishes portability.
 func InventorySkills(root string, plugins bool) (SkillInventory, error) {
+	return inventorySkills(root, plugins, true)
+}
+
+// Collision guards inspect fresh identities on every check, without repeatedly
+// hashing unrelated installed packages. This is not an equality/portability
+// inventory: callers receive no digest-based groups or inspected-content claim.
+func inventorySkillIdentities(root string) ([]SkillInstallation, error) {
+	r, err := inventorySkills(root, true, false)
+	return r.Skills, err
+}
+
+func inventorySkills(root string, plugins, full bool) (SkillInventory, error) {
 	r := SkillInventory{Version: 1, ReadOnly: true, Skills: []SkillInstallation{}, Groups: []SkillMatch{}, Warnings: []string{
 		"No files changed or enrolled. Matching names do not prove equivalence or portability.",
 		"Plugin cache presence does not prove installation or enablement; native manifests do not prove runtime compatibility.",
@@ -89,7 +101,7 @@ func InventorySkills(root string, plugins bool) (SkillInventory, error) {
 		if count > inventoryEntryLimit {
 			return fmt.Errorf("inventory limit exceeded")
 		}
-		s := inspectSkillInstallation(abs, path, host, source, native)
+		s := inspectSkillInstallation(abs, path, host, source, native, full)
 		r.Skills = append(r.Skills, s)
 		return nil
 	}
@@ -204,6 +216,9 @@ func InventorySkills(root string, plugins bool) (SkillInventory, error) {
 		}
 	}
 	sort.Slice(r.Skills, func(i, j int) bool { return r.Skills[i].Path < r.Skills[j].Path })
+	if !full {
+		return r, nil
+	}
 	byName := map[string][]SkillInstallation{}
 	for _, s := range r.Skills {
 		byName[s.Name] = append(byName[s.Name], s)
@@ -292,7 +307,7 @@ func inventoryRead(path string) ([]byte, error) {
 	return data, nil
 }
 
-func inspectSkillInstallation(root, path, host, source string, native bool) SkillInstallation {
+func inspectSkillInstallation(root, path, host, source string, native, full bool) SkillInstallation {
 	s := SkillInstallation{Host: host, Source: source, Path: path, Name: filepath.Base(path), NativeCodexManifest: native, Status: "inspection-blocked"}
 	physical := path
 	if err := assertSafe(filepath.Dir(path)); err != nil {
@@ -358,6 +373,11 @@ func inspectSkillInstallation(root, path, host, source string, native bool) Skil
 		return s
 	}
 	s.Name = meta.Name
+	if !full {
+		s.PhysicalPath = physical
+		s.Status = "identity-inspected"
+		return s
+	}
 	if len(meta.Metadata.Version) <= 128 {
 		s.Version = meta.Metadata.Version
 	}

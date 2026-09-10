@@ -35,17 +35,17 @@ func validatePlannedNativeSkills(c Config, plan PlanResult) error {
 	if len(names) == 0 {
 		return nil
 	}
-	inventory, err := InventorySkills(c.Conventions.Root, true)
+	inventory, err := inventorySkillIdentities(c.Conventions.Root)
 	if err != nil {
 		return fmt.Errorf("native skill inventory unavailable; global skill adoption blocked")
 	}
-	for _, installed := range inventory.Skills {
+	for _, installed := range inventory {
 		id, relevant := names[installed.Name]
 		if !relevant {
 			continue
 		}
 		r := resources[id]
-		if installed.Status != "inspected" || (installed.Path != r.Paths["claude"] && installed.Path != r.Paths["codex"]) {
+		if installed.Status != "identity-inspected" || (installed.Path != r.Paths["claude"] && installed.Path != r.Paths["codex"]) {
 			return fmt.Errorf("prospective global skill has another native or cached candidate; review native ownership before adoption")
 		}
 	}

@@ -86,7 +86,7 @@ or updates. An already-running profile does not automatically gain this check.
 
 Global profiles can explicitly opt into an ongoing native-candidate guard with
 `conventions.protectNativeSkills: true` (requires global scope and the skills
-feature). On each configuration load, including watcher reloads, it inventories
+feature). On each configuration load, including watcher reloads, it inspects
 personal, legacy, system and conventional cached skills. An automatically
 discovered skill is blocked if its declared name has another candidate outside
 its Claude/Codex pair, or a matching candidate cannot be inspected. Directory
@@ -95,8 +95,11 @@ excluded; this guard never chooses, deletes, upgrades or disables a variant.
 
 This is conservative: even an inactive cached candidate requires review. It
 does not guard explicit resource exceptions or prove skill portability, and is
-not atomic with another installer changing files concurrently. Hashing skill
-trees adds configuration-load latency. Leave installer-owned variants excluded
+not atomic with another installer changing files concurrently. The guard reads
+fresh entrypoint identities without hashing supporting assets on every scan;
+`inventory-skills` still inspects and hashes full trees for equality reports,
+and synchronization retains its own content/safety validation. No identity cache
+can hide a later native installation or rename. Leave installer-owned variants excluded
 and managed through their native installation mechanism. Existing profiles keep
 their behavior unless they opt in.
 
