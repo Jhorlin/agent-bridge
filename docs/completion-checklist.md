@@ -12,16 +12,20 @@ does not complete these items. A rejected input is not supported functionality.
   plugins in disposable homes before adding production lifecycle commands.
 - [ ] Support package-relative MCP and hook dependencies with explicit safe path
   translation and native runtime evidence, not absolute cache-path copying.
-  Quoted compatibility-hook executables are implemented and tested. MCP remains
+  Quoted compatibility-hook executables and sh/bash scripts with package-file
+  arguments are implemented and tested, including argument dependency recovery.
+  MCP remains
   blocked: compatibility Codex does not expand its package root, portable Codex
   changes cwd, and Claude ignores configured cwd.
 - [ ] Expand actual plugin layouts/components only where native loading can be
   verified; enumerate incompatible commands, agents and hooks separately.
-  Bounded root documentation/images now pass native package tests; custom/nested
-  components and conflicting host manifests remain unsupported.
+  Bounded root documentation/images, nested/underscore command paths, literal
+  dollar text and native-local metadata shapes now pass native tests. Command
+  name collisions fail closed. Custom layouts and conflicting host manifests
+  remain unsupported; read-only native candidate comparison is implemented.
 - [x] Re-evaluate the actual-data plugin survey after each relevant adapter
   change; retain source provenance privately and never publish private inputs.
-  Latest copied-input run: 8/33 packages converge, 56 managed items; 25 blocked.
+  Latest copied-input run: 10/33 packages converge, 63 managed items; 23 blocked.
 - [x] Reconcile documentation and produce a versioned compatibility report with
   completed mappings, native-version evidence and remaining host limitations.
   Current [dated source-build report](interoperability-status.md) is available;

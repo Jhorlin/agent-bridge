@@ -33,6 +33,14 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 		present = true
 		hasManifest := false
 		for _, file := range files {
+			if file == "skills/.gitkeep" {
+				raw, err := snapshot(filepath.Join(r.Paths[side], file))
+				if err != nil || raw == nil || raw.Data != "" || raw.Mode&0111 != 0 {
+					return nil, fmt.Errorf("skill placeholder must be empty and non-executable")
+				}
+				names[file] = true
+				continue
+			}
 			if file == pluginManifestFor(r, side) {
 				hasManifest = true
 				continue
@@ -46,9 +54,8 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 				}
 				names[file] = true
 			case "commands":
-				parts := strings.Split(filepath.ToSlash(file), "/")
-				if r.CodexPluginLayout == "portable" || len(parts) != 2 || len(parts[1]) > 67 || !strings.HasSuffix(parts[1], ".md") || !skillName.MatchString(strings.TrimSuffix(parts[1], ".md")) {
-					return nil, fmt.Errorf("plugin commands require flat kebab-case Markdown files and compatibility layout")
+				if _, ok := pluginCommandMigrationName(file); r.CodexPluginLayout == "portable" || !ok {
+					return nil, fmt.Errorf("plugin commands require bounded lowercase Markdown paths and compatibility layout")
 				}
 				names[file] = true
 			case ".mcp.json":
@@ -64,7 +71,7 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 					return nil, fmt.Errorf("reserved hook configuration path requires exact hooks/hooks.json spelling")
 				}
 				names[file] = true
-			case "skills", "scripts", "assets", "references", "README.md", "LICENSE":
+			case "skills", "scripts", "hooks-handlers", "assets", "references", "README.md", "LICENSE":
 				names[file] = true
 			default:
 				if pluginRootSupportingFile(file) {
@@ -85,6 +92,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 		skillNames := map[string]bool{}
 		entrypoints := map[string]bool{}
 		for _, file := range files {
+			if file == "skills/.gitkeep" {
+				continue
+			}
 			parts := strings.Split(filepath.ToSlash(file), "/")
 			if parts[0] == "skills" {
 				if len(parts) < 3 {
@@ -123,9 +133,18 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 	if len(r.Servers) > 0 && !names[".mcp.json"] {
 		return nil, fmt.Errorf("bundled MCP source is missing")
 	}
+	migratedCommands := map[string]string{}
 	for name := range names {
 		if strings.HasPrefix(name, "commands/") {
-			migrated := "skills/source-command-" + strings.TrimSuffix(strings.TrimPrefix(name, "commands/"), ".md") + "/"
+			identity, ok := pluginCommandMigrationName(name)
+			if !ok {
+				return nil, fmt.Errorf("invalid historical plugin command path")
+			}
+			if previous, exists := migratedCommands[identity]; exists && previous != name {
+				return nil, fmt.Errorf("plugin commands collide after native name migration")
+			}
+			migratedCommands[identity] = name
+			migrated := "skills/" + identity + "/"
 			for other := range names {
 				if strings.HasPrefix(other, migrated) {
 					return nil, fmt.Errorf("plugin skill collides with Codex's migrated command name")

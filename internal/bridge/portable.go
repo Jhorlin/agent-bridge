@@ -244,17 +244,27 @@ func normalizeHooksForResource(r Resource, side string, raw *Snapshot) (*Snapsho
 				command, ok := h["command"].(string)
 				validCommand := hookExecutable.MatchString(command) && filepath.Clean(command) == command
 				if r.Kind == "plugin-directory" {
-					_, relative := pluginHookPath(command)
+					_, relative := pluginHookDependencies(command)
 					validCommand = validCommand || relative
 				}
 				if h["type"] != "command" || !ok || !validCommand {
 					return nil, fmt.Errorf("hook command must be an absolute executable path without shell syntax")
 				}
-				// JSON numbers retain precision; timeout must be explicit on both hosts.
+				// Materialize source-native defaults, not the destination's.
+				// Claude prompt hooks default to 30s; Codex uses 600s. The
+				// remaining supported command events default to 600s in both.
+				// Shared canonical data has no host and must remain explicit.
+				if _, present := h["timeout"]; !present && (side == "claude" || side == "codex") {
+					h["timeout"] = json.Number("600")
+					if side == "claude" && event == "UserPromptSubmit" {
+						h["timeout"] = json.Number("30")
+					}
+				}
+				// JSON numbers retain precision; never coerce nulls or strings.
 				value, ok := h["timeout"].(json.Number)
 				seconds, err := value.Int64()
-				if !ok || err != nil || seconds < 1 || seconds > 60 {
-					return nil, fmt.Errorf("hook timeout must be an integer from 1 to 60 seconds")
+				if !ok || err != nil || seconds < 1 || seconds > 600 {
+					return nil, fmt.Errorf("hook timeout must be an integer from 1 to 600 seconds")
 				}
 			}
 		}

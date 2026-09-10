@@ -2,8 +2,11 @@
 
 Source builds accept `PreToolUse` and `PostToolUse` with the exact matcher
 `^Bash$`, alongside the existing startup/prompt/Stop definitions. Handlers remain
-synchronous commands with one clean absolute executable path and an explicit
-integer timeout of 1–60 seconds. This works for standalone `hook-config` and
+synchronous commands with one clean absolute executable path and an
+integer timeout of 1–600 seconds. An omitted native timeout becomes explicit
+using that host's default; shared data requires an explicit timeout.
+Compatibility plugins additionally support bounded
+[package-relative scripts](plugin-runtime-paths.md). This works for standalone `hook-config` and
 conventional compatibility-plugin `hooks/hooks.json`. Other tools, wildcard
 matchers, shell expressions, async/prompt/agent handlers and extra fields fail.
 

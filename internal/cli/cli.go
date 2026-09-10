@@ -61,6 +61,9 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if len(args) > 0 && args[0] == "compare-plugin-copy" {
 		return runPluginCopy(args, out, errOut)
 	}
+	if len(args) > 0 && args[0] == "compare-plugin-candidates" {
+		return runPluginCandidates(args, out, errOut)
+	}
 	if len(args) > 0 && (args[0] == "review-retirement" || args[0] == "apply-retirement" || args[0] == "review-file-change" || args[0] == "apply-file-change" || args[0] == "recover-file-change" || args[0] == "file-change-history" || args[0] == "review-file-change-undo" || args[0] == "apply-file-change-undo") {
 		return runFileChange(ctx, args, out, errOut)
 	}
@@ -419,6 +422,7 @@ func usage(w io.Writer) int {
 	fmt.Fprintln(w, "       agent-bridge review-file-change-undo <config.json> <transaction>")
 	fmt.Fprintln(w, "       agent-bridge apply-file-change-undo <config.json> <observation> <transaction>")
 	fmt.Fprintln(w, "       agent-bridge compare-plugin-copy <config.json> <plugin-id> <claude|codex> <absolute-copy-root>")
+	fmt.Fprintln(w, "       agent-bridge compare-plugin-candidates <absolute-left-package> <absolute-right-package>")
 	fmt.Fprintln(w, "       agent-bridge restore-reviewed <config.json> <observation> <transaction> <item-key> <side> <before|after>")
 	fmt.Fprintln(w, "       agent-bridge systemd-unit <absolute-config.json> <absolute-binary> [--apply]")
 	fmt.Fprintln(w, "       agent-bridge review-profile <config.json>\n       agent-bridge sync-reviewed <config.json> <observation>")

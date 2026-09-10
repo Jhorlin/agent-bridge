@@ -18,6 +18,18 @@ different acceptance levels; passing one does not establish the others.
   configuration and competing host manifests remain blocked.
 - Corrected nonempty MCP `cwd` handling: Claude ignores that field, so the
   bridge now rejects it instead of generating a misleading equivalent.
+- Nested/underscore command paths and literal dollar text, with native migration
+  collision detection. YAML-list argument hints and explicit false invocation
+  flags stay Claude-local. Dynamic arguments and shell preprocessing still fail.
+- Sh/bash package scripts and package-file arguments; missing dependencies are
+  checked across sync, conflict choices, history and supporting-file changes.
+- Source-specific omitted hook timeouts become explicit on the other host;
+  explicit values support 1–600 seconds. Native defaults differ for prompt hooks.
+- Empty non-executable `skills/.gitkeep` placeholders and ordinary spaces or
+  parentheses in bounded root image filenames no longer block a package.
+- Read-only native plugin candidate comparison without requiring a plannable
+  synchronization profile. Multiple native manifests remain separate evidence;
+  this command neither creates duplicates nor claims native equivalence.
 
 Independent review found and regression tests closed pre-upgrade history,
 prospective hook dependency, reserved filename-case and supporting-file mutation
@@ -36,12 +48,20 @@ providers and inert scripts, not real model outcomes or service credentials.
 | Root supporting files | Native install/remove and Codex cache comparison across compatibility and portable skill packages |
 | MCP cwd mismatch | Claude connects an inert server but starts it in the session directory despite a different declared cwd |
 | CLI refresh | Claude requires a version bump for cached content; Codex re-add refreshes content but re-enables disabled plugins |
-| Actual-data authoring survey | 8 of 33 copied packages converge across 56 managed items, up from 6 packages/36 items; 25 remain blocked |
+| Command path/expansion probes | Nested and underscore names invoke; literal dollars survive; native dynamic argument omission and normalized-name collisions reproduced |
+| Interpreted hooks | Both hosts execute sh/bash, preserve session cwd, resolve roots with spaces and read package-file arguments; trust stays native |
+| Hook defaults | Codex native metadata reports 600 seconds; Claude installed code/docs use 30 for prompt hooks and 600 for other supported events. Inert handlers execute with explicit 600; no ten-minute timeout experiment |
+| Actual-data authoring survey | 10 of 33 copied packages converge across 63 managed items, up from 8 packages/56 items; 23 remain blocked |
 
 The private survey inputs and provenance are not included in this public repo.
 The aggregate result is **not** an execution certification for those packages.
 Adapters stop at the first blocker, so a blocked package may have additional
 incompatibilities after that one is addressed.
+
+The new candidate inspector also ran against disposable copies of the native
+Figma, Qodo and Stripe packages. All three had matching names but different
+versions and component inventories. This is evidence against assuming complete
+equivalence, not an authentication test or authorization to replace either copy.
 
 ## Still unsupported or externally gated
 
@@ -52,7 +72,7 @@ incompatibilities after that one is addressed.
   portable Codex changes the working directory and Claude ignores `cwd`.
   A launcher would need its own reviewed runtime contract.
 - General command argument/shell preprocessing, arbitrary hook events and
-  interpreters, nested/custom package layouts, direct bundled Codex agents and
+  interpreters beyond sh/bash, custom package layouts, direct bundled Codex agents and
   arbitrary host-only metadata. Rejection is not translation.
 - Figma, Stripe and Qodo authenticated workflows still require native user
   sign-in. Installed counterparts are not proof of successful authentication.

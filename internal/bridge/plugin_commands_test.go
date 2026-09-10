@@ -56,7 +56,7 @@ func TestPluginCommandsFailClosed(t *testing.T) {
 		}
 		f.missing("codex-plugin")
 	}
-	for _, path := range []string{"commands/nested/demo.md", "commands/UPPER.md", "commands/demo.sh"} {
+	for _, path := range []string{"commands/nested/UPPER.md", "commands/UPPER.md", "commands/demo.sh"} {
 		f := pluginFixture(t)
 		f.write("claude-plugin/"+path, commandFixture)
 		if _, err := Apply(f.c, Options{}); err == nil {

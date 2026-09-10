@@ -16,18 +16,35 @@ Source builds support this bounded command in compatibility-layout plugin hooks:
 }
 ```
 
-The referenced executable must exist in that authoring package under `hooks/` or
-`scripts/`. The bridge synchronizes supporting files and executable bits without
+The referenced executable must exist in that authoring package under `hooks/`,
+`hooks-handlers/` or `scripts/`. The bridge synchronizes supporting files and executable bits without
 running them. Both native hosts resolve the quoted root token; no machine-specific
 cache path is embedded in generated configuration. This is macOS/Linux support,
 not a Windows shell or permission mapping.
 
-Only one quoted executable path is accepted. Arguments, interpreters, shell
-operators, other environment variables, traversal, symlinks, non-executable or
-missing dependencies and references to the hook JSON itself are rejected.
+Direct execution accepts one quoted executable path. Source builds also accept
+`sh` or `bash` followed by one quoted package script and up to 15 quoted package
+file arguments, for example:
+
+```text
+bash "${CLAUDE_PLUGIN_ROOT}/hooks/run.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/input.txt"
+```
+
+Every referenced file must exist safely inside the package. Interpreted scripts
+and file arguments need not be executable; direct scripts still must be. The
+interpreter must be available in the native host environment; the bridge does
+not install it. Interpreter flags, literal arguments, other interpreters, shell
+operators, other environment variables, traversal, symlinks, missing dependencies
+and references to the hook JSON itself are rejected.
 `hooks/hooks.json` must use that exact spelling, including on case-insensitive
-filesystems. Existing bounded event, matcher and explicit 1–60 second timeout
-requirements still apply. Arbitrary input/output policy semantics are not
+filesystems. Existing bounded event and matcher requirements still apply.
+Explicit integer timeouts support 1–600 seconds. Omitted native timeouts are
+materialized from the source host: Claude `UserPromptSubmit` is 30 seconds,
+Codex is 600; the other supported events use 600 on both. Shared canonical
+timeouts must be explicit. This preserves timeout changes during reverse sync,
+conflict resolution and history rather than treating missing fields as equal.
+Native tests establish timeout metadata and immediate execution, not a ten-minute
+wall-clock timeout experiment. Arbitrary input/output policy semantics are not
 translated. Supporting files are not an endorsement of their behavior.
 
 The bridge validates both current definitions and the prospective merged package.
@@ -36,6 +53,7 @@ cannot produce a selected hook with a missing or non-executable dependency.
 Reviewed supporting-file deletion, rename and rename undo also refuse to remove
 an executable that a current hook still references. Change and synchronize the
 hook reference first; the bridge does not rewrite shell commands during rename.
+Those checks include interpreter argument files, not only the script itself.
 Raw changes also invalidate stale reviews. Native hook trust is never copied,
 granted or bypassed by synchronization.
 
@@ -43,6 +61,8 @@ granted or bypassed by synchronization.
 and native execution on Claude 2.1.267 and Codex 0.153.4 in disposable paths with
 spaces, using a local fake model provider and an inert script. Codex discovers
 the hook untrusted and does not run it without fixture-only invocation consent.
+`TestNativePluginInterpretedHookExecution` additionally proves `sh` and `bash`
+read non-executable scripts and file arguments in both native hosts.
 Claude local marketplaces can execute from the authoring folder even though
 `plugin list` reports a cache directory; the native token handles that distinction.
 

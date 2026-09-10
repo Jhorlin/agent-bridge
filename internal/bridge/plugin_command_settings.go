@@ -20,16 +20,24 @@ func splitPluginCommandSettings(raw *Snapshot) (*Snapshot, map[string]any, error
 	for key, value := range fields {
 		valid := false
 		switch key {
-		case "model", "argument-hint":
+		case "model":
 			valid = validText(value)
-		case "allowed-tools":
+		case "allowed-tools", "argument-hint":
 			valid = validText(value)
 			if entries, ok := value.([]any); ok {
 				valid = len(entries) <= 128
+				if key == "argument-hint" {
+					valid = valid && len(entries) > 0
+				}
 				for _, entry := range entries {
 					valid = valid && validText(entry)
 				}
 			}
+		case "disable-model-invocation":
+			// Explicit false is the native default, verified on both hosts.
+			// True is an execution policy and cannot be dropped on migration.
+			flag, ok := value.(bool)
+			valid = ok && !flag
 		default:
 			continue // Strict command normalization rejects every other field.
 		}

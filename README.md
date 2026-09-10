@@ -149,16 +149,27 @@ namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
 Those files have an independent lifecycle; Codex plugin uninstall does not remove them.
 
 Conventional plugin commands also retain bounded Claude-local `model`,
-`allowed-tools` and `argument-hint` settings while synchronizing static text.
+`allowed-tools` and `argument-hint` settings while synchronizing static text,
+including literal dollar examples, nested paths and underscore names. Native
+normalized command-name collisions are rejected before writing.
 Explicit profiles opt in with `preserveCommandSettings: true` and
 `allowReformat: true`; plugin conventions enable it automatically. Those settings
 are not exported as Codex permissions or model choices. See
 [command mapping and limits](docs/plugin-commands.md).
 
 Compatibility plugins can also use [quoted package-relative hook
-executables](docs/plugin-runtime-paths.md), with executable dependency checks on
-the final merged package. Package-relative MCP and portable-layout hooks remain
+executables and sh/bash script invocations](docs/plugin-runtime-paths.md), with
+script/argument dependency checks on the final merged package. Package-relative MCP and portable-layout hooks remain
 unsupported; native trust stays local.
+
+Before creating a translated plugin, use the read-only
+[`compare-plugin-candidates`](docs/plugin-candidates.md) command to compare two
+explicit native package roots. It reports manifest evidence and component-path
+differences without reading component bodies or changing native configuration.
+It does not infer equivalence, installation or authentication from matching names.
+
+Use the [local acceptance checklist](docs/local-acceptance.md) for the next
+real-project test, including reverse edits, conflicts, native loading and logs.
 
 ## New adapters
 

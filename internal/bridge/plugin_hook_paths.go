@@ -9,9 +9,9 @@ import (
 
 // Both compatibility-layout native hosts export CLAUDE_PLUGIN_ROOT to hooks.
 // Quoting is mandatory so a native cache/source root containing spaces remains
-// one executable path. No arguments, shell expressions or other variables are
+// one path. Only package-file arguments and the sh/bash interpreters are
 // accepted. Native trust remains a separate user decision.
-var pluginHookExecutable = regexp.MustCompile(`^"\$\{CLAUDE_PLUGIN_ROOT\}/((scripts|hooks)/[A-Za-z0-9_./-]+)"$`)
+var pluginHookExecutable = regexp.MustCompile(`^"\$\{CLAUDE_PLUGIN_ROOT\}/((scripts|hooks|hooks-handlers)/[A-Za-z0-9_./-]+)"$`)
 
 func pluginHookPath(command string) (string, bool) {
 	match := pluginHookExecutable.FindStringSubmatch(command)
@@ -19,6 +19,38 @@ func pluginHookPath(command string) (string, bool) {
 		return "", false
 	}
 	return match[1], true
+}
+
+type pluginHookDependency struct {
+	Path       string
+	Executable bool
+}
+
+// Deliberately not a general shell parser: each token is a quoted, clean
+// package-relative file. No flags, substitutions, pipelines or environment
+// assignments. An interpreter reads its first file, so that file need not have
+// executable bits; direct execution still requires them.
+func pluginHookDependencies(command string) ([]pluginHookDependency, bool) {
+	parts := strings.Split(command, " ")
+	interpreted := parts[0] == "sh" || parts[0] == "bash"
+	if interpreted {
+		parts = parts[1:]
+	}
+	if len(parts) == 0 || len(parts) > 16 {
+		return nil, false
+	}
+	if !interpreted && len(parts) != 1 {
+		return nil, false
+	}
+	dependencies := make([]pluginHookDependency, 0, len(parts))
+	for index, part := range parts {
+		path, ok := pluginHookPath(part)
+		if !ok {
+			return nil, false
+		}
+		dependencies = append(dependencies, pluginHookDependency{Path: path, Executable: index == 0 && !interpreted})
+	}
+	return dependencies, true
 }
 
 // Validate each existing definition against its own authoring tree. Initial
@@ -48,10 +80,11 @@ func validatePluginHookDependencies(r Resource) error {
 			for _, group := range groups.([]any) {
 				for _, handler := range group.(map[string]any)["hooks"].([]any) {
 					command := handler.(map[string]any)["command"].(string)
-					if relative, ok := pluginHookPath(command); ok {
-						dependency, err := snapshot(filepath.Join(r.Paths[side], relative))
-						if err != nil || dependency == nil || dependency.Mode&0111 == 0 {
-							return fmt.Errorf("plugin hook requires an existing, safe executable dependency in the same package")
+					dependencies, _ := pluginHookDependencies(command)
+					for _, reference := range dependencies {
+						dependency, err := snapshot(filepath.Join(r.Paths[side], reference.Path))
+						if err != nil || dependency == nil || (reference.Executable && dependency.Mode&0111 == 0) {
+							return fmt.Errorf("plugin hook requires an existing, safe package dependency with executable bits for direct execution")
 						}
 					}
 				}
@@ -71,6 +104,9 @@ func validatePlannedPluginContents(plan PlanResult) error {
 	files := map[string]*Snapshot{}
 	for _, item := range plan.Items {
 		if item.Kind == "plugin-directory" {
+			if item.Relative == "skills/.gitkeep" && item.Content != nil && (item.Content.Data != "" || item.Content.Mode&0111 != 0) {
+				return fmt.Errorf("prospective skill placeholder must be empty and non-executable")
+			}
 			if pluginRootSupportingFile(item.Relative) && item.Content != nil && item.Content.Mode&0111 != 0 {
 				return fmt.Errorf("prospective root plugin documentation and images must be non-executable")
 			}
@@ -92,10 +128,11 @@ func validatePlannedPluginContents(plan PlanResult) error {
 		for _, groups := range hooks {
 			for _, group := range groups {
 				for _, handler := range group.Hooks {
-					if relative, ok := pluginHookPath(handler.Command); ok {
-						dependency := files[item.ID+"/"+relative]
-						if dependency == nil || dependency.Mode&0111 == 0 {
-							return fmt.Errorf("prospective plugin hook requires its safe executable package dependency")
+					dependencies, _ := pluginHookDependencies(handler.Command)
+					for _, reference := range dependencies {
+						dependency := files[item.ID+"/"+reference.Path]
+						if dependency == nil || (reference.Executable && dependency.Mode&0111 == 0) {
+							return fmt.Errorf("prospective plugin hook requires its safe package dependency with executable bits for direct execution")
 						}
 					}
 				}
