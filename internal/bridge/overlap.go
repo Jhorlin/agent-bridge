@@ -74,6 +74,9 @@ func configPathClaims(c Config) []PathClaim {
 		claims = append(claims, PathClaim{profile, "coordination", c.CoordinationDir})
 	}
 	for _, r := range c.Resources {
+		if companion := InstructionCompanionPath(r); companion != "" {
+			claims = append(claims, PathClaim{profile, r.ID + ":claude-alternate", companion})
+		}
 		for _, path := range resourceDestinations(Resource{CodexAgentExports: r.CodexAgentExports}) {
 			claims = append(claims, PathClaim{profile, r.ID + ":codex-agent-export", path})
 		}

@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"reflect"
@@ -267,4 +268,46 @@ func TestInstructionSetExclusionBeforeCompanionRead(t *testing.T) {
 	reloadConventions(t, f)
 	f.apply()
 	f.missing("nested/AGENTS.md")
+}
+
+func TestInstructionSetCompanionClaimAcrossProfiles(t *testing.T) {
+	f := instructionSetFixture(t, false)
+	f.write("other.json", `{"version":1,"stateDir":"other-state","resources":[{"id":"other","kind":"portable-file","scope":"project","claude":".claude/CLAUDE.md","codex":"other.md"}]}`)
+	report, err := CheckOverlaps([]string{f.path("config.json"), f.path("other.json")})
+	must(t, err)
+	if len(report.Overlaps) == 0 {
+		t.Fatal("second profile can claim the instruction companion")
+	}
+	if report.Overlaps[0].First.Path != f.path(".claude/CLAUDE.md") || report.Overlaps[0].First.Role != f.c.Resources[0].ID+":claude-alternate" {
+		t.Fatal("overlap did not identify the companion", report.Overlaps)
+	}
+}
+
+func TestInstructionSetCompanionBlocksEnrollmentAndWrites(t *testing.T) {
+	f := instructionSetFixture(t, false)
+	f.write("config.json", `{"version":1,"stateDir":"state","coordinationDir":"coordination","conventions":{"root":"."},"resources":[]}`)
+	f.write("other.json", `{"version":1,"stateDir":"other-state","coordinationDir":"coordination","resources":[{"id":"other","kind":"portable-file","scope":"project","claude":".claude/CLAUDE.md","codex":"other.md"}]}`)
+	review, err := ReviewProfile(f.path("config.json"))
+	must(t, err)
+	must(t, EnrollReviewed(f.path("config.json"), review.Observation))
+	before := f.read("coordination/profiles.json")
+	review, err = ReviewProfile(f.path("other.json"))
+	must(t, err)
+	contains(t, EnrollReviewed(f.path("other.json"), review.Observation), "ownership overlaps")
+	f.expect("coordination/profiles.json", before)
+	// Also protect already-enrolled profiles if a companion is discovered later.
+	roster, err := json.Marshal(ownershipRoster{Version: 1, Profiles: []string{f.path("config.json"), f.path("other.json")}})
+	must(t, err)
+	f.write("coordination/profiles.json", string(roster))
+	for _, profile := range []string{"config.json", "other.json"} {
+		c, err := LoadConfig(f.path(profile))
+		must(t, err)
+		_, err = Apply(c, Options{})
+		contains(t, err, "ownership overlaps")
+	}
+	f.expect(".claude/CLAUDE.md", "alternate\n")
+	f.missing("AGENTS.md")
+	f.missing("other.md")
+	f.missing("state/manifest.json")
+	f.missing("other-state/manifest.json")
 }
