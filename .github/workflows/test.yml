@@ -103,6 +103,9 @@ jobs:
       - name: Fuzz namespaced plugin agent exports
         if: runner.os == 'Linux'
         run: go test ./internal/bridge -run '^$' -fuzz '^FuzzPluginAgentRoundTrip$' -fuzztime=100000x -parallel=2 -timeout=2m
+      - name: Fuzz file-guard patch targets
+        if: runner.os == 'Linux'
+        run: go test ./internal/hookguard -run '^$' -fuzz '^FuzzPatchTargets$' -fuzztime=100000x -parallel=2 -timeout=2m
       - run: go build ./cmd/agent-bridge
   cross-build:
     runs-on: ubuntu-latest

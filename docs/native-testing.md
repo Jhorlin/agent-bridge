@@ -109,3 +109,22 @@ real launchd job with temporary profiles and homes, including sync, stop, restar
 uninstall and persistent-data preservation. It does not test actual login/reboot.
 
 Isolation references: [Codex environment variables](https://learn.chatgpt.com/docs/config-file/environment-variables), [Claude configuration locations](https://code.claude.com/docs/en/settings). Commands and flags are also checked against each installed CLI's help.
+
+## Path-only file-guard acceptance
+
+The opt-in `TestNativeCodexFileGuard` test forces a harmless native `apply_patch`
+call through a loopback Responses fixture. With Codex 0.153.4, the permitted
+patch creates its temporary file; the denied patch creates nothing and the next
+provider request contains the policy denial. It uses only synthetic policy code,
+disposable homes, and invocation-only trust of that fixture. It does not test or
+authorize production hooks. Run with:
+
+```sh
+AGENT_BRIDGE_NATIVE_TESTS=1 go test ./internal/bridge -run '^TestNativeCodexFileGuard$' -count=1 -v
+```
+
+`TestNativeSkillLocalSettings` similarly proves explicit skill loading in Claude
+Code 2.1.267 and Codex 0.153.4 while Claude-only metadata stays out of the Codex
+file. These are native-host tests with fake providers, not paid model evaluations
+or evidence of equivalent tool permissions. See [file-guard limits](file-guards.md)
+and [native-local skill settings](skill-settings.md).

@@ -25,8 +25,10 @@ as fixtures in this public repository; reproduce structural patterns synthetical
   Unknown files and unsafe links still fail discovery.
 - **Informational skill fields:** current strict/invocation modes retain `license`,
   `compatibility`, and string-to-string `metadata`. These fields do not install
-  prerequisites or translate tool permissions. `allowed-tools`, arbitrary custom
-  fields, execution context and other host controls remain unsupported.
+  prerequisites or translate tool permissions. An explicit
+  [`preserveSkillSettings`](skill-settings.md) opt-in retains a bounded set of
+  Claude-local settings, including `allowed-tools`, without granting Codex those
+  approvals. Arbitrary custom fields and execution context remain unsupported.
 - **Skill body expansions:** automatic resources reject recognized Claude-only
   argument/variable/shell expansion syntax. Literal examples also require review.
 - **Instruction code examples:** import detection skips closed code fences and
@@ -42,6 +44,9 @@ as fixtures in this public repository; reproduce structural patterns synthetical
   Claude path triggers and Codex instruction loading are not the same contract.
 - **Hooks:** matching `Glob|Grep` or `Edit|Write|NotebookEdit` cannot be changed
   into `^Bash$` without changing policy. Leave unsupported hooks native-local.
+  For a separately reviewed path-only script, the explicit
+  [file-guard runtime adapter](file-guards.md) can inspect native patch targets.
+  It is not automatic definition synchronization or complete filesystem mediation.
 - **Upstream-owned instructions:** generated peers may complicate fork upgrades.
   Exclude upstream files and retain their existing aliases during a local trial.
 

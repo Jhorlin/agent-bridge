@@ -122,6 +122,11 @@ file while syncing portable instructions. It never grants Codex extra approvals.
 The same option is available under `conventions`; see
 [native-local skill settings](docs/skill-settings.md).
 
+For reviewed Claude path-only edit guards, the opt-in
+[`hook-file-guard` runtime adapter](docs/file-guards.md) translates Codex patch
+targets into legacy path-bearing hook inputs. It is separate from automatic
+definition sync and does not claim full hook or permission equivalence.
+
 For minimal Claude plugin agents, source builds support explicit or convention-derived,
 namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
 Those files have an independent lifecycle; Codex plugin uninstall does not remove them.

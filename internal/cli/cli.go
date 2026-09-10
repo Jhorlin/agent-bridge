@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Jhorlin/agent-bridge/internal/bridge"
+	"github.com/Jhorlin/agent-bridge/internal/hookguard"
 	"io"
+	"os"
 	"time"
 )
 
@@ -14,6 +16,13 @@ import (
 var Version = "dev"
 
 func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
+	if len(args) > 0 && args[0] == "hook-file-guard" {
+		if len(args) != 3 {
+			fmt.Fprintln(errOut, "Usage: agent-bridge hook-file-guard ABSOLUTE_PROJECT ABSOLUTE_EXECUTABLE")
+			return 2
+		}
+		return hookguard.Run(ctx, args[1], args[2], os.Stdin, out)
+	}
 	if ctx.Err() != nil {
 		return 0
 	}
@@ -369,6 +378,7 @@ func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
 	}
 }
 func usage(w io.Writer) int {
+	fmt.Fprintln(w, "       agent-bridge hook-file-guard <absolute-project> <absolute-reviewed-executable>")
 	fmt.Fprintln(w, "       agent-bridge init <config.json> [--conventions]")
 	fmt.Fprintln(w, "       agent-bridge init <config.json> --global <explicit-home-root>")
 	fmt.Fprintln(w, "       agent-bridge logs <config.json> [--tail 1..1000]\n       agent-bridge doctor <config.json>\n       agent-bridge support-bundle <config.json> <new-output.json>")

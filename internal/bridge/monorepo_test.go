@@ -133,6 +133,23 @@ func TestConventionAlternateFileExclusions(t *testing.T) {
 	f.missing("services/one/AGENTS.md")
 }
 
+func TestInstructionAlternateDirectorySafety(t *testing.T) {
+	f := allConventionFixture(t, "project")
+	f.write("nested/source.txt", "fixture")
+	f.write("config.json", `{"version":1,"stateDir":"state","resources":[],"conventions":{"root":".","features":["instructions"]}}`)
+	must(t, os.Symlink(f.dir, f.path("nested/.claude")))
+	if _, err := LoadConfig(f.path("config.json")); err == nil {
+		t.Fatal("unsafe native alias hidden")
+	}
+	must(t, os.Remove(f.path("nested/.claude")))
+	f.write("nested/.claude/CLAUDE.md", "alternate")
+	if _, err := LoadConfig(f.path("config.json")); err == nil {
+		t.Fatal("alternate hidden")
+	}
+	f.write("config.json", `{"version":1,"stateDir":"state","resources":[],"conventions":{"root":".","features":["instructions"],"exclude":["nested/.claude/CLAUDE.md"]}}`)
+	reloadConventions(t, f)
+}
+
 func TestDiagnosticPathsAvoidNativeDiscovery(t *testing.T) {
 	f := allConventionFixture(t, "project")
 	f.write(".mcp.json", "unparseable native config")

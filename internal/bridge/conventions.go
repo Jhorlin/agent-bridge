@@ -147,6 +147,22 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 			}
 			return nil
 		}
+		// The directory walk already tells us whether a native .claude entry
+		// exists. Avoid re-checking its ancestors under every ordinary source
+		// directory. Keep symlink and case-alias entries visible to validation.
+		if path != policy.Root && strings.EqualFold(entry.Name(), ".claude") {
+			alternate := filepath.Join(filepath.Dir(path), ".claude", "CLAUDE.md")
+			if !policy.excluded(alternate) && !managed(alternate) {
+				if err := assertSafe(filepath.Dir(alternate)); err != nil {
+					return err
+				}
+				if _, e := os.Lstat(alternate); e == nil {
+					return fmt.Errorf("conventions: .claude/CLAUDE.md requires explicit mapping or exclusion")
+				} else if !os.IsNotExist(e) {
+					return e
+				}
+			}
+		}
 		if entry.IsDir() {
 			if path != policy.Root {
 				name := entry.Name()
@@ -157,17 +173,6 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 				if _, e := os.Lstat(filepath.Join(path, ".git")); e == nil {
 					skipped = append(skipped, path)
 					return filepath.SkipDir
-				} else if !os.IsNotExist(e) {
-					return e
-				}
-			}
-			alternate := filepath.Join(path, ".claude", "CLAUDE.md")
-			if !policy.excluded(alternate) && !managed(alternate) {
-				if err := assertSafe(filepath.Dir(alternate)); err != nil {
-					return err
-				}
-				if _, e := os.Lstat(alternate); e == nil {
-					return fmt.Errorf("conventions: .claude/CLAUDE.md requires explicit mapping or exclusion")
 				} else if !os.IsNotExist(e) {
 					return e
 				}

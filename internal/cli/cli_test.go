@@ -81,6 +81,15 @@ func TestUsageAndUnknownFlags(t *testing.T) {
 		}
 	}
 }
+
+func TestFileGuardUsage(t *testing.T) {
+	for _, args := range [][]string{{"hook-file-guard"}, {"hook-file-guard", "/fixture"}, {"hook-file-guard", "/fixture", "/fixture/guard", "extra"}} {
+		var out, errOut bytes.Buffer
+		if Run(context.Background(), args, &out, &errOut) != 2 || out.Len() != 0 || !strings.Contains(errOut.String(), "ABSOLUTE_EXECUTABLE") {
+			t.Fatal("file guard accepted invalid CLI arguments")
+		}
+	}
+}
 func TestPlanAndRecoverCommands(t *testing.T) {
 	_, config := setup(t)
 	for _, cmd := range []string{"plan", "sync", "recover"} {
