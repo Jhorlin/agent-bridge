@@ -84,6 +84,22 @@ conventions, and run the ordinary `audit`/`plan`/reviewed-enrollment workflow fo
 the remaining portable resources. Re-run inventory after native installations
 or updates. An already-running profile does not automatically gain this check.
 
+Global profiles can explicitly opt into an ongoing native-candidate guard with
+`conventions.protectNativeSkills: true` (requires global scope and the skills
+feature). On each configuration load, including watcher reloads, it inventories
+personal, legacy, system and conventional cached skills. An automatically
+discovered skill is blocked if its declared name has another candidate outside
+its Claude/Codex pair, or a matching candidate cannot be inspected. Directory
+aliases do not bypass name matching. Explicitly reviewed exclusions remain
+excluded; this guard never chooses, deletes, upgrades or disables a variant.
+
+This is conservative: even an inactive cached candidate requires review. It
+does not guard explicit resource exceptions or prove skill portability, and is
+not atomic with another installer changing files concurrently. Hashing skill
+trees adds configuration-load latency. Leave installer-owned variants excluded
+and managed through their native installation mechanism. Existing profiles keep
+their behavior unless they opt in.
+
 Regression tests use disposable fixture homes: shared links, identical copies,
 supporting-file and executable-bit differences, release/channel skew, system
 collisions, multiple cached versions, native manifest evidence, content redaction,

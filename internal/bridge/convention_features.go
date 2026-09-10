@@ -132,6 +132,31 @@ func discoverConventions(c Config, explicit []resourceInput) ([]resourceInput, [
 	}
 	result = append(result, more...)
 	warnings = append(warnings, notes...)
+	if c.Conventions.ProtectNativeSkills {
+		inventory, err := InventorySkills(c.Conventions.Root, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("native skill inventory unavailable; global skill adoption blocked")
+		}
+		for _, r := range result {
+			if r.Kind != "skill-directory" {
+				continue
+			}
+			names := map[string]bool{}
+			for _, installed := range inventory.Skills {
+				if installed.Path == r.Claude || installed.Path == r.Codex {
+					names[installed.Name] = true
+				}
+			}
+			for _, installed := range inventory.Skills {
+				if !names[installed.Name] {
+					continue
+				}
+				if installed.Status != "inspected" || (installed.Path != r.Claude && installed.Path != r.Codex) {
+					return nil, nil, fmt.Errorf("global skill has another native or cached candidate; inspect inventory-skills and exclude installer-owned variants before adoption")
+				}
+			}
+		}
+	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	sort.Strings(warnings)
 	return result, warnings, nil
@@ -270,15 +295,20 @@ func mcpNames(path, side string) ([]string, bool, error) {
 	if !ok {
 		return nil, false, fmt.Errorf("conventional MCP servers must be an object")
 	}
+	names, err := conventionalMCPNames(entries)
+	return names, true, err
+}
+
+func conventionalMCPNames(entries map[string]any) ([]string, error) {
 	var names []string
 	for name := range entries {
 		if !safeID.MatchString(name) || strings.Contains(reserved, "|"+name+"|") {
-			return nil, false, fmt.Errorf("unsafe conventional MCP server name")
+			return nil, fmt.Errorf("unsafe conventional MCP server name")
 		}
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	return names, true, nil
+	return names, nil
 }
 
 func unionNames(a, b []string) []string {
@@ -490,7 +520,7 @@ func populatePluginConvention(c Config, base string, r *resourceInput) error {
 		r.CodexPluginLayout = "portable"
 	}
 	for _, root := range []string{r.Claude, r.Codex} {
-		names, _, err := mcpNames(filepath.Join(root, ".mcp.json"), "claude")
+		names, err := pluginMCPNames(filepath.Join(root, ".mcp.json"))
 		if err != nil {
 			return err
 		}

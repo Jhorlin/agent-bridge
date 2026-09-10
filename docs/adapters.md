@@ -136,10 +136,21 @@ Source builds also translate conventional `hooks/hooks.json` in the Codex compat
 Source builds support conventional `.mcp.json` for compatibility-layout plugins
 when the resource also declares `"servers": ["docs"]` and `"allowReformat": true`.
 Every server in the package must be allowlisted. Both native packages use JSON;
-environment/header references retain the common MCP contract. Inline/custom-path
+the adapter accepts either the `mcpServers` wrapper or a direct server-name map.
+New destinations use the wrapper; existing direct maps retain that layout on
+reverse writes. This support is plugin-only, not a reinterpretation of mixed
+global account files. Convention profiles discover server names in either shape.
+Environment/header references retain the common MCP contract. Inline/custom-path
 MCP, plugin-root expansion, host-local policies, unlisted servers and portable
 layout are rejected. Bundled MCP currently conflicts as one selected server set;
 standalone MCP's granular per-server merge does not apply to this component.
+
+Local acceptance on 2026-09-10: `TestNativeBundledMCPDirectMap` passed with
+Claude Code 2.1.267 and Codex 0.153.4 in disposable homes. Claude loaded the
+direct-map fixture, and Codex discovered the translated wrapped fixture's inert
+MCP tool. No model calls, production servers or credentials were used. Offline
+regressions cover convention discovery, reverse layout retention, malformed and
+mixed wrappers, unselected servers, and credential-bearing arguments.
 
 Source builds also bridge bounded [conventional static commands](plugin-commands.md)
 in compatibility layout, and explicit or convention-derived [standalone Codex agent exports](plugin-agent-exports.md).

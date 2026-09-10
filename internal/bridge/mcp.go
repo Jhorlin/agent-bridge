@@ -255,6 +255,21 @@ func serverFromNative(side string, m map[string]any) (MCPServer, error) {
 	return canonicalServer(s)
 }
 func canonicalServer(s MCPServer) (MCPServer, error) {
+	// A bounded check for explicit credential-bearing command options. Never
+	// copy their values into the canonical store, logs, or opposite host. This
+	// intentionally is not a general secret scanner for arbitrary script text.
+	for _, arg := range s.Args {
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+		flag := strings.SplitN(arg, "=", 2)[0]
+		flag = strings.ReplaceAll(strings.ToLower(strings.TrimLeft(flag, "-")), "_", "-")
+		for _, sensitive := range []string{"password", "passwd", "secret", "token", "api-key", "apikey", "authorization"} {
+			if flag == sensitive || strings.HasSuffix(flag, "-"+sensitive) {
+				return s, fmt.Errorf("MCP credential-bearing command arguments require host-local secret setup; values are not portable")
+			}
+		}
+	}
 	if s.CWD != "" && !filepath.IsAbs(s.CWD) {
 		return s, fmt.Errorf("MCP cwd must be absolute to retain meaning across scopes")
 	}

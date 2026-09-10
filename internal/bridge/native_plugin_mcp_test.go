@@ -10,14 +10,18 @@ import (
 // Probe conventional bundled MCP loading separately from conversion. Only this
 // test binary's inert stdio helper is installed into disposable host homes.
 func TestNativeBundledMCPContract(t *testing.T) {
-	nativeBundledMCP(t, "")
+	nativeBundledMCP(t, "", false)
+}
+
+func TestNativeBundledMCPDirectMap(t *testing.T) {
+	nativeBundledMCP(t, "", true)
 }
 
 func TestNativeBundledMCPRootCompatibilityBoundary(t *testing.T) {
-	nativeBundledMCP(t, "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-fixture")
+	nativeBundledMCP(t, "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-fixture", false)
 }
 
-func nativeBundledMCP(t *testing.T, codexRootCommand string) {
+func nativeBundledMCP(t *testing.T, codexRootCommand string, direct bool) {
 	f := pluginFixture(t)
 	tools := nativeTools(t, f)
 	f.raw.Resources[0].Codex = "home/plugins/demo"
@@ -28,6 +32,11 @@ func nativeBundledMCP(t *testing.T, codexRootCommand string) {
 	must(t, err)
 	data, err := json.Marshal(map[string]any{"mcpServers": map[string]any{"bridge-test": map[string]any{"command": "/usr/bin/env", "args": []string{"AGENT_BRIDGE_MCP_FIXTURE=1", binary, "-test.run=^TestNativeMCPServerHelper$"}}}})
 	must(t, err)
+	if direct {
+		var wrapped map[string]json.RawMessage
+		must(t, json.Unmarshal(data, &wrapped))
+		data = wrapped["mcpServers"]
+	}
 	f.write("claude-plugin/.mcp.json", string(data))
 	f.apply()
 	if codexRootCommand != "" {

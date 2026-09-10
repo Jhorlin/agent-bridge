@@ -17,6 +17,7 @@ import (
 // Exclude entries are root-relative files or directory subtrees, not globs.
 // Resource identities and all writes still use the ordinary transaction engine.
 type Conventions struct {
+	ProtectNativeSkills   bool     `json:"protectNativeSkills,omitempty"`
 	PreserveSkillSettings bool     `json:"preserveSkillSettings,omitempty"`
 	Root                  string   `json:"root"`
 	Exclude               []string `json:"exclude,omitempty"`
@@ -41,6 +42,9 @@ func (c *Conventions) UnmarshalJSON(data []byte) error {
 const conventionPrefix = "auto-instructions-"
 
 func (c *Conventions) resolve(base string) error {
+	if c.ProtectNativeSkills && (c.Scope != "global" || !c.enabled("skills")) {
+		return fmt.Errorf("protectNativeSkills requires global skill conventions")
+	}
 	if c.Scope != "" && c.Scope != "project" && c.Scope != "global" {
 		return fmt.Errorf("conventions.scope must be project or global")
 	}

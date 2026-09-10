@@ -4,6 +4,8 @@ Before global skill enrollment, run the separate
 [duplicate and native-variant inventory](skill-inventory.md). Preserve already
 shared links and installer-owned variants; do not treat cache matches as active
 installations or missing entries as proof of portability.
+For an ongoing global skill profile, opt into `protectNativeSkills` after this
+review; see the inventory guide for its conservative collision checks and limits.
 
 For ongoing project/global component discovery, use [convention-based setup](conventions.md).
 `init PROFILE --conventions` selects the containing project and all six supported

@@ -133,7 +133,9 @@ Only top-level `mcpServers` definitions participate; nested project entries and
 account/authentication data are not copied to Codex. Transactional snapshots back
 up the **original mixed file**. Keep recovery state private; never upload backups.
 Use sanitized support bundles instead. Literal credential values in supported MCP
-env/header fields are rejected; use references. This is not a general secret
+env/header fields and recognized credential-bearing command options (such as
+`--password`, `--jenkins-password`, `--api-key` and `--access-token`) are rejected;
+use host-local secret setup. Argument interpolation is still unsupported. This is not a general secret
 scanner: review arbitrary bodies, scripts and arguments before sharing.
 
 ## Boundaries and exceptions
