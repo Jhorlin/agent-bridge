@@ -68,6 +68,8 @@ func Audit(c Config) AuditReport {
 			}
 		case "portable-file", "instruction-file":
 			row.Actions = append(row.Actions, "Review instruction, metadata, script and tool compatibility in both hosts; byte copying does not validate behavior.")
+		case "instruction-set":
+			row.Actions = append(row.Actions, "CLAUDE.md and .claude/CLAUDE.md compose into source-marked AGENTS.md sections. Edit within the sections; source deletions and imports are blocked. Native permissions remain local; host instruction size limits still apply.")
 		case "mcp-config":
 			row.Actions = append(row.Actions, "Authenticate and verify selected tools separately in each host; review formatting loss and host-local policies.")
 			if r.PreserveCodexMCPPolicies {

@@ -40,6 +40,13 @@ func unpackSkillBundle(raw *Snapshot) (skillBundle, error) {
 }
 func readItemSide(item Item, side string) (*Snapshot, error) {
 	entry, err := snapshot(item.Paths[side])
+	if err == nil && item.Adapter == "instruction-set" && side == "claude" {
+		alternate, err := snapshot(InstructionCompanionPath(item.Resource))
+		if err != nil {
+			return nil, err
+		}
+		return packInstructionBundle(instructionBundle{entry, alternate})
+	}
 	if err != nil || item.Adapter != "skill-invocation" || side != "codex" {
 		return entry, err
 	}

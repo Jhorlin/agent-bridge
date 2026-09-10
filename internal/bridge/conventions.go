@@ -134,6 +134,9 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 				return
 			}
 		}
+		if old, ok := entries[r.ID]; ok && old.Kind == "instruction-set" {
+			return
+		}
 		entries[r.ID] = r
 	}
 	skipped := []string{}
@@ -152,14 +155,39 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 		// directory. Keep symlink and case-alias entries visible to validation.
 		if path != policy.Root && strings.EqualFold(entry.Name(), ".claude") {
 			alternate := filepath.Join(filepath.Dir(path), ".claude", "CLAUDE.md")
-			if !policy.excluded(alternate) && !managed(alternate) {
+			pair := conventionEntry(policy.Root, filepath.Dir(path))
+			if !policy.excluded(alternate) && !policy.excluded(pair.Claude) && !policy.excluded(pair.Codex) && !managed(alternate) {
 				if err := assertSafe(filepath.Dir(alternate)); err != nil {
 					return err
 				}
-				if _, e := os.Lstat(alternate); e == nil {
-					return fmt.Errorf("conventions: .claude/CLAUDE.md requires explicit mapping or exclusion")
-				} else if !os.IsNotExist(e) {
+				children, e := os.ReadDir(path)
+				if e != nil {
 					return e
+				}
+				for _, child := range children {
+					if !strings.EqualFold(child.Name(), "CLAUDE.md") {
+						continue
+					}
+					if entry.Name() != ".claude" || child.Name() != "CLAUDE.md" {
+						return fmt.Errorf("conventions: alternate instruction filename case collision")
+					}
+					if _, err := snapshot(alternate); err != nil {
+						return err
+					}
+					r := conventionEntry(policy.Root, filepath.Dir(path))
+					if policy.excluded(r.Claude) || policy.excluded(r.Codex) {
+						continue
+					}
+					for _, old := range explicit {
+						if old.Claude == r.Claude && old.Codex == r.Codex && old.Kind != "instruction-set" {
+							return fmt.Errorf("conventions: explicit instruction pair does not include its alternate source")
+						}
+					}
+					add(filepath.Dir(path))
+					if _, ok := entries[r.ID]; ok {
+						r.Kind, r.Portable = "instruction-set", true
+						entries[r.ID] = r
+					}
 				}
 			}
 		}
@@ -223,6 +251,9 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 			return nil, nil, fmt.Errorf("conventions: tracked root changed; preserve the old profile for recovery")
 		}
 		r := conventionEntry(policy.Root, dir)
+		if previous.Kind == "instruction-set" {
+			r.Kind, r.Portable = "instruction-set", true
+		}
 		expected := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"claude": r.Claude, "codex": r.Codex, "shared": filepath.Join(c.StateDir, "shared", r.ID)}}
 		if id != r.ID || !reflect.DeepEqual(expected, previous) {
 			return nil, nil, fmt.Errorf("conventions: invalid tracked instruction identity")
@@ -243,7 +274,16 @@ func discoverInstructionConventions(c Config, explicit []resourceInput) ([]resou
 				return nil, nil, fmt.Errorf("conventions: a tracked pair moved behind an excluded boundary; explicitly exclude or restore it")
 			}
 		}
+		if current, ok := entries[r.ID]; ok && current.Kind != previous.Kind && previous.Kind != "instruction-set" {
+			return nil, nil, fmt.Errorf("conventions: instruction source layout changed; preserve the current state and review adoption in a fresh stateDir")
+		}
 		add(dir)
+		if r.Kind == "instruction-set" {
+			if policy.excluded(InstructionCompanionPath(expected)) {
+				return nil, nil, fmt.Errorf("conventions: tracked instruction companion cannot be excluded independently")
+			}
+			entries[r.ID] = r
+		}
 	}
 	result := []resourceInput{}
 	for _, entry := range entries {
@@ -313,6 +353,10 @@ func conventionTracked(c Config) (map[string]Resource, error) {
 }
 
 func validateConventionContent(c Config, item Item, value *Snapshot) error {
+	if item.Adapter == "instruction-set" {
+		// The adapter validates each source, not its JSON bundle.
+		return nil
+	}
 	if c.Conventions == nil || !(strings.HasPrefix(item.ID, conventionPrefix) || (featureResourceID(item.ID) && item.Kind == "portable-file")) || value == nil {
 		return nil
 	}

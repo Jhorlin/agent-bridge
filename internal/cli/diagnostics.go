@@ -79,6 +79,9 @@ func protectedPaths(c bridge.Config) []string {
 		for _, path := range r.Paths {
 			p = append(p, path)
 		}
+		if path := bridge.InstructionCompanionPath(r); path != "" {
+			p = append(p, path)
+		}
 		for _, path := range r.CodexAgentExports {
 			p = append(p, path)
 		}
@@ -261,6 +264,9 @@ func inspectDiagnostics(ctx context.Context, profile, dir string, tail int, serv
 	}
 	for _, item := range plan.Items {
 		for _, p := range item.Paths {
+			mapping[diagnostics.Ref(p)] = p
+		}
+		if p := bridge.InstructionCompanionPath(item.Resource); p != "" {
 			mapping[diagnostics.Ref(p)] = p
 		}
 	}

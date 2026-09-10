@@ -99,7 +99,7 @@ func readManifest(c Config) (Manifest, *Snapshot, error) {
 	return m, before, nil
 }
 func expand(r Resource, m Manifest) ([]Item, error) {
-	if r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config" {
+	if r.Kind == "instruction-file" || r.Kind == "instruction-set" || r.Kind == "agent-file" || r.Kind == "hook-config" {
 		return []Item{{Resource: r, Key: r.ID, Adapter: r.Kind}}, nil
 	}
 	if r.Kind == "mcp-config" {
@@ -240,6 +240,8 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 					semantic[side], err = normalizeSkill(value)
 				case "instruction-file":
 					semantic[side], err = normalizeInstructions(side, value)
+				case "instruction-set":
+					semantic[side], err = normalizeInstructionSet(side, value)
 				case "agent-file":
 					semantic[side], err = normalizeAgentResource(item.Resource, side, value)
 				case "hook-config":
@@ -255,6 +257,11 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 					return result, err
 				}
 				hashes[side] = fingerprint(semantic[side])
+			}
+			if item.Adapter == "instruction-set" {
+				if err := checkInstructionSourceDeletion(item, semantic, result.Manifest); err != nil {
+					return result, err
+				}
 			}
 			baseline, tracked := result.Manifest.Files[item.Key]
 			selected := ""

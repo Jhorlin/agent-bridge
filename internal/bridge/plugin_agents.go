@@ -51,6 +51,9 @@ func renderPluginAgent(item Item, side string, content, before *Snapshot) (*Snap
 // Complete write footprint for service and separate-copy overlap checks.
 func resourceDestinations(r Resource) []string {
 	result := []string{}
+	if r.Kind == "instruction-set" {
+		result = append(result, InstructionCompanionPath(r))
+	}
 	for _, path := range r.Paths {
 		result = append(result, path)
 	}

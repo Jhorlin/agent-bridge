@@ -15,7 +15,7 @@ func conventionFixture(t *testing.T) *fixture {
 }
 
 func TestConventionsUnsafeAndSpecialCases(t *testing.T) {
-	for _, kind := range []string{"symlink", "hardlink", "case", "override", "alternate", "import", "invalid-root", "invalid-exclusion", "unknown-option"} {
+	for _, kind := range []string{"symlink", "hardlink", "case", "override", "import", "invalid-root", "invalid-exclusion", "unknown-option"} {
 		t.Run(kind, func(t *testing.T) {
 			f := conventionFixture(t)
 			switch kind {
@@ -27,8 +27,6 @@ func TestConventionsUnsafeAndSpecialCases(t *testing.T) {
 				f.write("src/claude.md", "rules")
 			case "override":
 				f.write("AGENTS.override.md", "override")
-			case "alternate":
-				f.write(".claude/CLAUDE.md", "alternate")
 			case "import":
 				f.write("CLAUDE.md", "Read @docs/rules.md for rules")
 			case "invalid-root":

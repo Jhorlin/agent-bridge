@@ -185,6 +185,13 @@ func prepareHistory(c Config, p *PlanResult, choice HistoryChoice) (string, erro
 			}
 		}
 	}
+	if i.Adapter == "instruction-set" && choice.Side == "claude" {
+		selected, err = instructionHistorySnapshot(c, *i, j, choice.Snapshot)
+		if err != nil {
+			return "", err
+		}
+		found = selected != nil
+	}
 	if !found || selected == nil {
 		return "", fmt.Errorf("selected historical file version is absent")
 	}

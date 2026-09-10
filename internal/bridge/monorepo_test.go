@@ -143,7 +143,13 @@ func TestInstructionAlternateDirectorySafety(t *testing.T) {
 	}
 	must(t, os.Remove(f.path("nested/.claude")))
 	f.write("nested/.claude/CLAUDE.md", "alternate")
-	if _, err := LoadConfig(f.path("config.json")); err == nil {
+	c, err := LoadConfig(f.path("config.json"))
+	must(t, err)
+	found := false
+	for _, r := range c.Resources {
+		found = found || (r.Kind == "instruction-set" && r.Paths["claude"] == f.path("nested/CLAUDE.md"))
+	}
+	if !found {
 		t.Fatal("alternate hidden")
 	}
 	f.write("config.json", `{"version":1,"stateDir":"state","resources":[],"conventions":{"root":".","features":["instructions"],"exclude":["nested/.claude/CLAUDE.md"]}}`)

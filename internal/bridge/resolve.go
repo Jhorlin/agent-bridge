@@ -65,6 +65,8 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 		return normalizeSkill(raw)
 	case "instruction-file":
 		return normalizeInstructions(side, raw)
+	case "instruction-set":
+		return normalizeInstructionSet(side, raw)
 	case "agent-file":
 		return normalizeAgentResource(i.Resource, side, raw)
 	case "hook-config":

@@ -95,13 +95,16 @@ func allowedTarget(c Config, file string) bool {
 		return true
 	}
 	for _, r := range c.Resources {
+		if r.Kind == "instruction-set" && file == InstructionCompanionPath(r) {
+			return true
+		}
 		for _, target := range r.CodexAgentExports {
 			if target == file {
 				return true
 			}
 		}
 		for _, root := range r.Paths {
-			if (r.Kind == "portable-file" || r.Kind == "mcp-config" || r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config") && root == file {
+			if (r.Kind == "portable-file" || r.Kind == "mcp-config" || r.Kind == "instruction-file" || r.Kind == "instruction-set" || r.Kind == "agent-file" || r.Kind == "hook-config") && root == file {
 				return true
 			}
 			if (r.Kind == "skill-directory" || r.Kind == "plugin-directory") && file != root && inside(root, file) {
@@ -285,6 +288,8 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 					content, err = renderSkillResource(item.Resource, side, item.Content, before)
 				case "instruction-file":
 					content, err = renderInstructions(side, item.Content, before)
+				case "instruction-set":
+					content, err = renderInstructionSet(side, item.Content, before)
 				case "agent-file":
 					content, err = renderAgentResource(item.Resource, side, item.Content, before)
 				case "hook-config":
@@ -312,6 +317,8 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 					roundTrip, err = normalizeSkill(content)
 				case "instruction-file":
 					roundTrip, err = normalizeInstructions(side, content)
+				case "instruction-set":
+					roundTrip, err = normalizeInstructionSet(side, content)
 				case "agent-file":
 					roundTrip, err = normalizeAgentResource(item.Resource, side, content)
 				case "hook-config":
@@ -339,6 +346,14 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 					operations = append(operations, extra...)
 					continue
 				}
+				if item.Adapter == "instruction-set" && side == "claude" {
+					extra, err := instructionBundleOperations(item, before, content)
+					if err != nil {
+						return err
+					}
+					operations = append(operations, extra...)
+					continue
+				}
 				mode := uint32(0600)
 				if before != nil {
 					mode = before.Mode
@@ -347,6 +362,11 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				operations = append(operations, Operation{item.Key + "-" + side, item.Paths[side], before, &Snapshot{content.Data, mode}})
 			}
 			result.Manifest.Files[item.Key] = item.Digest
+			if item.Adapter == "instruction-set" {
+				if err := recordInstructionSources(item, &result.Manifest); err != nil {
+					return err
+				}
+			}
 			if item.Adapter == "mcp" || (item.Adapter == "plugin-mcp" && featureResourceID(item.ID)) {
 				resource := item.Resource
 				if item.Adapter == "plugin-mcp" {
@@ -401,7 +421,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 			for index, op := range operations {
 				stage, path, resource = "write", op.File, ""
 				for _, r := range c.Resources {
-					for _, root := range r.Paths {
+					for _, root := range resourceDestinations(r) {
 						if inside(root, op.File) {
 							resource = r.ID
 						}

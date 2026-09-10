@@ -98,6 +98,13 @@ Protocol/configuration references: [Codex custom providers](https://learn.chatgp
 
 ## Watcher process lifecycle
 
+`TestNativeClaudeAlternateInstructionSources` verifies that Claude loads both
+same-directory instruction sources, root first. `TestNativeComposedInstructionSources`
+then synchronizes a set, edits its Codex alternate section, synchronizes back,
+and checks both real hosts' loopback requests for both current instruction bodies
+in order. Claude Code 2.1.267 and Codex 0.153.4 passed these checks. This proves
+loading with fixed providers, not real-model compliance or unlimited context size.
+
 The normal Go suite also exercises the executable entry point in child processes
 on macOS/Linux. It synchronizes temporary files, sends SIGINT or SIGTERM, verifies
 clean exit with no state/coordinator locks or pending journal, restarts, and

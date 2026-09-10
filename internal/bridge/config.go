@@ -167,10 +167,10 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			return c, fmt.Errorf("resource IDs must be unique and path-safe")
 		}
 		ids[r.ID] = true
-		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" && r.Kind != "instruction-file" && r.Kind != "agent-file" && r.Kind != "hook-config" {
+		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" && r.Kind != "instruction-file" && r.Kind != "instruction-set" && r.Kind != "agent-file" && r.Kind != "hook-config" {
 			return c, fmt.Errorf("unsupported adapter: %s", r.Kind)
 		}
-		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory" || r.Kind == "instruction-file" || r.Kind == "agent-file" || r.Kind == "hook-config") && !r.Portable {
+		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory" || r.Kind == "instruction-file" || r.Kind == "instruction-set" || r.Kind == "agent-file" || r.Kind == "hook-config") && !r.Portable {
 			return c, fmt.Errorf("%s requires portable: true after reviewing tool compatibility", r.Kind)
 		}
 		if r.Scope != "global" && r.Scope != "project" {
@@ -280,6 +280,22 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			}
 			destinations = append(destinations, dest)
 			res.Paths[side] = dest
+		}
+		if r.Kind == "instruction-set" {
+			if r.Scope != "project" || len(r.LinkTargets) != 0 || filepath.Base(res.Paths["claude"]) != "CLAUDE.md" || filepath.Base(res.Paths["codex"]) != "AGENTS.md" || filepath.Dir(res.Paths["claude"]) != filepath.Dir(res.Paths["codex"]) {
+				return c, fmt.Errorf("instruction-set requires an unlinked project CLAUDE.md/AGENTS.md pair in the same directory")
+			}
+			dest := InstructionCompanionPath(res)
+			if err := assertSafe(dest); err != nil {
+				return c, err
+			}
+			for _, other := range destinations {
+				a, b := strings.ToLower(other), strings.ToLower(dest)
+				if inside(a, b) || inside(b, a) {
+					return c, fmt.Errorf("instruction companion overlaps a managed path")
+				}
+			}
+			destinations = append(destinations, dest)
 		}
 		exports := []string{}
 		for name := range res.CodexAgentExports {

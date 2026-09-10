@@ -38,8 +38,10 @@ as fixtures in this public repository; reproduce structural patterns synthetical
   already shares a physical source. Do not create a second bridge owner over it.
   Exclude the pair or use a separately reviewed explicit mapping where safe.
 - **Alternate instruction sources:** root `CLAUDE.md` plus `.claude/CLAUDE.md`
-  are not automatically concatenated. Lowercase variants on case-insensitive
-  filesystems can also be visible to native readers. Preserve and review them.
+  compose into a source-marked `AGENTS.md` through the reversible
+  [instruction-set adapter](instruction-sets.md). Alternate-only directories are
+  supported too. Lowercase variants remain blocked, including on case-insensitive
+  filesystems; preserve and review those separately.
 - **Scoped rules:** `.claude/rules` generates a warning, not translated rules.
   Claude path triggers and Codex instruction loading are not the same contract.
 - **Hooks:** matching `Glob|Grep` or `Edit|Write|NotebookEdit` cannot be changed

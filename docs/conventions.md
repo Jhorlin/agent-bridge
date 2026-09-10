@@ -167,8 +167,11 @@ collection entries fail; unrelated symlinks are not traversed. Explicit pinned-r
 symlinks remain an opt-in exception.
 
 - `CLAUDE.local.md` stays private and produces a fixed warning in project mode.
-- Project `.claude/CLAUDE.md` and project/global `AGENTS.override.md` require
-  explicit handling or exclusion; they can alter/shadow the ordinary pair.
+- Project `.claude/CLAUDE.md` is discovered as an
+  [instruction set](instruction-sets.md), composing it with any same-directory
+  `CLAUDE.md` while preserving the separate sources. Adding an alternate to an
+  already tracked plain pair requires reviewed adoption in a fresh state directory.
+  Project/global `AGENTS.override.md` still requires explicit handling or exclusion.
 - Automatic instructions containing whitespace-delimited `@references` outside
   closed Markdown fences and matched single-line code spans block planning.
   Literal package names in code examples do not count as imports. Unclosed fences

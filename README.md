@@ -87,6 +87,11 @@ Configuration paths resolve relative to their declaring file; absolute paths are
 
 The `portable-file` adapter copies exact bytes. Use it only when the content is genuinely compatible with both tools. It does not claim arbitrary CLAUDE.md instructions, skill metadata, or scripts are behaviorally portable.
 
+When a project directory has `.claude/CLAUDE.md`, current source builds use a
+[reversible instruction set](docs/instruction-sets.md): both Claude instruction
+files stay separate, while Codex receives source-marked sections in `AGENTS.md`.
+Edits inside those sections synchronize back to the corresponding source.
+
 ## Skill directories
 
 Register **one skill directory per resource**, not the entire installed-skills folder. All nested regular files (including hidden and binary files) participate; review the directory for secrets before adoption. Existing populated peers must contain `SKILL.md`. By default, the adapter preserves bytes and executable bits without validating frontmatter or tool behavior. Set `portable: true` only after reviewing that compatibility yourself.
