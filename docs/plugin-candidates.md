@@ -55,3 +55,55 @@ No error includes the rejected paths or manifest values.
 
 For byte comparison of an already registered authoring package and an explicitly
 selected native copy, use [compare-plugin-copy](plugin-copy.md) instead.
+
+## Ongoing protection for global authoring packages
+
+After reviewing native ownership, a global convention profile can opt into:
+
+```json
+{
+  "version": 1,
+  "stateDir": "./state",
+  "conventions": {
+    "root": "/absolute/selected-home",
+    "scope": "global",
+    "features": ["plugins"],
+    "protectNativePlugins": true
+  },
+  "resources": []
+}
+```
+
+The guard reads only the three known manifest locations under
+`.claude/plugins/cache/{marketplace}/{package}/{version}` and
+`.codex/plugins/cache/{marketplace}/{package}/{version}`, relative to that
+explicit root. Package bodies, registry settings, credentials, enablement and
+trust are not inspected or changed. It compares declared names, not directory
+aliases, across every known manifest, including packages with multiple manifests.
+
+A same-name cached candidate blocks automatic adoption, even if it is inactive,
+an old version, or has a different publisher. This is conservative collision
+protection, not automatic counterpart selection. Use the comparison command and
+upstream evidence to review ownership, then exclude installer-owned authoring
+packages through the ordinary reviewed profile/enrollment workflow. Do not enroll
+the cache itself. No existing cache or authoring package is deleted by the guard.
+
+Checks run at discovery, planning, history/conflict review and before a write
+journal is created. They also reject two automatic authoring packages with the
+same prospective name. Malformed/oversized identity files, unknown schemas,
+symlinks in inspected paths, unexpected cache-level files, missing manifests and
+inventories exceeding 20,000 directory entries fail closed with private errors.
+Hidden/staging directories are not silently exempted; an incomplete installation
+can pause a guarded profile until its native installer finishes.
+
+This option requires global scope with plugin conventions enabled. It does not
+cover explicit resources, project profiles, custom cache roots, custom package
+depths, external development directories or differently named counterparts.
+Absent caches do not prove that no native counterpart exists. Scanning is not an
+atomic snapshot or a native installer lock; keep installers stopped during
+reviewed writes. Existing profiles retain their behavior unless they opt in.
+
+Recovery also loads the guarded profile: a newly cached collision can pause
+recovery after a crash. The pending journal remains intact; resolve ownership
+privately before retrying recovery. The guard never clears pending state or
+disables itself to get past an error.

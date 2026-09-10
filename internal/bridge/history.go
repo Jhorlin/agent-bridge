@@ -245,7 +245,7 @@ func prepareHistory(c Config, p *PlanResult, choice HistoryChoice) (string, erro
 			i.Writes = append(i.Writes, side)
 		}
 	}
-	if err := validatePlannedNativeSkills(c, *p); err != nil {
+	if err := validatePlannedNativeCandidates(c, *p); err != nil {
 		return "", err
 	}
 	if err := validatePlannedPluginContents(*p); err != nil {

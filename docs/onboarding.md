@@ -6,6 +6,9 @@ shared links and installer-owned variants; do not treat cache matches as active
 installations or missing entries as proof of portability.
 For an ongoing global skill profile, opt into `protectNativeSkills` after this
 review; see the inventory guide for its conservative collision checks and limits.
+For global authoring plugins, `protectNativePlugins` provides a separate opt-in
+[cached-name collision guard](plugin-candidates.md#ongoing-protection-for-global-authoring-packages).
+It does not install or choose a native counterpart automatically.
 
 For ongoing project/global component discovery, use [convention-based setup](conventions.md).
 `init PROFILE --conventions` selects the containing project and all six supported

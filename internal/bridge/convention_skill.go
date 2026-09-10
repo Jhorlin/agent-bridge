@@ -6,7 +6,10 @@ import (
 	"regexp"
 )
 
-var hostSkillExpansion = regexp.MustCompile("\\$(?:ARGUMENTS\\b|[0-9]+\\b|\\{CLAUDE_[^}]*\\})|!`")
+// This is a conservative automatic-adoption boundary, not a host interpreter.
+// Reserved prefixes (including escaped forms) require explicit compatibility
+// review; word boundaries would miss argument suffixes and incomplete tokens.
+var hostSkillExpansion = regexp.MustCompile("\\$(?:ARGUMENTS|[0-9]|\\{?CLAUDE_)|!`|```!")
 
 func normalizeConventionSkill(item Item, side string, raw *Snapshot, m Manifest) (*Snapshot, error) {
 	if featureResourceID(item.ID) && raw != nil {

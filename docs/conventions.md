@@ -60,9 +60,16 @@ agent-bridge watch /absolute/profiles/global.json --apply
 
 This creates the same policy with `scope: "global"` and the selected absolute root.
 Global mode examines only the known locations below: it **does not recursively
-scan the home, find projects, or traverse installed plugin caches**. Global files
+scan the home, find projects, or adopt installed plugin caches**. Global files
 apply according to each host's own loading rules. Run separate project profiles
 where project-specific definitions are needed; global mode does not adopt them.
+
+The optional `protectNativeSkills` and `protectNativePlugins` policies add
+read-only native/cache identity checks before automatic global adoption.
+See [skill protection](skill-inventory.md) and
+[plugin protection](plugin-candidates.md#ongoing-protection-for-global-authoring-packages)
+for their conservative collision handling and limits. Neither changes native
+installation, authentication or trust.
 
 ## Locations and translation
 

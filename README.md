@@ -167,6 +167,9 @@ Before creating a translated plugin, use the read-only
 explicit native package roots. It reports manifest evidence and component-path
 differences without reading component bodies or changing native configuration.
 It does not infer equivalence, installation or authentication from matching names.
+Global plugin conventions can opt into `protectNativePlugins` to block same-name
+cached candidates on later syncs and watcher polls. This protects automatic
+authoring packages; it does not install, refresh or select native counterparts.
 
 Use the [local acceptance checklist](docs/local-acceptance.md) for the next
 real-project test, including reverse edits, conflicts, native loading and logs.

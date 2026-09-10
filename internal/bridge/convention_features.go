@@ -136,6 +136,9 @@ func discoverConventions(c Config, explicit []resourceInput) ([]resourceInput, [
 	}
 	result = append(result, more...)
 	warnings = append(warnings, notes...)
+	if err := validateDiscoveredNativePlugins(c, result); err != nil {
+		return nil, nil, err
+	}
 	if c.Conventions.ProtectNativeSkills {
 		inventory, err := inventorySkillIdentities(c.Conventions.Root)
 		if err != nil {

@@ -326,7 +326,7 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 			result.Items = append(result.Items, item)
 		}
 	}
-	if err := validatePlannedNativeSkills(c, result); err != nil {
+	if err := validatePlannedNativeCandidates(c, result); err != nil {
 		return result, err
 	}
 	if err := validatePlannedPluginContents(result); err != nil {

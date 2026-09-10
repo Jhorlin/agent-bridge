@@ -4,6 +4,13 @@ import "fmt"
 
 // Check the prospective identity, not only metadata already on disk. History,
 // canonical-source edits and explicit conflict choices can all change a name.
+func validatePlannedNativeCandidates(c Config, plan PlanResult) error {
+	if err := validatePlannedNativePlugins(c, plan); err != nil {
+		return err
+	}
+	return validatePlannedNativeSkills(c, plan)
+}
+
 func validatePlannedNativeSkills(c Config, plan PlanResult) error {
 	if c.Conventions == nil || !c.Conventions.ProtectNativeSkills {
 		return nil

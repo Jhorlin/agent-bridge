@@ -30,6 +30,12 @@ different acceptance levels; passing one does not establish the others.
 - Read-only native plugin candidate comparison without requiring a plannable
   synchronization profile. Multiple native manifests remain separate evidence;
   this command neither creates duplicates nor claims native equivalence.
+- Opt-in global `protectNativePlugins` checks cached manifest names before
+  automatic plugin adoption, history/conflict selection and writes. Existing
+  native packages are never modified; inactive caches can also block adoption.
+- Automatic skill adoption rejects reserved expansion-token prefixes and
+  executable Markdown fences from either host. Literal dollar examples remain
+  supported; explicitly reviewed portable skills retain their existing behavior.
 
 Independent review found and regression tests closed pre-upgrade history,
 prospective hook dependency, reserved filename-case and supporting-file mutation

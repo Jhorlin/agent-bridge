@@ -30,6 +30,9 @@ does not complete these items. A rejected input is not supported functionality.
   completed mappings, native-version evidence and remaining host limitations.
   Current [dated source-build report](interoperability-status.md) is available;
   this does not close the remaining full-parity release requirements.
+- [x] Add opt-in ongoing global cached-plugin name collision protection, with
+  prospective rename/history/conflict and pre-journal rechecks. This blocks
+  potential duplicates; it does not automatically select or install counterparts.
 
 ## External or host-specific gates
 
