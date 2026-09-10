@@ -1,5 +1,10 @@
 # Global and project onboarding
 
+Before global skill enrollment, run the separate
+[duplicate and native-variant inventory](skill-inventory.md). Preserve already
+shared links and installer-owned variants; do not treat cache matches as active
+installations or missing entries as proof of portability.
+
 For ongoing project/global component discovery, use [convention-based setup](conventions.md).
 `init PROFILE --conventions` selects the containing project and all six supported
 categories; `init PROFILE --global ROOT` selects known global locations under an

@@ -26,6 +26,26 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	if ctx.Err() != nil {
 		return 0
 	}
+	if len(args) > 0 && args[0] == "inventory-skills" {
+		if len(args) < 2 || len(args) > 3 || (len(args) == 3 && args[2] != "--include-plugin-cache") {
+			fmt.Fprintln(errOut, "Usage: agent-bridge inventory-skills ABSOLUTE_HOME [--include-plugin-cache]")
+			return 1
+		}
+		report, err := bridge.InventorySkills(args[1], len(args) == 3)
+		if err != nil {
+			fmt.Fprintln(errOut, "Skill inventory failed: inspect root safety, permissions and size limits. No files changed.")
+			return 1
+		}
+		if err := json.NewEncoder(out).Encode(report); err != nil {
+			return 1
+		}
+		for _, g := range report.Groups {
+			if g.Status == "inspection-blocked" {
+				return 2
+			}
+		}
+		return 0
+	}
 	if len(args) > 0 && (args[0] == "logs" || args[0] == "doctor" || args[0] == "support-bundle") {
 		return runDiagnostics(ctx, args, out, errOut)
 	}

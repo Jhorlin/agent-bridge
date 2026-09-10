@@ -52,6 +52,12 @@ made for that attempt; the new contents must stabilize before synchronization.
 
 `audit CONFIG [--json]` is a read-only compatibility preflight for explicit and convention-discovered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
 
+Before global onboarding, run `inventory-skills ABSOLUTE_HOME --include-plugin-cache`
+for a [read-only duplicate and native-variant preflight](docs/skill-inventory.md).
+It distinguishes shared links, identical/different copies, system collisions and
+cached plugin candidates without copying or enrolling them. Cache presence is not
+proof of enablement; the report is advisory and does not change existing watchers.
+
 Source builds also provide [whole-resource retirement that preserves files](docs/retirement.md),
 [reviewed supporting-file rename/delete and historical undo](docs/supporting-file-changes.md)
 with retained backups and interrupted-operation recovery. These explicit commands
