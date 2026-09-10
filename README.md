@@ -116,6 +116,12 @@ Claude's `disable-model-invocation` maps to the inverse Codex
 invocation remains available; host-specific skill controls remain unsupported. See
 [invocation policy, adoption and native test limits](docs/skill-invocation.md).
 
+With invocation translation, opt-in `preserveSkillSettings: true` retains bounded
+Claude-only grants, hints and custom dependency/version metadata in its original
+file while syncing portable instructions. It never grants Codex extra approvals.
+The same option is available under `conventions`; see
+[native-local skill settings](docs/skill-settings.md).
+
 For minimal Claude plugin agents, source builds support explicit or convention-derived,
 namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
 Those files have an independent lifecycle; Codex plugin uninstall does not remove them.

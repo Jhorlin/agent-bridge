@@ -46,6 +46,7 @@ func featureEntry(c Config, feature, base, name string) resourceInput {
 		r.Portable = true
 		r.AllowReformat = true
 		r.TranslateSkillInvocation = true
+		r.PreserveSkillSettings = c.Conventions.PreserveSkillSettings
 		r.Claude = filepath.Join(base, ".claude", "skills", name)
 		r.Codex = filepath.Join(base, ".agents", "skills", name)
 	case "agents":
@@ -82,13 +83,18 @@ func featureEntry(c Config, feature, base, name string) resourceInput {
 }
 
 func resolvedFeature(c Config, r resourceInput) Resource {
-	return Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"claude": r.Claude, "codex": r.Codex, "shared": filepath.Join(c.StateDir, "shared", r.ID)}, Servers: r.Servers, AllowReformat: r.AllowReformat, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings, TranslateSkillInvocation: r.TranslateSkillInvocation, CodexAgentExports: r.CodexAgentExports, CodexPluginLayout: r.CodexPluginLayout}
+	return Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"claude": r.Claude, "codex": r.Codex, "shared": filepath.Join(c.StateDir, "shared", r.ID)}, Servers: r.Servers, AllowReformat: r.AllowReformat, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings, TranslateSkillInvocation: r.TranslateSkillInvocation, PreserveSkillSettings: r.PreserveSkillSettings, CodexAgentExports: r.CodexAgentExports, CodexPluginLayout: r.CodexPluginLayout}
 }
 
 // Auto-managed collections may grow, but existing members never silently vanish
 // or move. Native paths, adapter choices and host-local policy modes stay pinned.
 func sameResourceIdentity(previous, current Resource) bool {
 	if featureResourceID(current.ID) && previous.ID == current.ID {
+		// Opting in only separates new native-local fields; the previously
+		// accepted portable projection is unchanged. Downgrades remain blocked.
+		if current.Kind == "skill-directory" && current.TranslateSkillInvocation && current.PreserveSkillSettings && !previous.PreserveSkillSettings {
+			current.PreserveSkillSettings = false
+		}
 		for _, name := range previous.Servers {
 			if !hasField(current.Servers, name) {
 				return false
@@ -550,7 +556,7 @@ func restoreFeatureRecipe(c Config, old Resource) (resourceInput, string, string
 		}
 		r.CodexAgentExports[name] = filepath.Join(base, ".codex", "agents", exportedAgentName(r.ID, name)+".toml")
 	}
-	if !reflect.DeepEqual(resolvedFeature(c, r), old) {
+	if !sameResourceIdentity(old, resolvedFeature(c, r)) {
 		return r, "", "", fmt.Errorf("invalid tracked convention identity")
 	}
 	return r, base, feature, nil

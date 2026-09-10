@@ -27,7 +27,7 @@ func normalizeConventionSkill(item Item, side string, raw *Snapshot, m Manifest)
 		}
 	}
 	if !featureResourceID(item.ID) || side != "codex" || raw == nil {
-		return normalizeSkillInvocation(side, raw)
+		return normalizeSkillResource(item.Resource, side, raw)
 	}
 	bundle, err := unpackSkillBundle(raw)
 	if err != nil {
@@ -44,7 +44,7 @@ func normalizeConventionSkill(item Item, side string, raw *Snapshot, m Manifest)
 			return nil, err
 		}
 	}
-	return normalizeSkillInvocation(side, raw)
+	return normalizeSkillResource(item.Resource, side, raw)
 }
 
 func recordConventionSkillPolicy(item Item, m *Manifest) error {

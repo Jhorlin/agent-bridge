@@ -17,10 +17,11 @@ import (
 // Exclude entries are root-relative files or directory subtrees, not globs.
 // Resource identities and all writes still use the ordinary transaction engine.
 type Conventions struct {
-	Root     string   `json:"root"`
-	Exclude  []string `json:"exclude,omitempty"`
-	Scope    string   `json:"scope,omitempty"`
-	Features []string `json:"features,omitempty"`
+	PreserveSkillSettings bool     `json:"preserveSkillSettings,omitempty"`
+	Root                  string   `json:"root"`
+	Exclude               []string `json:"exclude,omitempty"`
+	Scope                 string   `json:"scope,omitempty"`
+	Features              []string `json:"features,omitempty"`
 }
 
 // Unknown policy keys must fail even in the legacy permissive config loader:

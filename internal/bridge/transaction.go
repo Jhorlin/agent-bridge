@@ -282,7 +282,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				case "plugin-agent":
 					content, err = renderPluginAgent(item, side, item.Content, before)
 				case "skill-invocation":
-					content, err = renderSkillInvocation(side, item.Content)
+					content, err = renderSkillResource(item.Resource, side, item.Content, before)
 				case "instruction-file":
 					content, err = renderInstructions(side, item.Content, before)
 				case "agent-file":
@@ -305,7 +305,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				case "plugin-agent":
 					roundTrip, err = normalizePluginAgent(item, side, content)
 				case "skill-invocation":
-					roundTrip, err = normalizeSkillInvocation(side, content)
+					roundTrip, err = normalizeSkillResource(item.Resource, side, content)
 				case "plugin-command":
 					roundTrip, err = normalizePluginCommand(content)
 				case "skill-metadata":

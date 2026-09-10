@@ -28,6 +28,7 @@ type Resource struct {
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 }
 
@@ -56,8 +57,9 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 		PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 		TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+		PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 		CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.CodexAgentExports})
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.PreserveSkillSettings, r.CodexAgentExports})
 }
 
 type Config struct {
@@ -82,6 +84,7 @@ type resourceInput struct {
 	PreserveCodexMCPPolicies bool              `json:"preserveCodexMCPPolicies,omitempty"`
 	PreserveAgentSettings    bool              `json:"preserveAgentSettings,omitempty"`
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
+	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 }
 type configInput struct {
@@ -185,6 +188,12 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 				return c, fmt.Errorf("translateSkillInvocation requires a strict skill-directory")
 			}
 			res.TranslateSkillInvocation = true
+		}
+		if r.PreserveSkillSettings {
+			if r.Kind != "skill-directory" || !r.TranslateSkillInvocation || !r.AllowReformat {
+				return c, fmt.Errorf("preserveSkillSettings requires skill invocation translation")
+			}
+			res.PreserveSkillSettings = true
 		}
 		if r.PreserveAgentSettings {
 			if r.Kind != "agent-file" && !(r.Kind == "plugin-directory" && (len(r.CodexAgentExports) > 0 || featureResourceID(r.ID))) {

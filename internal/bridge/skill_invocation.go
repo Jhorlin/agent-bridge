@@ -50,14 +50,10 @@ func readItemSide(item Item, side string) (*Snapshot, error) {
 	return packSkillBundle(entry, policy)
 }
 
-func invocationFields(raw *Snapshot) (map[string]any, string, error) {
-	fields, _, err := agentDocument("claude", raw)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid skill invocation metadata")
-	}
+func skillInstructionBytes(raw *Snapshot) (string, error) {
 	data, err := snapshotBytes(raw)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 	// Preserve the original instruction bytes, including CRLF, as strict skills do.
 	text := string(data)
@@ -73,6 +69,18 @@ func invocationFields(raw *Snapshot) (map[string]any, string, error) {
 			break
 		}
 		start = end + 1
+	}
+	return body, nil
+}
+
+func invocationFields(raw *Snapshot) (map[string]any, string, error) {
+	fields, _, err := agentDocument("claude", raw)
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid skill invocation metadata")
+	}
+	body, err := skillInstructionBytes(raw)
+	if err != nil {
+		return nil, "", err
 	}
 	for key := range fields {
 		if !portableSkillField(key) && key != "disable-model-invocation" {

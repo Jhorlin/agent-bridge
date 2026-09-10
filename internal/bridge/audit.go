@@ -56,6 +56,9 @@ func Audit(c Config) AuditReport {
 		row := AuditResource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Direction: "bidirectional", Status: "review-required", Checks: []AuditCheck{}, Actions: []string{"Run plan before sync; audit is not a write authorization or live host certification."}}
 		switch r.Kind {
 		case "skill-directory":
+			if r.PreserveSkillSettings {
+				row.Actions = append(row.Actions, "Bounded Claude skill grants, hints and custom dependency/version metadata remain native-local, not shared. Codex keeps its own approval settings; dependencies are not installed and permission parity is not established.")
+			}
 			if r.TranslateSkillInvocation {
 				row.Actions = append(row.Actions, "Invocation mode maps disable-model-invocation to inverse policy.allow_implicit_invocation. Codex entry and explicit policy sidecar form one reviewed unit; history restores policy too. Common informational metadata is retained; host-specific controls and execution contexts remain unsupported.")
 			} else if r.AllowReformat {
