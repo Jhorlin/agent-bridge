@@ -94,6 +94,11 @@ func splitAgentSettings(side string, fields map[string]any) (map[string]any, map
 		}
 		if side == "claude" {
 			switch key {
+			case "color":
+				// Display metadata stays in the existing Claude file. It is not
+				// an execution policy or a portable Codex agent field.
+				s, ok := value.(string)
+				valid = ok && strings.TrimSpace(s) != "" && len(s) <= 64 && !strings.ContainsAny(s, "\x00\r\n")
 			case "permissionMode":
 				valid = agentSettingChoice(value, []string{"default", "acceptEdits", "auto", "dontAsk", "bypassPermissions", "plan", "manual"})
 			case "maxTurns":

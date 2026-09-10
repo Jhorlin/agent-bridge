@@ -50,7 +50,8 @@ features, relative references and script behavior are not translated.
 By default host-local model/tool/permission fields are rejected. A separate
 `"preserveAgentSettings": true` opt-in permits the same bounded local fields as
 the standalone agent adapter: Claude model, tools/disallowedTools, permissionMode
-and maxTurns; Codex model, model_reasoning_effort, sandbox_mode and approval_policy.
+and maxTurns, plus bounded single-line display color; Codex model,
+model_reasoning_effort, sandbox_mode and approval_policy.
 They stay in their original native file, including during historical restore;
 none are copied into the other host or the shared canonical definition. A newly
 created destination has no translated local settings and uses that host's defaults.

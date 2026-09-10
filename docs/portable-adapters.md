@@ -61,7 +61,9 @@ The default strict mode above is unchanged. This option is part of resource
 identity and requires reviewed adoption, not an in-place toggle on a tracked ID.
 
 Claude retains `model`, `tools`, `disallowedTools`, `permissionMode` and positive
-integer `maxTurns`. Codex retains `model`, `model_reasoning_effort`, `sandbox_mode`
+integer `maxTurns`, and a nonempty single-line `color` of at most 64 bytes.
+Color stays Claude-local; it is not a Codex field or execution policy.
+Codex retains `model`, `model_reasoning_effort`, `sandbox_mode`
 and string `approval_policy`. Types and bounded mode values are checked. Model
 availability and the validity of particular tool names still require native review.
 Unrecognized settings, hooks, MCP definitions, skill preloads and memory remain
