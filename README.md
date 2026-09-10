@@ -16,6 +16,9 @@ also covers manual resource exceptions.
 
 Requires Go 1.25+ to build. The resulting standalone executable does not require Go installed to run. TOML and YAML parsing use pinned pure-Go dependencies. macOS and Linux are supported. Windows filesystem safety/permissions are not implemented yet.
 
+See [test coverage and validation boundaries](docs/testing.md) for reproducible
+coverage commands, regression areas and what the percentages do not prove.
+
 `./agent-bridge --version` identifies the build (`dev` for ordinary source builds).
 The [distribution guide](docs/distribution.md) covers Go-only cross-platform
 packaging, archive verification and installation. Download the experimental
