@@ -1,6 +1,6 @@
 # Claude Code ↔ Codex compatibility
 
-Reviewed through 2026-09-09 source-build milestones. This is a feature-family audit of local configuration and extensibility, not an exhaustive inventory of every UI feature, flag, or enterprise policy. [Native acceptance tests](native-testing.md) cover specific discovery/validation operations in Claude Code 2.1.266 and Codex CLI 0.153.4, not complete interoperability or model behavior.
+Reviewed through 2026-09-09 source-build milestones. This is a feature-family audit of local configuration and extensibility, not an exhaustive inventory of every UI feature, flag, or enterprise policy. [Native acceptance tests](native-testing.md) cover specific discovery/validation operations in Claude Code 2.1.267 and Codex CLI 0.153.4, not complete interoperability or model behavior.
 
 ## Reading the matrix
 
@@ -38,6 +38,7 @@ Native references: [Claude instruction loading](https://code.claude.com/docs/en/
 | Plugin identity + portable skills | Partial: common metadata, portable skill assets, compatibility/portable Codex layouts | Authoring directories only; not a general plugin converter. [T4](#test-evidence) |
 | Bundled MCP | Partial in source builds: explicit allowlist and conventional compatibility-package JSON | Native loading tested; root-relative execution remains blocked after failed Codex probes. [Contract](adapters.md#plugin-packages) |
 | Hooks | Partial: startup SessionStart, plus prompt/Stop and exact-Bash pre/post events in source builds; bundled hooks require compatibility layout | Explicit timeout/absolute executable; bounded native denial, failure, timeout and trust tests, not arbitrary policy equivalence. [Tool hooks](tool-hooks.md) |
+| Path-only edit guards | Partial in source builds: explicit `file-guard-config` reference reconciliation and `hook-file-guard` runtime | Reviewed project script allowlist only; unrelated hooks stay local. Stronger error handling, no notebook/content-sensitive translation, shell-write mediation or automatic trust. [Contract and tests](file-guards.md) |
 | Plugin agents | Partial: explicit namespaced standalone Codex exports, with optional host-local settings retention | Claude agents remain package components; Codex exports have independent ownership/lifecycle. No direct bundled Codex agent loading. [Export contract](plugin-agent-exports.md) |
 | UI/app mappings and other components | Host-managed pending component-specific review | No silent dropping of components; unknown fields/layouts fail. [T4](#test-evidence) |
 | Marketplace install / update / enable / trust / cache | Host-managed; fixture lifecycle verified; read-only selected-copy comparison implemented | Production install APIs lack a supported contract. Sync has no installation/refresh side effects; copies can remain stale. [Copy comparison](plugin-copy.md), [native evidence](native-testing.md) |

@@ -133,8 +133,10 @@ The same option is available under `conventions`; see
 
 For reviewed Claude path-only edit guards, the opt-in
 [`hook-file-guard` runtime adapter](docs/file-guards.md) translates Codex patch
-targets into legacy path-bearing hook inputs. It is separate from automatic
-definition sync and does not claim full hook or permission equivalence.
+targets into legacy path-bearing hook inputs. Source builds also offer an explicit
+`file-guard-config` adapter for ongoing bidirectional reference changes within a
+reviewed script allowlist, preserving other native hooks. Neither is selected
+automatically or claims full hook or permission equivalence.
 
 For minimal Claude plugin agents, source builds support explicit or convention-derived,
 namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
@@ -148,7 +150,7 @@ See the [compatibility matrix and implementation priorities](docs/compatibility.
 | --- | --- | --- |
 | Shared instructions | Automatic root/nested project pairs and a selected global pair; optional explicit shared sections | No semantic translation of instructions, imports or precedence |
 | Custom agents | Name, description and instruction body; Claude Markdown/YAML ↔ Codex TOML; source builds offer bounded host-local settings retention | Settings are not equivalent cross-host permissions; unsupported fields rejected |
-| Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit, Stop and exact-Bash PreToolUse/PostToolUse | Absolute executable paths; no trust grants, script execution by the bridge, other tool-name or arbitrary output-policy translation |
+| Hooks | Explicitly timed startup SessionStart definitions; source builds also map UserPromptSubmit, Stop and exact-Bash PreToolUse/PostToolUse, plus opt-in reviewed path-guard references | No trust grants or script execution during sync; the path-guard runtime separately executes reviewed policies, with bounded inputs and stronger failure handling, not general hook parity |
 | MCP | Explicit allowlist or convention-discovered names; stdio/HTTP; Claude JSON ↔ Codex TOML; environment/header/bearer references; bidirectional ongoing sync | Literal env/header credentials, unsupported policy fields, SSE, interpolation in command/args/URL, partial explicit allowlists, and deleting tracked servers block sync |
 | Plugins | Portable skill packages, common metadata, supporting files; source builds add bounded conventional hooks, static commands, selected MCP and explicit or convention-derived standalone agent exports | No automatic installation/cache refresh, OAuth, marketplace management, portable-layout hooks/MCP/commands, direct bundled Codex agents, app mappings or arbitrary host-specific fields |
 | Symlinks | Existing native file/skill/plugin root link pinned to an explicit existing physical target; link preserved on writes | No link creation, nested/chained links, target changes, or overlapping targets |

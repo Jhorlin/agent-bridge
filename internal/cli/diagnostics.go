@@ -76,6 +76,7 @@ func protectedPaths(c bridge.Config) []string {
 		p = append(p, c.CoordinationDir)
 	}
 	for _, r := range c.Resources {
+		p = append(p, bridge.FileGuardDependencies(r)...)
 		for _, path := range r.Paths {
 			p = append(p, path)
 		}

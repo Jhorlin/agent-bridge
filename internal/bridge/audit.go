@@ -90,6 +90,8 @@ func Audit(c Config) AuditReport {
 			}
 		case "hook-config":
 			row.Actions = append(row.Actions, "Startup SessionStart, UserPromptSubmit, Stop and exact-Bash PreToolUse/PostToolUse definitions are mapped. Review and trust hooks in each host; failures can continue tool execution and arbitrary output policy is not translated.")
+		case "file-guard-config":
+			row.Actions = append(row.Actions, "Only one explicitly allowlisted path-only guard reference maps Edit/Write/NotebookEdit to apply_patch through hook-file-guard. Unrelated hooks and Claude timeout remain local. Runtime failures deny more strictly; shell writes, notebook semantics and arbitrary content-sensitive guards are not equivalent. Review script changes and trust new or changed native hook definitions separately; synchronization does not activate hooks or install dependencies.")
 		}
 		// Reuse the actual planner so audit cannot call a rejected resource compatible.
 		// Per-resource plans collect independent failures without writing a lock or state.

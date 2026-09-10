@@ -65,6 +65,7 @@ func flatProfile(c Config) (*Snapshot, error) {
 		entry.TranslateSkillInvocation = r.TranslateSkillInvocation
 		entry.PreserveSkillSettings = r.PreserveSkillSettings
 		entry.CodexAgentExports = r.CodexAgentExports
+		entry.FileGuard = r.FileGuard
 		for side, link := range r.Links {
 			if entry.LinkTargets == nil {
 				entry.LinkTargets = map[string]string{}

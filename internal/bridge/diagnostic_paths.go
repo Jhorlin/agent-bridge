@@ -16,6 +16,7 @@ func DiagnosticProtectedPaths(filename string) ([]string, error) {
 		paths = append(paths, c.CoordinationDir)
 	}
 	for _, r := range c.Resources {
+		paths = append(paths, FileGuardDependencies(r)...)
 		for _, path := range resourceDestinations(r) {
 			paths = append(paths, path)
 		}

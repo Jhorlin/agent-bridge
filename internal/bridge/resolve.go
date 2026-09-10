@@ -71,6 +71,8 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 		return normalizeAgentResource(i.Resource, side, raw)
 	case "hook-config":
 		return normalizeHooks(side, raw)
+	case "file-guard-config":
+		return normalizeFileGuard(i.Resource, side, raw)
 	case "mcp":
 		return normalizeMCP(i.Resource, side, raw)
 	case "plugin-mcp":

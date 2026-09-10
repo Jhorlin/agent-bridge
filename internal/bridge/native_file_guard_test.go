@@ -23,21 +23,29 @@ func TestNativeFileGuardHelper(t *testing.T) {
 }
 
 func TestNativeCodexFileGuard(t *testing.T) {
+	nativeCodexFileGuard(t, "#!/bin/sh\ninput=$(/bin/cat)\ncase \"$input\" in *protected.txt*) printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"BRIDGE_NATIVE_FILE_DENIED\"}}';; esac\n", "allowed.txt", "protected.txt", "BRIDGE_NATIVE_FILE_DENIED")
+}
+
+func nativeCodexFileGuard(t *testing.T, policy, allowedPath, deniedPath, denialMarker string) {
+	t.Helper()
 	for _, mode := range []string{"allow", "deny"} {
 		t.Run(mode, func(t *testing.T) {
 			f := newFixture(t)
 			tools := nativeTools(t, f)
-			f.write("policy", "#!/bin/sh\ninput=$(/bin/cat)\ncase \"$input\" in *protected.txt*) printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"BRIDGE_NATIVE_FILE_DENIED\"}}';; esac\n")
+			f.write("policy", policy)
 			must(t, os.Chmod(f.path("policy"), 0700))
-			f.write("wrapper", "#!/bin/sh\nexport AGENT_BRIDGE_NATIVE_GUARD=1\nexport AGENT_BRIDGE_GUARD_PROJECT='"+f.dir+"'\nexport AGENT_BRIDGE_GUARD_SCRIPT='"+f.path("policy")+"'\nexec '"+os.Args[0]+"' -test.run='^TestNativeFileGuardHelper$'\n")
+			f.write("wrapper", "#!/bin/sh\n[ \"$#\" -eq 3 ] && [ \"$1\" = hook-file-guard ] || exit 2\nexport AGENT_BRIDGE_NATIVE_GUARD=1\nexport AGENT_BRIDGE_GUARD_PROJECT=\"$2\"\nexport AGENT_BRIDGE_GUARD_SCRIPT=\"$3\"\nexec '"+os.Args[0]+"' -test.run='^TestNativeFileGuardHelper$'\n")
 			must(t, os.Chmod(f.path("wrapper"), 0700))
-			hooks := map[string]any{"hooks": map[string]any{"PreToolUse": []any{map[string]any{"matcher": "^apply_patch$", "hooks": []any{map[string]any{"type": "command", "command": f.path("wrapper"), "timeout": 15}}}}}}
+			f.raw.Resources = []resourceInput{{ID: "guard", Kind: "file-guard-config", Scope: "project", Portable: true, AllowReformat: true, Claude: ".claude/settings.json", Codex: ".codex/hooks.json", FileGuard: &FileGuardConfig{BridgeExecutable: f.path("wrapper"), Scripts: []string{f.path("policy")}}}}
+			f.load()
+			hooks := map[string]any{"hooks": map[string]any{"PreToolUse": []any{map[string]any{"matcher": "Edit|Write|NotebookEdit", "hooks": []any{map[string]any{"type": "command", "command": f.path("policy")}}}}}}
 			data, err := json.Marshal(hooks)
 			must(t, err)
-			f.write("codex-home/hooks.json", string(data))
-			file := "allowed.txt"
+			f.write(".claude/settings.json", string(data))
+			f.apply()
+			file := allowedPath
 			if mode == "deny" {
-				file = "protected.txt"
+				file = deniedPath
 			}
 			patch := "*** Begin Patch\n*** Add File: " + file + "\n+fixture\n*** End Patch"
 			var calls atomic.Int32
@@ -48,7 +56,7 @@ func TestNativeCodexFileGuard(t *testing.T) {
 					return
 				}
 				body, _ := io.ReadAll(io.LimitReader(r.Body, 8<<20))
-				if strings.Contains(string(body), "BRIDGE_NATIVE_FILE_DENIED") {
+				if strings.Contains(string(body), denialMarker) {
 					denied.Store(true)
 				}
 				n := calls.Add(1)
@@ -85,7 +93,7 @@ func TestNativeCodexFileGuard(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			f.write("codex-home/config.toml", nativePluginProviderConfig(server.URL)+"\n[features]\nplugins=false\n")
+			f.write("codex-home/config.toml", nativePluginProviderConfig(server.URL)+fmt.Sprintf("\n[features]\nplugins=false\n[projects.%q]\ntrust_level='trusted'\n", f.dir))
 			// A known tool-capable model profile selects the native patch tool;
 			// the provider is still our loopback fixture, never a real model.
 			output := nativeRun(t, f, tools["codex"], "exec", "--model", "gpt-5.5", "--skip-git-repo-check", "--ephemeral", "--sandbox", "workspace-write", "--dangerously-bypass-hook-trust", "Apply the fixed fixture patch.")

@@ -74,6 +74,9 @@ func configPathClaims(c Config) []PathClaim {
 		claims = append(claims, PathClaim{profile, "coordination", c.CoordinationDir})
 	}
 	for _, r := range c.Resources {
+		for _, dependency := range FileGuardDependencies(r) {
+			claims = append(claims, PathClaim{profile, r.ID + ":file-guard-dependency", dependency})
+		}
 		if companion := InstructionCompanionPath(r); companion != "" {
 			claims = append(claims, PathClaim{profile, r.ID + ":claude-alternate", companion})
 		}
@@ -94,6 +97,9 @@ func overlappingClaims(first, second []PathClaim) []PathOverlap {
 	result := []PathOverlap{}
 	for _, a := range first {
 		for _, b := range second {
+			if strings.EqualFold(a.Path, b.Path) && strings.HasSuffix(a.Role, ":file-guard-dependency") && strings.HasSuffix(b.Role, ":file-guard-dependency") {
+				continue // Multiple profiles may read the same executable.
+			}
 			if a.Path == b.Path && a.Role == b.Role && (a.Role == "config" || a.Role == "coordination") {
 				continue
 			}

@@ -30,6 +30,7 @@ type Resource struct {
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
 	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
+	FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
 }
 
 type Link struct {
@@ -59,7 +60,8 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
 		PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 		CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.PreserveSkillSettings, r.CodexAgentExports})
+		FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.PreserveSkillSettings, r.CodexAgentExports, r.FileGuard})
 }
 
 type Config struct {
@@ -86,6 +88,7 @@ type resourceInput struct {
 	TranslateSkillInvocation bool              `json:"translateSkillInvocation,omitempty"`
 	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
+	FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
 }
 type configInput struct {
 	Conventions     *Conventions    `json:"conventions,omitempty"`
@@ -167,16 +170,20 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			return c, fmt.Errorf("resource IDs must be unique and path-safe")
 		}
 		ids[r.ID] = true
-		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" && r.Kind != "instruction-file" && r.Kind != "instruction-set" && r.Kind != "agent-file" && r.Kind != "hook-config" {
+		if r.Kind != "portable-file" && r.Kind != "skill-directory" && r.Kind != "mcp-config" && r.Kind != "plugin-directory" && r.Kind != "instruction-file" && r.Kind != "instruction-set" && r.Kind != "agent-file" && r.Kind != "hook-config" && r.Kind != "file-guard-config" {
 			return c, fmt.Errorf("unsupported adapter: %s", r.Kind)
 		}
-		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory" || r.Kind == "instruction-file" || r.Kind == "instruction-set" || r.Kind == "agent-file" || r.Kind == "hook-config") && !r.Portable {
+		if (r.Kind == "skill-directory" || r.Kind == "plugin-directory" || r.Kind == "instruction-file" || r.Kind == "instruction-set" || r.Kind == "agent-file" || r.Kind == "hook-config" || r.Kind == "file-guard-config") && !r.Portable {
 			return c, fmt.Errorf("%s requires portable: true after reviewing tool compatibility", r.Kind)
 		}
 		if r.Scope != "global" && r.Scope != "project" {
 			return c, fmt.Errorf("each resource needs global or project scope")
 		}
 		res := Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"shared": filepath.Join(c.StateDir, "shared", r.ID)}}
+		if (r.Kind == "file-guard-config") != (r.FileGuard != nil) {
+			return c, fmt.Errorf("fileGuard is required exclusively for file-guard-config")
+		}
+		res.FileGuard = r.FileGuard
 		if r.CodexAgentExports != nil {
 			if r.Kind != "plugin-directory" || !r.AllowReformat || len(r.CodexAgentExports) == 0 || len(r.ID) > 64 || len(r.LinkTargets) != 0 {
 				return c, fmt.Errorf("codexAgentExports requires an unlinked plugin, explicit exports and allowReformat")
@@ -236,7 +243,7 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 				return c, fmt.Errorf("skill-directory does not accept servers")
 			}
 			res.AllowReformat = r.AllowReformat
-		} else if r.Kind == "agent-file" || r.Kind == "hook-config" {
+		} else if r.Kind == "agent-file" || r.Kind == "hook-config" || r.Kind == "file-guard-config" {
 			if !r.AllowReformat || len(r.Servers) > 0 {
 				return c, fmt.Errorf("agent and hook adapters require allowReformat and do not accept servers")
 			}
@@ -319,6 +326,11 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			destinations = append(destinations, dest)
 		}
 		c.Resources = append(c.Resources, res)
+	}
+	for _, r := range c.Resources {
+		if err := validateFileGuardConfig(r, destinations); err != nil {
+			return c, err
+		}
 	}
 	return c, nil
 }

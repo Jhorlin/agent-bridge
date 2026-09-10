@@ -122,7 +122,9 @@ Isolation references: [Codex environment variables](https://learn.chatgpt.com/do
 The opt-in `TestNativeCodexFileGuard` test forces a harmless native `apply_patch`
 call through a loopback Responses fixture. With Codex 0.153.4, the permitted
 patch creates its temporary file; the denied patch creates nothing and the next
-provider request contains the policy denial. It uses only synthetic policy code,
+provider request contains the policy denial. The project hook is produced by
+`file-guard-config` from a Claude definition, not handwritten on the Codex side.
+It uses only synthetic policy code,
 disposable homes, and invocation-only trust of that fixture. It does not test or
 authorize production hooks. Run with:
 
