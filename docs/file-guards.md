@@ -42,6 +42,10 @@ fixtures in disposable homes, a loopback provider, and no paid model requests.
   targets, symlinks, parent-directory (`..`) components, duplicate JSON keys,
   execution errors and timeouts deny. Parent traversal is rejected before path
   cleaning so it cannot conceal a symlink.
+- Any script stderr also denies, even with exit status zero or an explicit allow
+  result. Shell scripts can accidentally swallow missing-dependency errors and
+  otherwise appear successful. Reviewed guards must keep successful checks quiet
+  on stderr; warnings are deliberately treated conservatively, not ignored.
 - Only a strict patch grammar subset is supported. Environment overrides, shell
   heredoc wrappers, CRLF patches and ambiguous constructs require review.
 - Input is limited to 1 MiB, targets to 256, stdout/stderr to 64 KiB each, and

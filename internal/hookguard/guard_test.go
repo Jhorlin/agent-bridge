@@ -152,3 +152,28 @@ func TestGuardRejectsOutputCaseAliases(t *testing.T) {
 		}
 	}
 }
+
+func TestGuardRejectsStderrEvenWhenScriptExitsSuccessfully(t *testing.T) {
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "guard")
+	for _, body := range []string{
+		"printf 'PRIVATE_DEPENDENCY_ERROR' >&2\nexit 0\n",
+		"agent_bridge_nonexistent_dependency_for_test\nexit 0\n",
+		"printf 'PRIVATE_DEPENDENCY_ERROR' >&2\nprintf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}}'\nexit 0\n",
+	} {
+		if err := os.WriteFile(script, []byte("#!/bin/sh\n"+body), 0700); err != nil {
+			t.Fatal(err)
+		}
+		in := Input{Event: "PreToolUse", Tool: "apply_patch", Cwd: dir, ToolInput: map[string]any{"command": "*** Begin Patch\n*** Add File: protected.txt\n+x\n*** End Patch"}}
+		result := Evaluate(context.Background(), dir, script, in)
+		if !result.Denied {
+			t.Fatal("a swallowed script error bypassed the guard")
+		}
+		if strings.Contains(result.Reason, "PRIVATE_DEPENDENCY_ERROR") || strings.Contains(result.Context, "PRIVATE_DEPENDENCY_ERROR") {
+			t.Fatal("private stderr leaked")
+		}
+	}
+}

@@ -172,7 +172,7 @@ func Evaluate(ctx context.Context, project, executable string, in Input) Result 
 		if cmd.Process != nil {
 			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		}
-		if err != nil {
+		if err != nil || stderr.Len() != 0 {
 			return deny()
 		}
 		if len(bytes.TrimSpace(output.Bytes())) == 0 {
