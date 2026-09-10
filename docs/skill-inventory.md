@@ -100,6 +100,13 @@ trees adds configuration-load latency. Leave installer-owned variants excluded
 and managed through their native installation mechanism. Existing profiles keep
 their behavior unless they opt in.
 
+The guard also validates prospective skill names from the shared store,
+historical restores and reviewed conflict resolutions, including collisions
+between two proposed personal skills. Validation runs during previews and again
+before a transaction creates its journal or writes native files. A previously
+reviewed restoration does not bypass a newly installed native candidate. These
+checks remain point-in-time checks, not a lock on an external installer.
+
 Regression tests use disposable fixture homes: shared links, identical copies,
 supporting-file and executable-bit differences, release/channel skew, system
 collisions, multiple cached versions, native manifest evidence, content redaction,

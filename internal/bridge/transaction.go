@@ -406,6 +406,11 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 		if len(operations) == 0 {
 			return nil
 		}
+		// Recheck final content after history/resolution and rendering, before
+		// creating any recovery journal or changing native files.
+		if err := validatePlannedNativeSkills(c, result); err != nil {
+			return err
+		}
 		transaction, err := uuid()
 		if err != nil {
 			return err

@@ -111,6 +111,9 @@ func ReviewResolution(filename string, choices map[string]string) (ReviewCheckpo
 	if err := resolvePlan(&p, choices); err != nil {
 		return r, err
 	}
+	if err := validatePlannedNativeSkills(c, p); err != nil {
+		return r, err
+	}
 	r.Summaries = p.Summaries()
 	return r, nil
 }
