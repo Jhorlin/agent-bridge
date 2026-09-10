@@ -46,6 +46,10 @@ On macOS, opt-in `service install|start|stop|status|uninstall` commands manage a
 
 Exit codes: 0 = successful command (a read-only plan may report pending work), 1 = usage or operational error, 2 = synchronization conflict. Watch mode reports conflicts and keeps checking until stopped. Unreadable or unsupported inputs pause writes and are retried, with redacted pause/resume diagnostics; transaction and output errors stop the watcher. It never automatically recovers a pending transaction. Signals finish the current sync before shutdown.
 
+If a file changes between a reviewed observation and the pre-journal input check,
+watch mode discards that stale plan and retries. No journal or native writes are
+made for that attempt; the new contents must stabilize before synchronization.
+
 `audit CONFIG [--json]` is a read-only compatibility preflight for explicit and convention-discovered resources. It reports adapter/direction, recognized native MCP/plugin manifest fields, unsupported fields, redacted unknown-field counts, and host-local follow-up actions. Exit 2 means at least one resource is blocked (including conflicts, invalid content or unsafe state); exit 0 still requires human compatibility review, not host certification. Invalid profiles exit 1. No locks, state, backups, native files, environment expansion, installation or authentication are performed. See [audit details](docs/adapters.md#compatibility-audit).
 
 Source builds also provide [whole-resource retirement that preserves files](docs/retirement.md),

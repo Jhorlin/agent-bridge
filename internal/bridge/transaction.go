@@ -30,6 +30,8 @@ type Recovery struct {
 }
 
 type Options struct {
+	// beforePrepare injects deterministic pre-journal races in package tests.
+	beforePrepare func()
 	// Observe receives only content-free diagnostic metadata; it must not panic.
 	Observe diagnostics.Observer
 	// BeforeWrite allows deterministic fault injection from isolated tests only.
@@ -264,6 +266,9 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 		if result.HasConflicts() {
 			return ErrConflicts
 		}
+		if options.beforePrepare != nil {
+			options.beforePrepare()
+		}
 		operations := []Operation{}
 		for _, item := range result.Items {
 			stage, resource = "prepare", item.Resource.ID
@@ -274,7 +279,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 					return err
 				}
 				if !equal(current, item.Values[side]) {
-					return fmt.Errorf("input changed during planning: %s", item.Key)
+					return fmt.Errorf("%w: input changed during planning: %s", ErrObservationChanged, item.Key)
 				}
 			}
 			for _, side := range item.Writes {

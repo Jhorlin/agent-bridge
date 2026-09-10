@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -40,5 +41,50 @@ func TestObservationIncludesRawInputsAndProfile(t *testing.T) {
 	changed.CoordinationDir = f.path("other-coordinator")
 	if Observation(changed, p) == before {
 		t.Fatal("profile change was not observed")
+	}
+}
+
+func TestPrepareRaceIsRetryableBeforeAnyJournal(t *testing.T) {
+	for _, kind := range []string{"ordinary", "instruction-companion", "instruction-codex"} {
+		t.Run(kind, func(t *testing.T) {
+			f := newFixture(t)
+			path := "CLAUDE.md"
+			if kind != "ordinary" {
+				f = instructionSetFixture(t, false)
+				f.apply()
+				path = ".claude/CLAUDE.md"
+				if kind == "instruction-codex" {
+					path = "AGENTS.md"
+				}
+			}
+			before := f.plan()
+			var newest string
+			_, err := Apply(f.c, Options{ExpectedObservation: Observation(f.c, before), beforePrepare: func() {
+				newest = f.read(path)
+				if kind == "instruction-codex" {
+					newest = strings.Replace(newest, "alternate\n", "newest alternate\n", 1)
+				} else {
+					newest += "\nnewest edit"
+				}
+				f.write(path, newest)
+			}})
+			if !errors.Is(err, ErrObservationChanged) {
+				t.Fatalf("pre-journal edit must tell watcher to retry, got: %v", err)
+			}
+			f.expect(path, newest)
+			f.missing("state/pending.json")
+			f.missing("state/sync.lock")
+			after := f.plan()
+			if !equal(before.ManifestBefore, after.ManifestBefore) {
+				t.Fatal("stale plan changed manifest")
+			}
+			_, err = Apply(f.c, Options{ExpectedObservation: Observation(f.c, after)})
+			must(t, err)
+			for _, item := range f.plan().Items {
+				if len(item.Writes) != 0 || item.Conflict != "" {
+					t.Fatal("retry failed to converge")
+				}
+			}
+		})
 	}
 }
