@@ -47,6 +47,13 @@ Native fixtures ran against Claude Code 2.1.267 and Codex CLI 0.153.4. All host
 homes and configurations were disposable. Invocation fixtures used local fake
 providers and inert scripts, not real model outcomes or service credentials.
 
+For source milestone `bebf582`, the full Go race suite, vet, build, published-alpha
+upgrade/recovery fixtures, opt-in native-host suite and isolated macOS service
+test passed. Independent local review found no further actionable defects.
+The separate ordinary coverage run measured **85.9% overall** (bridge package
+87.0%); optional native tests are not included in that percentage. Coverage is
+statement execution, not proof of feature parity or freedom from bugs.
+
 | Check | Evidence |
 | --- | --- |
 | Command settings | Both hosts discover/invoke synchronized static text; local settings excluded from Codex output |

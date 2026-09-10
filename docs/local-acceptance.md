@@ -7,6 +7,13 @@ directory as raw shared files.
 
 ## Check the profile before writing
 
+Stop any existing writer for the selected profile before manual testing. For a
+managed macOS service, use `agent-bridge service status /absolute/profile.json`
+and `agent-bridge service stop /absolute/profile.json`. Stop a foreground watcher
+with Ctrl-C in its terminal. Do not run manual sync alongside another writer.
+Replacing the executable on disk does not upgrade an already-running watcher;
+restart it with the tested build only after manual acceptance succeeds.
+
 Build from the repository and use the intended profile's absolute physical path:
 
 ```sh
