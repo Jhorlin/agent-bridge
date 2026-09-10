@@ -60,6 +60,7 @@ statement execution, not proof of feature parity or freedom from bugs.
 | Hook executables | Forward/reverse scripts execute from native-resolved roots containing spaces; Codex skips the untrusted hook |
 | Root supporting files | Native install/remove and Codex cache comparison across compatibility and portable skill packages |
 | MCP cwd mismatch | Claude connects an inert server but starts it in the session directory despite a different declared cwd |
+| MCP root environment | An absolute inert script confirms Codex compatibility exports neither root variable; portable Codex exports `PLUGIN_ROOT` but changes cwd to the package. Claude compatibility exports `CLAUDE_PLUGIN_ROOT` with session cwd |
 | CLI refresh | Claude requires a version bump for cached content; Codex re-add refreshes content but re-enables disabled plugins |
 | Command path/expansion probes | Nested and underscore names invoke; literal dollars survive; native dynamic argument omission and normalized-name collisions reproduced |
 | Interpreted hooks | Both hosts execute sh/bash, preserve session cwd, resolve roots with spaces and read package-file arguments; trust stays native |
@@ -81,7 +82,8 @@ equivalence, not an authentication test or authorization to replace either copy.
 - Ongoing native installed-cache refresh that preserves enablement and trust.
   Reinstallation is not a transparent sync operation. See
   [native CLI evidence](plugin-copy.md#native-cli-refresh-evidence).
-- General package-relative MCP: compatibility Codex leaves root tokens literal;
+- General package-relative MCP: compatibility Codex leaves root tokens literal
+  and supplies neither root environment variable to a launcher;
   portable Codex changes the working directory and Claude ignores `cwd`.
   A launcher would need its own reviewed runtime contract.
 - General command argument/shell preprocessing, arbitrary hook events and
