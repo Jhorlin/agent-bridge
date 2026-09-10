@@ -287,6 +287,8 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				before := item.Values[side]
 				content := item.Content
 				switch item.Adapter {
+				case "plugin-command":
+					content, err = renderPluginCommandResource(item.Resource, side, item.Content, before)
 				case "plugin-agent":
 					content, err = renderPluginAgent(item, side, item.Content, before)
 				case "skill-invocation":
@@ -319,7 +321,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				case "skill-invocation":
 					roundTrip, err = normalizeSkillResource(item.Resource, side, content)
 				case "plugin-command":
-					roundTrip, err = normalizePluginCommand(content)
+					roundTrip, err = normalizePluginCommandResource(item.Resource, side, content)
 				case "skill-metadata":
 					roundTrip, err = normalizeSkill(content)
 				case "instruction-file":

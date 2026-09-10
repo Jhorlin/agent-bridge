@@ -31,6 +31,7 @@ type Resource struct {
 	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 	FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
+	PreserveCommandSettings  bool              `json:"preserveCommandSettings,omitempty"`
 }
 
 type Link struct {
@@ -61,7 +62,8 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 		PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 		CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 		FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
-	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.PreserveSkillSettings, r.CodexAgentExports, r.FileGuard})
+		PreserveCommandSettings  bool              `json:"preserveCommandSettings,omitempty"`
+	}{r.ID, r.Kind, r.Scope, orderedPaths{r.Paths["shared"], r.Paths["claude"], r.Paths["codex"]}, r.Servers, r.Links, r.AllowReformat, r.CodexPluginLayout, r.PreserveCodexMCPPolicies, r.PreserveAgentSettings, r.TranslateSkillInvocation, r.PreserveSkillSettings, r.CodexAgentExports, r.FileGuard, r.PreserveCommandSettings})
 }
 
 type Config struct {
@@ -89,6 +91,7 @@ type resourceInput struct {
 	PreserveSkillSettings    bool              `json:"preserveSkillSettings,omitempty"`
 	CodexAgentExports        map[string]string `json:"codexAgentExports,omitempty"`
 	FileGuard                *FileGuardConfig  `json:"fileGuard,omitempty"`
+	PreserveCommandSettings  bool              `json:"preserveCommandSettings,omitempty"`
 }
 type configInput struct {
 	Conventions     *Conventions    `json:"conventions,omitempty"`
@@ -184,6 +187,12 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			return c, fmt.Errorf("fileGuard is required exclusively for file-guard-config")
 		}
 		res.FileGuard = r.FileGuard
+		if r.PreserveCommandSettings {
+			if r.Kind != "plugin-directory" || !r.AllowReformat {
+				return c, fmt.Errorf("preserveCommandSettings requires a plugin with allowReformat")
+			}
+			res.PreserveCommandSettings = true
+		}
 		if r.CodexAgentExports != nil {
 			if r.Kind != "plugin-directory" || !r.AllowReformat || len(r.CodexAgentExports) == 0 || len(r.ID) > 64 || len(r.LinkTargets) != 0 {
 				return c, fmt.Errorf("codexAgentExports requires an unlinked plugin, explicit exports and allowReformat")
@@ -236,7 +245,7 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 			if r.Kind == "plugin-directory" && r.CodexPluginLayout == "portable" {
 				return c, fmt.Errorf("bundled MCP currently requires the compatibility plugin layout")
 			}
-		} else if r.Kind == "plugin-directory" && (len(r.CodexAgentExports) > 0 || featureResourceID(r.ID)) {
+		} else if r.Kind == "plugin-directory" && (len(r.CodexAgentExports) > 0 || featureResourceID(r.ID) || r.PreserveCommandSettings) {
 			res.AllowReformat = true
 		} else if r.Kind == "skill-directory" {
 			if len(r.Servers) > 0 {

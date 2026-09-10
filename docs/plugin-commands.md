@@ -27,6 +27,29 @@ Claude installs, validates and expands the reverse-generated command. Both
 invocation checks capture the instruction body at local fake providers.
 These tests do not certify arbitrary scripts, tool permissions or model outcomes.
 
+## Claude-local command settings
+
+Source builds accept `preserveCommandSettings: true` on a plugin resource with
+`allowReformat: true`. Plugin conventions enable this retention automatically.
+It retains bounded `model`, `allowed-tools` and `argument-hint` values only in
+the original Claude command. They are excluded from shared canonical text and
+Codex output. Reverse edits, conflict choices and historical restores preserve
+the current Claude-local settings; changing them makes an earlier review stale.
+
+This is not cross-host model, argument or permission translation. The command
+body must still be static; `$ARGUMENTS`, shell preprocessing, invocation-control
+fields, unknown settings and host-local fields in Codex/shared input still fail.
+Codex continues to use its own configured model and permissions. Portable-root
+plugins still do not support commands. Native settings are not reconstructed if
+the original Claude file is absent.
+
+Explicit profiles without this option keep strict metadata rejection. Existing
+automatic plugin baselines may adopt the additive retention mode without a new
+resource ID because the previously accepted portable projection is unchanged;
+other identity changes remain guarded. Native fixture tests verify command
+discovery/invocation text with the overlay enabled using isolated fake providers,
+not arbitrary tool behavior or real model results.
+
 The [official plugin overview](https://learn.chatgpt.com/docs/build-plugins)
 describes skills/package formats but does not promise identical cross-host command
 semantics. The specific migration name above is version-pinned native evidence.

@@ -148,6 +148,13 @@ For minimal Claude plugin agents, source builds support explicit or convention-d
 namespaced [standalone Codex agent exports](docs/plugin-agent-exports.md).
 Those files have an independent lifecycle; Codex plugin uninstall does not remove them.
 
+Conventional plugin commands also retain bounded Claude-local `model`,
+`allowed-tools` and `argument-hint` settings while synchronizing static text.
+Explicit profiles opt in with `preserveCommandSettings: true` and
+`allowReformat: true`; plugin conventions enable it automatically. Those settings
+are not exported as Codex permissions or model choices. See
+[command mapping and limits](docs/plugin-commands.md).
+
 ## New adapters
 
 See the [compatibility matrix and implementation priorities](docs/compatibility.md) for current coverage, test evidence, and features that remain host-specific or intentionally excluded. File synchronization is not full behavioral compatibility.

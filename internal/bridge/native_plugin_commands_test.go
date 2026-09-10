@@ -12,11 +12,26 @@ import (
 
 // Verify the generated authoring package, not Codex's private migrated cache.
 func TestNativePluginCommandDiscovery(t *testing.T) {
+	nativePluginCommandDiscovery(t, false)
+}
+
+func TestNativePluginCommandLocalSettings(t *testing.T) {
+	nativePluginCommandDiscovery(t, true)
+}
+
+func nativePluginCommandDiscovery(t *testing.T, localSettings bool) {
 	f := pluginFixture(t)
 	tools := nativeTools(t, f)
 	f.raw.Resources[0].Codex = "home/plugins/demo"
+	if localSettings {
+		f.raw.Resources[0].PreserveCommandSettings = true
+		f.raw.Resources[0].AllowReformat = true
+	}
 	f.load()
 	f.write("claude-plugin/commands/bridge-command.md", "---\ndescription: Bridge command discovery marker.\n---\nReturn the fixed word fixture.\n")
+	if localSettings {
+		f.write("claude-plugin/commands/bridge-command.md", strings.Replace(f.read("claude-plugin/commands/bridge-command.md"), "description:", "model: sonnet\nallowed-tools: [Read, Grep]\nargument-hint: '[topic]'\ndescription:", 1))
+	}
 	f.apply()
 	f.write("home/.agents/plugins/marketplace.json", `{"name":"personal","interface":{"displayName":"Personal"},"plugins":[{"name":"demo","source":{"source":"local","path":"./plugins/demo"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Productivity"}]}`)
 	nativeRPCSession(t, f, tools["codex"], func(call func(string, any) json.RawMessage) {
@@ -30,6 +45,11 @@ func TestNativePluginCommandDiscovery(t *testing.T) {
 	// Reverse authoring changes survive Claude's installer and validation.
 	f.write("home/plugins/demo/commands/bridge-command.md", "---\ndescription: Reverse command marker.\n---\nReturn the fixed word fixture.\n")
 	f.apply()
+	if localSettings {
+		if !strings.Contains(f.read("claude-plugin/commands/bridge-command.md"), "model: sonnet") || strings.Contains(f.read("home/plugins/demo/commands/bridge-command.md"), "model:") {
+			t.Fatal("command local settings were lost or exported")
+		}
+	}
 	f.write(".claude-plugin/marketplace.json", `{"name":"bridge-fixture","owner":{"name":"Bridge tests"},"plugins":[{"name":"demo","source":"./claude-plugin"}]}`)
 	nativeRun(t, f, tools["claude"], "plugin", "marketplace", "add", f.dir)
 	nativeRun(t, f, tools["claude"], "plugin", "install", "demo@bridge-fixture", "--scope", "user")

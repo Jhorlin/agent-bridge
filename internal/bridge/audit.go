@@ -76,6 +76,9 @@ func Audit(c Config) AuditReport {
 				row.Actions = append(row.Actions, "Codex MCP policies are retained locally, not translated. Configure Claude enablement and tool permissions independently before use.")
 			}
 		case "plugin-directory":
+			if r.PreserveCommandSettings {
+				row.Actions = append(row.Actions, "Claude command model, allowed-tools and argument-hint remain local; Codex grants and model selection are not inferred. Argument expansion remains unsupported.")
+			}
 			row.Actions = append(row.Actions, "Review skill behavior and install or refresh separately in each host; bounded conventional compatibility-layout hooks, commands and allowlisted MCP are bridged. Command names differ after Codex migration; arguments and direct bundled Codex agents remain unsupported.")
 			if len(r.CodexAgentExports) > 0 {
 				row.Actions = append(row.Actions, "Explicit plugin agents export as namespaced standalone Codex files, not installed package components. Exports remain separately available after plugin uninstall; permissions, models, agent scheduling and arbitrary body behavior are not translated.")

@@ -165,7 +165,14 @@ func prepareHistory(c Config, p *PlanResult, choice HistoryChoice) (string, erro
 				return "", fmt.Errorf("invalid historical manifest")
 			}
 			for _, r := range c.Resources {
-				if r.ID == i.ID && reflect.DeepEqual(m.Resources[r.ID], r) {
+				historical := m.Resources[r.ID]
+				// Automatic command retention is additive: the old portable
+				// projection is unchanged. Permit only this upgrade, not the
+				// member growth allowed by ordinary convention planning.
+				if featureResourceID(r.ID) && r.Kind == "plugin-directory" && !historical.PreserveCommandSettings {
+					r.PreserveCommandSettings = false
+				}
+				if r.ID == i.ID && reflect.DeepEqual(historical, r) {
 					identityOK = true
 				}
 			}

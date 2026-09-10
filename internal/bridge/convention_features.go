@@ -76,6 +76,7 @@ func featureEntry(c Config, feature, base, name string) resourceInput {
 		r.Portable = true
 		r.AllowReformat = true
 		r.PreserveAgentSettings = true
+		r.PreserveCommandSettings = true
 		r.Claude = filepath.Join(base, ".agent-bridge-plugins", "claude", name)
 		r.Codex = filepath.Join(base, ".agent-bridge-plugins", "codex", name)
 	}
@@ -83,7 +84,7 @@ func featureEntry(c Config, feature, base, name string) resourceInput {
 }
 
 func resolvedFeature(c Config, r resourceInput) Resource {
-	return Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"claude": r.Claude, "codex": r.Codex, "shared": filepath.Join(c.StateDir, "shared", r.ID)}, Servers: r.Servers, AllowReformat: r.AllowReformat, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings, TranslateSkillInvocation: r.TranslateSkillInvocation, PreserveSkillSettings: r.PreserveSkillSettings, CodexAgentExports: r.CodexAgentExports, CodexPluginLayout: r.CodexPluginLayout}
+	return Resource{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Paths: map[string]string{"claude": r.Claude, "codex": r.Codex, "shared": filepath.Join(c.StateDir, "shared", r.ID)}, Servers: r.Servers, AllowReformat: r.AllowReformat, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings, TranslateSkillInvocation: r.TranslateSkillInvocation, PreserveSkillSettings: r.PreserveSkillSettings, PreserveCommandSettings: r.PreserveCommandSettings, CodexAgentExports: r.CodexAgentExports, CodexPluginLayout: r.CodexPluginLayout}
 }
 
 // Auto-managed collections may grow, but existing members never silently vanish
@@ -94,6 +95,9 @@ func sameResourceIdentity(previous, current Resource) bool {
 		// accepted portable projection is unchanged. Downgrades remain blocked.
 		if current.Kind == "skill-directory" && current.TranslateSkillInvocation && current.PreserveSkillSettings && !previous.PreserveSkillSettings {
 			current.PreserveSkillSettings = false
+		}
+		if current.Kind == "plugin-directory" && current.PreserveCommandSettings && !previous.PreserveCommandSettings {
+			current.PreserveCommandSettings = false
 		}
 		for _, name := range previous.Servers {
 			if !hasField(current.Servers, name) {

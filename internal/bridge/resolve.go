@@ -60,7 +60,7 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 	case "skill-invocation":
 		return normalizeConventionSkill(i, side, raw, Manifest{})
 	case "plugin-command":
-		return normalizePluginCommand(raw)
+		return normalizePluginCommandResource(i.Resource, side, raw)
 	case "skill-metadata":
 		return normalizeSkill(raw)
 	case "instruction-file":

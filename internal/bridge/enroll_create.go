@@ -64,6 +64,7 @@ func flatProfile(c Config) (*Snapshot, error) {
 		entry := resourceInput{ID: r.ID, Kind: r.Kind, Scope: r.Scope, Portable: true, Claude: r.Paths["claude"], Codex: r.Paths["codex"], Servers: r.Servers, AllowReformat: r.AllowReformat, CodexPluginLayout: r.CodexPluginLayout, PreserveCodexMCPPolicies: r.PreserveCodexMCPPolicies, PreserveAgentSettings: r.PreserveAgentSettings}
 		entry.TranslateSkillInvocation = r.TranslateSkillInvocation
 		entry.PreserveSkillSettings = r.PreserveSkillSettings
+		entry.PreserveCommandSettings = r.PreserveCommandSettings
 		entry.CodexAgentExports = r.CodexAgentExports
 		entry.FileGuard = r.FileGuard
 		for side, link := range r.Links {

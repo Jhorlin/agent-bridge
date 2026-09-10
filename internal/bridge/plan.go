@@ -235,7 +235,7 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 				case "skill-invocation":
 					semantic[side], err = normalizeConventionSkill(item, side, value, result.Manifest)
 				case "plugin-command":
-					semantic[side], err = normalizePluginCommand(value)
+					semantic[side], err = normalizePluginCommandResource(item.Resource, side, value)
 				case "skill-metadata":
 					semantic[side], err = normalizeSkill(value)
 				case "instruction-file":
