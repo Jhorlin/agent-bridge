@@ -82,14 +82,16 @@ func TestFileGuardConfigRejectsDriftWithoutWrites(t *testing.T) {
 				f.write(".claude/settings.json", strings.Replace(claude, "policy-one", "not-reviewed", 1))
 			case "codex-command":
 				f.write(".codex/hooks.json", strings.Replace(codex, "hook-file-guard", "hook-file-guard --unknown", 1))
-			case "codex-timeout":
-				f.write(".codex/hooks.json", strings.Replace(codex, "15", "1", 1))
-			case "missing-timeout":
+			case "codex-timeout", "missing-timeout":
 				doc, err := document("claude", f.plan().Items[0].Values["codex"])
 				must(t, err)
 				s, err := selectFileGuard(f.c.Resources[0], "codex", doc)
 				must(t, err)
-				delete(s.handler, "timeout")
+				if mode == "missing-timeout" {
+					delete(s.handler, "timeout")
+				} else {
+					s.handler["timeout"] = 1
+				}
 				data, err := json.Marshal(doc)
 				must(t, err)
 				f.write(".codex/hooks.json", string(data))
@@ -215,7 +217,8 @@ func TestFileGuardConfigConventionsAndDependencyClaims(t *testing.T) {
 func TestFileGuardConfigQuotedPathsAndLocalTimeout(t *testing.T) {
 	f := fileGuardFixture(t)
 	f.raw.Resources[0].FileGuard.BridgeExecutable = f.path("bridge ' dollar$ space")
-	f.raw.Resources[0].FileGuard.Scripts[0] = f.path("policy ' dollar$ space")
+	// Timeout digits can also occur in a real filename (or a random temp root).
+	f.raw.Resources[0].FileGuard.Scripts[0] = f.path("policy60 ' dollar$ space")
 	f.load()
 	r := f.c.Resources[0]
 	doc := map[string]any{"hooks": map[string]any{"PreToolUse": []any{map[string]any{"matcher": "Edit|Write|NotebookEdit", "hooks": []any{map[string]any{"type": "command", "command": guardCommand(r, "claude", r.FileGuard.Scripts[0]), "timeout": 60}}}}}}
@@ -223,7 +226,14 @@ func TestFileGuardConfigQuotedPathsAndLocalTimeout(t *testing.T) {
 	must(t, err)
 	f.write(".claude/settings.json", string(data))
 	f.apply()
-	f.write(".claude/settings.json", strings.Replace(f.read(".claude/settings.json"), "60", "45", 1))
+	doc, err = document("claude", f.plan().Items[0].Values["claude"])
+	must(t, err)
+	selected, err := selectFileGuard(r, "claude", doc)
+	must(t, err)
+	selected.handler["timeout"] = 45
+	data, err = json.Marshal(doc)
+	must(t, err)
+	f.write(".claude/settings.json", string(data))
 	if len(f.plan().Items[0].Writes) != 0 {
 		t.Fatal("host-local timeout entered shared state")
 	}
