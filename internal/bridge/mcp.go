@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,7 +19,7 @@ type MCPServer struct {
 	Transport  string            `json:"transport"`
 	Command    string            `json:"command,omitempty"`
 	Args       []string          `json:"args,omitempty"`
-	CWD        string            `json:"cwd,omitempty"`
+	CWD        string            `json:"cwd,omitempty"` // Retained to reject unsupported historical state without losing it.
 	EnvVars    []string          `json:"envVars,omitempty"`
 	URL        string            `json:"url,omitempty"`
 	HeaderVars map[string]string `json:"headerVars,omitempty"`
@@ -270,8 +269,8 @@ func canonicalServer(s MCPServer) (MCPServer, error) {
 			}
 		}
 	}
-	if s.CWD != "" && !filepath.IsAbs(s.CWD) {
-		return s, fmt.Errorf("MCP cwd must be absolute to retain meaning across scopes")
+	if s.CWD != "" {
+		return s, fmt.Errorf("MCP cwd cannot be synchronized: Claude ignores this field; keep working-directory overrides host-local")
 	}
 	if s.Transport != "stdio" && s.Transport != "http" {
 		return s, fmt.Errorf("unsupported MCP transport")

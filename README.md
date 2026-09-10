@@ -155,9 +155,18 @@ Explicit profiles opt in with `preserveCommandSettings: true` and
 are not exported as Codex permissions or model choices. See
 [command mapping and limits](docs/plugin-commands.md).
 
+Compatibility plugins can also use [quoted package-relative hook
+executables](docs/plugin-runtime-paths.md), with executable dependency checks on
+the final merged package. Package-relative MCP and portable-layout hooks remain
+unsupported; native trust stays local.
+
 ## New adapters
 
 See the [compatibility matrix and implementation priorities](docs/compatibility.md) for current coverage, test evidence, and features that remain host-specific or intentionally excluded. File synchronization is not full behavioral compatibility.
+
+The [dated interoperability report](docs/interoperability-status.md) distinguishes
+current source-build results from unresolved implementation and authentication
+gates, including the copied-package survey and native CLI versions tested.
 
 | Capability | Supported now | Explicit limits |
 | --- | --- | --- |

@@ -245,7 +245,7 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 				case "agent-file":
 					semantic[side], err = normalizeAgentResource(item.Resource, side, value)
 				case "hook-config":
-					semantic[side], err = normalizeHooks(side, value)
+					semantic[side], err = normalizeHooksForResource(item.Resource, side, value)
 				case "file-guard-config":
 					semantic[side], err = normalizeFileGuard(item.Resource, side, value)
 				case "mcp":
@@ -327,6 +327,9 @@ func PlanObserved(c Config, sink Observer) (result PlanResult, failure error) {
 		}
 	}
 	if err := validatePlannedNativeSkills(c, result); err != nil {
+		return result, err
+	}
+	if err := validatePlannedPluginContents(result); err != nil {
 		return result, err
 	}
 	return result, nil

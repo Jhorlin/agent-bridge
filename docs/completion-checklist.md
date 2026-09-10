@@ -12,18 +12,30 @@ does not complete these items. A rejected input is not supported functionality.
   plugins in disposable homes before adding production lifecycle commands.
 - [ ] Support package-relative MCP and hook dependencies with explicit safe path
   translation and native runtime evidence, not absolute cache-path copying.
+  Quoted compatibility-hook executables are implemented and tested. MCP remains
+  blocked: compatibility Codex does not expand its package root, portable Codex
+  changes cwd, and Claude ignores configured cwd.
 - [ ] Expand actual plugin layouts/components only where native loading can be
   verified; enumerate incompatible commands, agents and hooks separately.
-- [ ] Re-evaluate the actual-data plugin survey after each relevant adapter
+  Bounded root documentation/images now pass native package tests; custom/nested
+  components and conflicting host manifests remain unsupported.
+- [x] Re-evaluate the actual-data plugin survey after each relevant adapter
   change; retain source provenance privately and never publish private inputs.
-- [ ] Reconcile documentation and produce a versioned compatibility report with
+  Latest copied-input run: 8/33 packages converge, 56 managed items; 25 blocked.
+- [x] Reconcile documentation and produce a versioned compatibility report with
   completed mappings, native-version evidence and remaining host limitations.
+  Current [dated source-build report](interoperability-status.md) is available;
+  this does not close the remaining full-parity release requirements.
 
 ## External or host-specific gates
 
 - Figma, Stripe and Qodo require native user sign-in for authenticated validation.
 - Exact model names, permission grants, security enforcement, OAuth tokens and
   application-only runtimes are not interchangeable between hosts.
+- Native Codex 0.153.4 refresh re-enables disabled plugins; Claude same-version
+  refresh keeps old cached content. See the repeatable [CLI contract
+  tests](plugin-copy.md#native-cli-refresh-evidence). Automatic cache refresh
+  preserving those choices is not implemented or implied by authoring sync.
 - A native counterpart is preferred over creating a competing translated copy;
   matching names alone do not prove equivalence.
 

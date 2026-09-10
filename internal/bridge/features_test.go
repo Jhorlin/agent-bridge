@@ -375,7 +375,7 @@ func TestPluginFailureRecoveryAndNoInstallSideEffects(t *testing.T) {
 func TestMCPPropertyRoundTrips(t *testing.T) {
 	servers := []MCPServer{
 		{Transport: "stdio", Command: "server"},
-		{Transport: "stdio", Command: "server", Args: []string{"--path", "space and unicode 文"}, EnvVars: []string{"Z_VAR", "A_VAR"}, CWD: "/example/work"},
+		{Transport: "stdio", Command: "server", Args: []string{"--path", "space and unicode 文"}, EnvVars: []string{"Z_VAR", "A_VAR"}},
 		{Transport: "http", URL: "https://example.test/mcp", BearerEnv: "TOKEN"},
 		{Transport: "http", URL: "http://localhost:9000/mcp", HeaderVars: map[string]string{"X-Token": "TOKEN", "X-Tenant": "TENANT"}},
 	}

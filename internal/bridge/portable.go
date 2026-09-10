@@ -173,6 +173,10 @@ var hookExecutable = regexp.MustCompile(`^/[A-Za-z0-9_./-]+$`)
 // UserPromptSubmit/Stop commands and exact Bash pre/post tool events. No shell
 // expressions or prompt handlers; output policy remains the host's responsibility.
 func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
+	return normalizeHooksForResource(Resource{}, side, raw)
+}
+
+func normalizeHooksForResource(r Resource, side string, raw *Snapshot) (*Snapshot, error) {
 	if raw == nil {
 		return nil, nil
 	}
@@ -238,7 +242,12 @@ func normalizeHooks(side string, raw *Snapshot) (*Snapshot, error) {
 					}
 				}
 				command, ok := h["command"].(string)
-				if h["type"] != "command" || !ok || !hookExecutable.MatchString(command) || filepath.Clean(command) != command {
+				validCommand := hookExecutable.MatchString(command) && filepath.Clean(command) == command
+				if r.Kind == "plugin-directory" {
+					_, relative := pluginHookPath(command)
+					validCommand = validCommand || relative
+				}
+				if h["type"] != "command" || !ok || !validCommand {
 					return nil, fmt.Errorf("hook command must be an absolute executable path without shell syntax")
 				}
 				// JSON numbers retain precision; timeout must be explicit on both hosts.

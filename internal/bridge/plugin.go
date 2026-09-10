@@ -60,13 +60,21 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 				if r.CodexPluginLayout == "portable" {
 					return nil, fmt.Errorf("portable Codex plugin layout does not load bundled hooks; use the compatibility layout")
 				}
-				if file != "hooks/hooks.json" {
-					return nil, fmt.Errorf("only the conventional plugin hooks/hooks.json is supported")
+				if strings.EqualFold(file, "hooks/hooks.json") && file != "hooks/hooks.json" {
+					return nil, fmt.Errorf("reserved hook configuration path requires exact hooks/hooks.json spelling")
 				}
 				names[file] = true
 			case "skills", "scripts", "assets", "references", "README.md", "LICENSE":
 				names[file] = true
 			default:
+				if pluginRootSupportingFile(file) {
+					raw, err := snapshot(filepath.Join(r.Paths[side], file))
+					if err != nil || raw == nil || raw.Mode&0111 != 0 {
+						return nil, fmt.Errorf("root plugin documentation and images must be safe non-executable files")
+					}
+					names[file] = true
+					continue
+				}
 				return nil, fmt.Errorf("plugin %s has an unsupported component (%s); no files will be converted", r.ID, top)
 			}
 		}
@@ -108,6 +116,9 @@ func expandPlugin(r Resource, m Manifest) ([]Item, error) {
 	}
 	if !present {
 		return nil, fmt.Errorf("no plugin source exists")
+	}
+	if err := validatePluginHookDependencies(r); err != nil {
+		return nil, err
 	}
 	if len(r.Servers) > 0 && !names[".mcp.json"] {
 		return nil, fmt.Errorf("bundled MCP source is missing")

@@ -9,6 +9,8 @@ import (
 func TestNativeClaudePluginInstallAndRemove(t *testing.T) {
 	f := pluginFixture(t)
 	tools := nativeTools(t, f)
+	f.write("claude-plugin/PRIVACY.md", "Fixture-only privacy notice.")
+	f.write("claude-plugin/example.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>")
 	f.write("claude-plugin/hooks/hooks.json", pluginHookFixture)
 	f.apply()
 	// Exercise the reverse-generated Claude package, not just its initial source.
@@ -44,6 +46,8 @@ func nativeCodexPluginLifecycle(t *testing.T, layout string) {
 		f.raw.Resources[0].CodexPluginLayout = "portable"
 	}
 	f.load()
+	f.write("claude-plugin/PRIVACY.md", "Fixture-only privacy notice.")
+	f.write("claude-plugin/example.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>")
 	if layout != "portable" {
 		f.write("claude-plugin/hooks/hooks.json", pluginHookFixture)
 	}

@@ -75,7 +75,7 @@ Source builds record per-server baselines after a successful sync, allowing inde
 | Common setting | Claude representation | Codex representation |
 | --- | --- | --- |
 | Stdio command/arguments | `command`, `args` | `command`, `args` |
-| Working directory | absolute `cwd` | absolute `cwd` |
+| Working directory | Nonempty `cwd` rejected: Claude 2.1.267 ignores it | Must remain native-managed; not a portable working-directory mapping |
 | Forward environment variable | `env: {"TOKEN":"${TOKEN}"}` | `env_vars = ["TOKEN"]` |
 | HTTP endpoint | `type: "http"`, `url` | `url` |
 | Bearer reference | `headers: {"Authorization":"Bearer ${TOKEN}"}` | `bearer_token_env_var = "TOKEN"` |
@@ -131,7 +131,14 @@ Claude uses `.claude-plugin/plugin.json`. By default Codex uses `.codex-plugin/p
 
 Common identity/publisher metadata is synchronized semantically. Skills in `skills/<name>/SKILL.md`, supporting `scripts/`, `assets/`, `references/`, root README and LICENSE files are synchronized per file, including executable bits. Compatibility manifests declare the standard skills path; portable Codex manifests rely on standard directory discovery. Custom skill locations are rejected. `portable: true` acknowledges that the skill content was reviewed; it is not an automated behavioral-equivalence certification.
 
-Source builds also translate conventional `hooks/hooks.json` in the Codex compatibility layout, subject to the same bounded command/event rules as standalone hooks. Portable-layout bundled hooks are rejected because native testing did not discover them. Custom hook locations and inline manifest hooks remain unsupported.
+Source builds also translate conventional `hooks/hooks.json` in the Codex compatibility layout. Alongside the standalone command/event subset, plugins support [quoted package-relative hook executables](plugin-runtime-paths.md) under `hooks/` or `scripts/`, with current and prospective dependency validation. Portable-layout bundled hooks are rejected because native testing did not discover them. Custom hook locations and inline manifest hooks remain unsupported.
+
+Supporting root files also include non-executable `PRIVACY.md`, `CHANGELOG.md`,
+`NOTICE`, `LICENSE.md`, `LICENSE.txt` and bounded ASCII filenames ending in
+`.png`, `.jpg`, `.jpeg`, `.webp` or `.svg`. These retain their path and bytes;
+they are not relocated or executed. Extra root configuration, hidden files and
+additional host manifests are still rejected. Supporting images do not prove
+the associated skill's host-specific instructions have equivalent behavior.
 
 Source builds support conventional `.mcp.json` for compatibility-layout plugins
 when the resource also declares `"servers": ["docs"]` and `"allowReformat": true`.

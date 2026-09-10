@@ -95,6 +95,15 @@ func prepareFileChange(c Config, change FileChange) (fileChangeJournal, string, 
 	if selected == nil || selected.Adapter != "" {
 		return journal, "", fmt.Errorf("supporting file is not a raw managed item")
 	}
+	// A move removes the old name just like deletion. Do not leave runtime
+	// references dangling; rename undo comes through this same preparation.
+	content := selected.Content
+	selected.Content = nil
+	err = validatePlannedPluginContents(p)
+	selected.Content = content
+	if err != nil {
+		return journal, "", err
+	}
 	journal = fileChangeJournal{Version: 1, Change: change, Resource: r, Operations: []Operation{}}
 	for _, side := range sides {
 		before := selected.Values[side]

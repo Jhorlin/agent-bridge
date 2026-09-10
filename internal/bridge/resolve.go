@@ -70,7 +70,7 @@ func resolutionContent(i Item, side string) (*Snapshot, error) {
 	case "agent-file":
 		return normalizeAgentResource(i.Resource, side, raw)
 	case "hook-config":
-		return normalizeHooks(side, raw)
+		return normalizeHooksForResource(i.Resource, side, raw)
 	case "file-guard-config":
 		return normalizeFileGuard(i.Resource, side, raw)
 	case "mcp":
@@ -112,6 +112,9 @@ func ReviewResolution(filename string, choices map[string]string) (ReviewCheckpo
 		return r, err
 	}
 	if err := validatePlannedNativeSkills(c, p); err != nil {
+		return r, err
+	}
+	if err := validatePlannedPluginContents(p); err != nil {
 		return r, err
 	}
 	r.Summaries = p.Summaries()

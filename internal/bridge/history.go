@@ -248,6 +248,9 @@ func prepareHistory(c Config, p *PlanResult, choice HistoryChoice) (string, erro
 	if err := validatePlannedNativeSkills(c, *p); err != nil {
 		return "", err
 	}
+	if err := validatePlannedPluginContents(*p); err != nil {
+		return "", err
+	}
 	return hex.EncodeToString(sum[:]), nil
 }
 

@@ -266,6 +266,9 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 		if result.HasConflicts() {
 			return ErrConflicts
 		}
+		if err := validatePlannedPluginContents(result); err != nil {
+			return err
+		}
 		if options.beforePrepare != nil {
 			options.beforePrepare()
 		}
@@ -331,7 +334,7 @@ func Apply(c Config, options Options) (output []Summary, failure error) {
 				case "agent-file":
 					roundTrip, err = normalizeAgentResource(item.Resource, side, content)
 				case "hook-config":
-					roundTrip, err = normalizeHooks(side, content)
+					roundTrip, err = normalizeHooksForResource(item.Resource, side, content)
 				case "file-guard-config":
 					roundTrip, err = normalizeFileGuard(item.Resource, side, content)
 				case "mcp":

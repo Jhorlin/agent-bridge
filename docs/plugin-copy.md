@@ -35,3 +35,20 @@ currently marks `plugin/list`, `plugin/read`, `plugin/install` and
 Agent Bridge keeps those calls inside opt-in isolated acceptance tests. Production
 installation/refresh remains native-managed pending a suitable supported contract
 and tests preserving host enablement, authentication and trust decisions.
+
+## Native CLI refresh evidence
+
+Source tests now exercise the CLI contracts separately from app-server methods:
+
+- Claude 2.1.267: `plugin update` keeps a disabled plugin disabled and refreshes
+  a bumped version. It does **not** refresh changed content with the same version.
+- Codex 0.153.4: repeating `plugin add` refreshes same-version and new-version
+  content, but also **re-enables a disabled plugin**, even with a process-level
+  disabled-setting override.
+
+`TestNativeClaudePluginRefreshContract` and
+`TestNativeCodexPluginRefreshContract` reproduce these results in disposable homes
+with inert skill-only packages. They do not certify authentication or trust
+preservation for external integrations. An automatic watcher must not use
+reinstall as a transparent refresh or silently bump a publisher's version. This
+is a native contract limitation, not completed ongoing installed-cache sync.
