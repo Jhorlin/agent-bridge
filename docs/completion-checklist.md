@@ -36,6 +36,11 @@ does not complete these items. A rejected input is not supported functionality.
 
 ## External or host-specific gates
 
+- Native rechecks on Claude 2.1.268 and Codex 0.153.4 confirm two additional
+  boundaries: [standalone skill arguments](skill-arguments.md) and
+  [path-scoped rule activation](scoped-rules.md). Copying the source files does
+  not supply equivalent execution. Manual guidance is documented separately;
+  automatic lossy translation remains disabled.
 - Figma, Stripe and Qodo require native user sign-in for authenticated validation.
 - Exact model names, permission grants, security enforcement, OAuth tokens and
   application-only runtimes are not interchangeable between hosts.

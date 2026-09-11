@@ -181,6 +181,10 @@ real-project test, including reverse edits, conflicts, native loading and logs.
 
 See the [compatibility matrix and implementation priorities](docs/compatibility.md) for current coverage, test evidence, and features that remain host-specific or intentionally excluded. File synchronization is not full behavioral compatibility.
 
+In particular, [Claude conditional rules](docs/scoped-rules.md) and
+[standalone skill argument substitution](docs/skill-arguments.md) have different
+native behavior in Codex. Copying those files does not establish equivalent execution.
+
 The [dated interoperability report](docs/interoperability-status.md) distinguishes
 current source-build results from unresolved implementation and authentication
 gates, including the copied-package survey and native CLI versions tested.

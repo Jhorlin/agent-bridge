@@ -43,6 +43,13 @@ gaps before this milestone was handed off.
 
 ## Evidence and limits
 
+Follow-up characterization on September 11 used Claude Code **2.1.268** and
+Codex CLI **0.153.4**. Native refresh boundaries remain unchanged. New fixtures
+verify [standalone skill arguments](skill-arguments.md) and [conditional rule
+activation versus nested instructions](scoped-rules.md). These are explicit
+compatibility limits, not newly supported mappings. The later ordinary coverage
+milestone reached **86.9% overall**; see [test coverage](testing.md).
+
 Native fixtures ran against Claude Code 2.1.267 and Codex CLI 0.153.4. All host
 homes and configurations were disposable. Invocation fixtures used local fake
 providers and inert scripts, not real model outcomes or service credentials.
