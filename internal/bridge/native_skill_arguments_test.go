@@ -68,3 +68,35 @@ func skillArgumentTextContains(value any, text string) bool {
 	}
 	return false
 }
+
+// Literal catalog prices and GraphQL non-null notation triggered conservative
+// automatic-adoption guards during monorepo onboarding. Check actual native
+// loading independently of the explicit reviewed-copy fixture.
+func TestNativeStandaloneSkillLiteralCatalogExamples(t *testing.T) {
+	for _, host := range []string{"claude", "codex"} {
+		t.Run(host, func(t *testing.T) {
+			f := newFixture(t)
+			tools := nativeTools(t, f)
+			const body = "BRIDGE_CATALOG_START price $2.50/M, range $2-3, GraphQL `Float!` BRIDGE_CATALOG_END\n"
+			const entry = "---\nname: bridge-catalog\ndescription: Inert catalog notation fixture.\n---\n" + body
+			f.write("claude-home/skills/bridge-catalog/SKILL.md", entry)
+			f.write("home/.agents/skills/bridge-catalog/SKILL.md", entry)
+			server, requests := nativePluginFixtureProvider(t)
+			if host == "codex" {
+				f.write("codex-home/config.toml", nativePluginProviderConfig(server.URL)+"\n[features]\nplugins=false\n")
+				nativeRun(t, f, tools[host], "exec", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "$bridge-catalog alpha beta gamma")
+			} else {
+				nativeRunEnvironment(t, f, tools[host], []string{"ANTHROPIC_BASE_URL=" + server.URL, "ANTHROPIC_API_KEY=bridge-fixture-not-a-real-key"}, "--print", "--model", "sonnet", "--max-turns", "1", "--no-session-persistence", "--setting-sources", "user", "/bridge-catalog alpha beta gamma")
+			}
+			want := strings.TrimSpace(body)
+			if host == "claude" {
+				// Claude 2.1.269 interprets $2 as the third argument even inside
+				// prices. Codex 0.153.4 preserves the literal source instead.
+				// Keep the conservative guard; a copied catalog is not proof of
+				// identical native invocation semantics.
+				want = "BRIDGE_CATALOG_START price gamma.50/M, range gamma-3, GraphQL `Float!` BRIDGE_CATALOG_END"
+			}
+			assertNativeCommandExpansionBody(t, requests, want)
+		})
+	}
+}

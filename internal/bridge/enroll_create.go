@@ -56,6 +56,7 @@ func decodeEnrollmentJSON(raw *Snapshot, v any) error {
 
 func flatProfile(c Config) (*Snapshot, error) {
 	raw := configInput{Version: 1, StateDir: c.StateDir, CoordinationDir: c.CoordinationDir, Resources: []resourceInput{}}
+	raw.WatchIntervalSeconds = c.WatchIntervalSeconds
 	raw.Conventions = c.Conventions
 	for _, r := range c.Resources {
 		if c.Conventions != nil && automaticResource(r.ID) {

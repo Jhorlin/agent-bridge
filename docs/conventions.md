@@ -120,6 +120,21 @@ components need no restart. Two stable observations and an under-lock freshness
 check precede watcher writes. Inventory changes invalidate review tokens. Project
 scan cost grows with the selected tree.
 
+For a large checkout or several worktrees, current source builds support a
+top-level `"watchIntervalSeconds": 30` in each profile. The default remains one
+second. Values are integers from 1 through 3600; omitted/zero inherits a parent
+profile's value, or uses the default if none is set. Use an explicit `1` to
+override an inherited longer interval. This controls the wait **after** each scan,
+not a deadline for the scan. Two stable observations still precede writes, so a
+30-second interval can take about a minute plus scan time to propagate an edit.
+Cancellation interrupts the wait. A valid profile change is picked up on the next
+poll; unreadable inputs retain the last successfully loaded interval, or one
+second before any profile has loaded. The interval also survives reviewed profile
+flattening/enrollment. It does not automatically enroll new Git worktrees.
+
+Use a binary that supports the field: older binaries may reject it or ignore it
+during an ordinary load. Review and upgrade the service binary before setting it.
+
 Stable derived IDs use the ordinary baseline/journal/recovery engine. Independent
 file changes merge; differing edits to the same shared content block the entire
 transaction. New MCP names on either side merge independently, including disjoint

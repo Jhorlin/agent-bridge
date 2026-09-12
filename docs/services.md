@@ -27,6 +27,15 @@ PROFILE`. Applying installation refuses current conflicts. The watcher retains
 its normal debounce, conflict blocking, journal, and explicit-recovery rules.
 Changes after installation are checked by the watcher, not implicitly approved.
 
+For large repositories and multiple worktrees, configure a top-level
+`"watchIntervalSeconds": 30` in each profile with a current source binary. The
+service uses the same profile-controlled cadence as foreground `watch`; no plist
+editing or reinstall is needed when changing the interval on a supported binary.
+The previous interval remains in effect until the next successful profile load.
+This reduces repeated full-tree scans, at the cost of slower propagation (normally
+up to two polling intervals plus scan time). It does not turn polling into a
+filesystem-event watcher. See [polling semantics](conventions.md#ongoing-reconciliation-and-safety).
+
 ## Lifecycle and ownership
 
 - `install` creates a plist for the next login, an ownership receipt, and private

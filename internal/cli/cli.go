@@ -231,6 +231,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	watchBlocked := false
 	lastObservation := ""
 	lastConventionWarnings := ""
+	watchInterval := time.Second
 	for {
 		if ctx.Err() != nil {
 			return 0
@@ -248,7 +249,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 					event(ctx, "watch_paused", "cli", err)
 				}
 				lastObservation = ""
-				if !retryWatch(ctx, errOut, &watchBlocked) {
+				if !retryWatch(ctx, errOut, &watchBlocked, watchInterval) {
 					if ctx.Err() != nil {
 						return 0
 					}
@@ -263,6 +264,10 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			event(ctx, "config_load", "cli", err)
 			fmt.Fprintln(errOut, err)
 			return 1
+		}
+		watchInterval = time.Second
+		if c.WatchIntervalSeconds > 0 {
+			watchInterval = time.Duration(c.WatchIntervalSeconds) * time.Second
 		}
 		if command == "audit" {
 			report := bridge.Audit(c)
@@ -313,7 +318,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 		if err != nil {
 			if command == "watch" {
 				lastObservation = ""
-				if !retryWatch(ctx, errOut, &watchBlocked) {
+				if !retryWatch(ctx, errOut, &watchBlocked, watchInterval) {
 					if ctx.Err() != nil {
 						return 0
 					}
@@ -372,7 +377,7 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 			}
 			return 0
 		}
-		timer := time.NewTimer(time.Second)
+		timer := time.NewTimer(watchInterval)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
@@ -384,14 +389,14 @@ func Run(ctx context.Context, args []string, out, errOut io.Writer) int {
 
 // Input errors can be temporary editor saves. Never apply or auto-recover while
 // unreadable; emit a redacted transition once, then retry until canceled.
-func retryWatch(ctx context.Context, out io.Writer, blocked *bool) bool {
+func retryWatch(ctx context.Context, out io.Writer, blocked *bool, interval time.Duration) bool {
 	if !*blocked {
 		if _, err := fmt.Fprintln(out, "Watch paused: configuration or inputs are unreadable/unsupported, or recovery is pending. No sync attempted; retrying. Use audit/plan to inspect."); err != nil {
 			return false
 		}
 		*blocked = true
 	}
-	timer := time.NewTimer(time.Second)
+	timer := time.NewTimer(interval)
 	defer timer.Stop()
 	select {
 	case <-ctx.Done():

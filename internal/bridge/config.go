@@ -67,12 +67,13 @@ func (r Resource) MarshalJSON() ([]byte, error) {
 }
 
 type Config struct {
-	Conventions        *Conventions `json:"conventions,omitempty"`
-	ConventionWarnings []string     `json:"conventionWarnings,omitempty"`
-	CoordinationDir    string       `json:"coordinationDir,omitempty"`
-	StateDir           string       `json:"stateDir"`
-	Resources          []Resource   `json:"resources"`
-	ConfigFiles        []string     `json:"configFiles"`
+	WatchIntervalSeconds int          `json:"watchIntervalSeconds,omitempty"`
+	Conventions          *Conventions `json:"conventions,omitempty"`
+	ConventionWarnings   []string     `json:"conventionWarnings,omitempty"`
+	CoordinationDir      string       `json:"coordinationDir,omitempty"`
+	StateDir             string       `json:"stateDir"`
+	Resources            []Resource   `json:"resources"`
+	ConfigFiles          []string     `json:"configFiles"`
 }
 type resourceInput struct {
 	ID                       string            `json:"id"`
@@ -94,13 +95,14 @@ type resourceInput struct {
 	PreserveCommandSettings  bool              `json:"preserveCommandSettings,omitempty"`
 }
 type configInput struct {
-	Conventions     *Conventions    `json:"conventions,omitempty"`
-	CoordinationDir string          `json:"coordinationDir,omitempty"`
-	Version         int             `json:"version"`
-	StateDir        string          `json:"stateDir"`
-	Resources       []resourceInput `json:"resources"`
-	Extends         string          `json:"extends,omitempty"`
-	Disable         []string        `json:"disable,omitempty"`
+	WatchIntervalSeconds int             `json:"watchIntervalSeconds,omitempty"`
+	Conventions          *Conventions    `json:"conventions,omitempty"`
+	CoordinationDir      string          `json:"coordinationDir,omitempty"`
+	Version              int             `json:"version"`
+	StateDir             string          `json:"stateDir"`
+	Resources            []resourceInput `json:"resources"`
+	Extends              string          `json:"extends,omitempty"`
+	Disable              []string        `json:"disable,omitempty"`
 }
 
 func inside(parent, child string) bool {
@@ -136,6 +138,7 @@ func loadConfigMode(filename string, audit, discover bool) (Config, error) {
 	}
 	c.StateDir = resolve(filepath.Dir(absolute), raw.StateDir)
 	c.ConfigFiles = configFiles
+	c.WatchIntervalSeconds = raw.WatchIntervalSeconds
 	c.CoordinationDir = raw.CoordinationDir
 	c.Conventions = raw.Conventions
 	if c.Conventions == nil || !discover {
@@ -387,6 +390,9 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 	if raw.Version != 1 || raw.StateDir == "" || raw.Resources == nil {
 		return raw, nil, fmt.Errorf("expected version: 1, stateDir, and resources array")
 	}
+	if raw.WatchIntervalSeconds < 0 || raw.WatchIntervalSeconds > 3600 {
+		return raw, nil, fmt.Errorf("watchIntervalSeconds must be 0 (default) or 1-3600")
+	}
 	files := []string{file}
 	base := filepath.Dir(file)
 	if raw.Conventions != nil {
@@ -412,6 +418,9 @@ func inherit(file string, stack map[string]bool, audit bool) (configInput, []str
 		}
 		if raw.CoordinationDir == "" {
 			raw.CoordinationDir = parent.CoordinationDir
+		}
+		if raw.WatchIntervalSeconds == 0 {
+			raw.WatchIntervalSeconds = parent.WatchIntervalSeconds
 		}
 		files = append(files, pfiles...)
 	}

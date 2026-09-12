@@ -40,6 +40,24 @@ can omit unsupported command files entirely.
 
 ## Usable manual alternative, explicitly non-equivalent
 
+### Literal prices also need review
+
+An isolated onboarding regression with Claude Code 2.1.269 and Codex 0.153.4
+found that `price $2.50/M, range $2-3` becomes
+`price gamma.50/M, range gamma-3` when Claude invokes the skill with
+`alpha beta gamma`. Codex preserves the literal prices. GraphQL notation
+such as the inline code span `Float!` stays literal in both hosts.
+Consequently, the automatic dollar-token guard is deliberately conservative:
+a dollar amount is not automatically safe merely because its author intended
+currency. Prefer unambiguous currency notation such as `USD 2.50` when authoring
+portable skills. An explicit reviewed copy preserves the source text in Codex;
+it does not emulate Claude's substitution or certify identical execution.
+
+`TestNativeStandaloneSkillLiteralCatalogExamples` records this differential
+contract using fake loopback providers, without authenticated model calls.
+
+### Invoke an excluded dynamic source explicitly
+
 Keep a dynamic skill excluded from automatic portable synchronization. In Codex,
 direct it to read the existing source skill and provide the task explicitly:
 
